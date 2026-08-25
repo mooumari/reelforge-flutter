@@ -1,0 +1,11 @@
+.DS_Store
+.dart_tool/
+.packages
+build/
+pubspec.lock
+*.iml
+
+# Spike + benchmark outputs
+benchmarks/**/out.mp4
+benchmarks/**/*.png
+benchmarks/**/bench_result.json
