@@ -42,6 +42,7 @@ class VideoClip extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.alignment = Alignment.center,
     this.opacity = 1.0,
+    this.loop = false,
   })  : assert(trimStartInFrames >= 0),
         assert(
           decodeWidth == null || decodeHeight == null || true,
@@ -70,6 +71,15 @@ class VideoClip extends StatelessWidget {
   final Alignment alignment;
   final double opacity;
 
+  /// Restart the clip when it reaches the end of the source, instead of
+  /// holding the last frame.
+  ///
+  /// Without this, a clip mounted for longer than the file lasts freezes --
+  /// warned about by name during the declaration pass, but still a frozen
+  /// frame. Two seconds of B-roll under a nine-second scene is the ordinary
+  /// case, not the exception.
+  final bool loop;
+
   @override
   Widget build(BuildContext context) {
     // Two jobs at once: the declaration pass infers the clip's window from the
@@ -83,6 +93,7 @@ class VideoClip extends StatelessWidget {
       trimStartInFrames: trimStartInFrames,
       decodeWidth: decodeWidth,
       decodeHeight: decodeHeight,
+      loop: loop,
     );
 
     DeclarationScope.maybeOf(context)?.declareVideo(declaration);

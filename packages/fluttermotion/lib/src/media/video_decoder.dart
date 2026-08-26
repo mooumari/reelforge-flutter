@@ -127,7 +127,12 @@ class VideoDecoder implements VideoFrameSource {
   FrameReader? _reader;
   StringBuffer? _errors;
 
-  /// The next composition frame the open pipe will yield.
+  /// The next *source* frame the open pipe will yield.
+  ///
+  /// Source rather than composition frames, because a looping clip runs the
+  /// composition forward while sending the source back to the start. Checking
+  /// continuity in source terms makes the wrap restart the pipe for the same
+  /// reason a backwards scrub does, rather than needing a case of its own.
   int? _cursor;
 
   ui.Image? _current;
@@ -138,20 +143,49 @@ class VideoDecoder implements VideoFrameSource {
   bool get exhausted => _exhausted;
   bool _exhausted = false;
 
+  /// The source frame the file ran dry at, once it has.
+  ///
+  /// Kept so that holding the last frame stays free. Without it every frame
+  /// past the end starts a fresh ffmpeg, decodes the whole file, and gets
+  /// nothing -- a clip mounted for seven seconds longer than it lasts cost 210
+  /// process spawns and dominated the render.
+  int? _driedAt;
+
+  /// How many source frames the clip has to play with after its trim.
+  ///
+  /// The length a loop wraps at. Clamped to at least one so a source shorter
+  /// than its own trim cannot divide by zero.
+  int get _loopLength =>
+      (info.frameCapacity(fps) - declaration.trimStartInFrames)
+          .clamp(1, 1 << 31);
+
   /// The source frame index this composition frame maps to.
   ///
   /// Absolute, in source time -- which is exactly what makes it independent of
-  /// where decoding started.
+  /// where decoding started. A looping clip wraps here, so every other part of
+  /// the decoder can go on believing frames are a straight line.
   @override
-  int sourceFrameFor(int compositionFrame) =>
-      declaration.trimStartInFrames + (compositionFrame - startFrame);
+  int sourceFrameFor(int compositionFrame) {
+    final int offset = compositionFrame - startFrame;
+    return declaration.trimStartInFrames +
+        (declaration.loop ? offset % _loopLength : offset);
+  }
 
   /// Decodes [compositionFrame], reusing the open pipe when it is the next one.
   @override
   Future<ui.Image?> frameAt(int compositionFrame) async {
     if (_currentFrame == compositionFrame) return _current;
 
-    if (_process == null || _cursor != compositionFrame) {
+    final int sourceFrame = sourceFrameFor(compositionFrame);
+
+    // Already known to be past the end. Scrubbing back before that point is
+    // still a normal restart.
+    if (_driedAt != null && sourceFrame >= _driedAt!) {
+      _currentFrame = compositionFrame;
+      return _current;
+    }
+
+    if (_process == null || _cursor != sourceFrame) {
       await _restartAt(compositionFrame);
     }
 
@@ -161,11 +195,13 @@ class VideoDecoder implements VideoFrameSource {
       // last frame rather than flashing to nothing; `prepare` has already
       // warned about this by name.
       _exhausted = true;
+      _driedAt = sourceFrame;
       _cursor = null;
+      _currentFrame = compositionFrame;
       return _current;
     }
 
-    _cursor = compositionFrame + 1;
+    _cursor = _cursor! + 1;
     _currentFrame = compositionFrame;
     final ui.Image decoded = await _decodeRgba(bytes, width, height);
     _current?.dispose();
@@ -213,8 +249,9 @@ class VideoDecoder implements VideoFrameSource {
     _process = process;
     _errors = errors;
     _reader = FrameReader(process.stdout, maxBufferedBytes: _frameBytes * 4);
-    _cursor = compositionFrame;
+    _cursor = sourceFrame;
     _exhausted = false;
+    _driedAt = null;
   }
 
   Future<void> _stop() async {

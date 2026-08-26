@@ -17,7 +17,18 @@ import 'video_decoder.dart';
 class VideoFrames {
   VideoFrames(this._decoders);
 
-  final Map<VideoDeclaration, VideoFrameSource> _decoders;
+  /// Every open decoder, grouped by the declaration a [VideoClip] looks up.
+  ///
+  /// A list rather than one decoder each, because the same file placed in two
+  /// scenes is two placements of one declaration -- [VideoDeclaration] has
+  /// value equality, so they are the same key. Keeping only the last one is
+  /// what made the earlier placement render black.
+  ///
+  /// The windows within a group are disjoint: the declaration pass builds them
+  /// from runs of consecutive frames, and a gap is what splits one run into
+  /// two. So at most one of them wants a given frame, and a [VideoClip] never
+  /// has to say which placement it is.
+  final Map<VideoDeclaration, List<VideoFrameSource>> _decoders;
 
   final Map<VideoDeclaration, ui.Image?> _current =
       <VideoDeclaration, ui.Image?>{};
@@ -47,11 +58,13 @@ class VideoFrames {
       // lands mid-decode should show the previous frame, not an empty one.
       final Map<VideoDeclaration, ui.Image?> next =
           <VideoDeclaration, ui.Image?>{};
-      for (final MapEntry<VideoDeclaration, VideoFrameSource> entry
+      for (final MapEntry<VideoDeclaration, List<VideoFrameSource>> entry
           in _decoders.entries) {
-        final VideoFrameSource decoder = entry.value;
-        if (frame < decoder.startFrame || frame > decoder.endFrame) continue;
-        next[entry.key] = await decoder.frameAt(frame);
+        for (final VideoFrameSource decoder in entry.value) {
+          if (frame < decoder.startFrame || frame > decoder.endFrame) continue;
+          next[entry.key] = await decoder.frameAt(frame);
+          break;
+        }
       }
       _frame = frame;
       _current
@@ -65,8 +78,10 @@ class VideoFrames {
   ui.Image? operator [](VideoDeclaration declaration) => _current[declaration];
 
   Future<void> dispose() async {
-    for (final VideoFrameSource decoder in _decoders.values) {
-      await decoder.dispose();
+    for (final List<VideoFrameSource> group in _decoders.values) {
+      for (final VideoFrameSource decoder in group) {
+        await decoder.dispose();
+      }
     }
     _decoders.clear();
     _current.clear();
@@ -103,8 +118,8 @@ abstract final class VideoPreloader {
     required VideoBackend backend,
     String? projectPath,
   }) async {
-    final Map<VideoDeclaration, VideoFrameSource> decoders =
-        <VideoDeclaration, VideoFrameSource>{};
+    final Map<VideoDeclaration, List<VideoFrameSource>> decoders =
+        <VideoDeclaration, List<VideoFrameSource>>{};
     final List<String> warnings = <String>[];
 
     for (final VideoTimelineEntry entry in entries) {
@@ -122,9 +137,11 @@ abstract final class VideoPreloader {
 
       // Catch a source that runs out mid-window now, by name, rather than
       // letting the last frame silently freeze for two seconds in the export.
-      final int needed = decoder.sourceFrameFor(entry.endFrame) + 1;
+      // A looping clip is meant to outlast its source, so it is not a warning.
+      final int needed =
+          entry.declaration.trimStartInFrames + entry.endFrame - entry.startFrame + 1;
       final int available = info.frameCapacity(fps);
-      if (needed > available) {
+      if (!entry.declaration.loop && needed > available) {
         warnings.add(
           '${entry.declaration.src} is mounted for frames '
           '${entry.startFrame}-${entry.endFrame} and needs $needed source '
@@ -134,7 +151,10 @@ abstract final class VideoPreloader {
         );
       }
 
-      decoders[entry.declaration] = decoder;
+      // Appended, not assigned: the same file in two scenes is two entries
+      // sharing one key.
+      decoders.putIfAbsent(entry.declaration, () => <VideoFrameSource>[])
+          .add(decoder);
     }
 
     return VideoFrames(decoders)..warnings.addAll(warnings);

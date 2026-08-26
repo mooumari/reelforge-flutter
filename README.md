@@ -218,6 +218,14 @@ Scrubbing backwards restarts the decoder; that is the only expensive path, and
 the preview coalesces scrub requests so a fast drag costs one restart rather
 than one per frame crossed.
 
+The same file placed in two scenes is two decoders, not one. A declaration has
+value equality on what it decodes -- same source, same trim, same size -- so
+both placements hash to one key, and keeping one decoder per key made the
+earlier placement render black. The store keeps a list per key and picks by
+window, which works without a `VideoClip` ever having to say which placement it
+is: the declaration pass builds windows from runs of consecutive frames, and a
+gap is what splits a run, so the windows under one key are disjoint.
+
 `decodeWidth` / `decodeHeight` are the biggest lever on cost. A 4K source drawn
 into a 1080p composition decodes four times the pixels it will ever paint, on
 every frame, and nothing downstream recovers that.
@@ -230,6 +238,25 @@ Warning: assets/clip.mp4 is mounted for frames 0-179 and needs 180 source
 frames at 60fps, but the file only has 120 (2.00s). The last frame will be
 held for the remaining 60.
 ```
+
+Or say `loop: true` and the clip wraps instead:
+
+```dart
+VideoClip(src: 'assets/clip.mp4', loop: true)
+```
+
+Looping is expressed in *source* frames, not composition frames: the decoder
+maps composition frame to source frame through one modulo, and the wrap
+restarts the pipe for the same reason a backwards scrub does. Nothing else in
+the decoder has to know loops exist. A looping clip is not warned about, since
+outlasting its source is the point.
+
+Holding the last frame is free either way. It did not used to be: a clip
+mounted seven seconds past its own end spawned a fresh ffmpeg per frame, each
+one decoding the whole file to find nothing -- 210 processes, and the dominant
+cost of the render. The decoder now remembers the source frame it ran dry at
+and short-circuits at or beyond it, while a scrub back before that point is
+still a normal restart.
 
 ## Widgets from your app
 
@@ -592,6 +619,12 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
 - **In-app video decoding lands on the same frames as ffmpeg.** All 200 frames
   of `VideoProbe` identical between the in-app export and the CLI render,
   including the clip's entry and exit, read per frame by pixel value.
+- **A 60-second, eight-scene reel renders deterministically.** 1800 frames at
+  1080x1920, three video clips, eight audio clips and data loaded from JSON:
+  worst per-frame difference between a 1-shard and a 4-shard render is 0.31
+  grey levels, with no frame over 3. It renders in 13.89 s -- **4.32x
+  realtime** -- inside 309 MB max RSS, which is what says the decoders are
+  streaming rather than accumulating.
 - **Widgets that animate on their own `Ticker` are frame-exact**, and identical
   across 1, 2, 4 and 8 shards -- including one mounted mid-timeline by a
   `Sequence`.
@@ -648,7 +681,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-180 tests across the three packages (119 framework, 40 CLI, 21 encoder).
+186 tests across the three packages (123 framework, 40 CLI, 23 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

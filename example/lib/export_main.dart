@@ -5,6 +5,8 @@ import 'package:fluttermotion/fluttermotion.dart';
 import 'package:fluttermotion_encoder/fluttermotion_encoder.dart';
 
 import 'compositions.dart';
+import 'longform.dart';
+import 'report_data.dart';
 
 /// Headless in-app export, for verifying that the *app* can make a video.
 ///
@@ -24,6 +26,7 @@ void main(List<String> args) {
   }
 
   final List<Composition> compositions = <Composition>[
+    longform,
     helloFlutter,
     weeklyDeals,
     videoShowcase,
@@ -36,6 +39,8 @@ void main(List<String> args) {
   // has produced a frame.
   binding.addPostFrameCallback((_) async {
     try {
+      // Same bootstrap the render host runs: data first, then compositions.
+      await loadReport();
       final String id = options['composition'] ?? 'WeeklyDeals';
       final Composition composition = compositions.firstWhere(
         (Composition c) => c.id == id,

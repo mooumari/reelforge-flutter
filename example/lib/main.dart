@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 import 'package:fluttermotion_encoder/fluttermotion_encoder.dart';
 
 import 'compositions.dart';
+import 'longform.dart';
+import 'report_data.dart';
 
 /// Preview app. `flutter run -d macos` here, then scrub -- and hot reload
 /// applies to compositions like any other Flutter code.
@@ -13,8 +16,13 @@ import 'compositions.dart';
 /// encoder and no ffmpeg involved. The [videoBackendFactory] is the other half
 /// of that: video clips decode through AVFoundation, so scrubbing a
 /// composition with footage in it does not need ffmpeg on the machine either.
-void main() => previewMain(
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Anything a composition reads has to be there before the first frame.
+  await loadReport();
+  previewMain(
       <Composition>[
+        longform,
         helloFlutter,
         weeklyDeals,
         videoShowcase,
@@ -27,3 +35,4 @@ void main() => previewMain(
       exportPathBuilder: (Composition composition) =>
           '${Directory.systemTemp.path}/fluttermotion/${composition.id}.mp4',
     );
+}

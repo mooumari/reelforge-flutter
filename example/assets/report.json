@@ -1,0 +1,30 @@
+{
+  "period": "Q3 2026",
+  "headline": "Shipped more, broke less",
+  "totals": {"releases": 47, "incidents": 3, "uptime": 99.97},
+  "weeks": [
+    {"label": "W27", "shipped": 12, "reverted": 2},
+    {"label": "W28", "shipped": 18, "reverted": 1},
+    {"label": "W29", "shipped": 9,  "reverted": 3},
+    {"label": "W30", "shipped": 24, "reverted": 0},
+    {"label": "W31", "shipped": 31, "reverted": 2},
+    {"label": "W32", "shipped": 27, "reverted": 1},
+    {"label": "W33", "shipped": 38, "reverted": 0},
+    {"label": "W34", "shipped": 41, "reverted": 1},
+    {"label": "W35", "shipped": 35, "reverted": 2},
+    {"label": "W36", "shipped": 44, "reverted": 0},
+    {"label": "W37", "shipped": 29, "reverted": 1},
+    {"label": "W38", "shipped": 52, "reverted": 0}
+  ],
+  "teams": [
+    {"name": "Platform",   "delta":  18.4, "owner": "AK"},
+    {"name": "Payments",   "delta":   7.1, "owner": "RM"},
+    {"name": "Growth",     "delta":  -2.3, "owner": "JD"},
+    {"name": "Mobile",     "delta":  22.9, "owner": "SP"},
+    {"name": "Infra",      "delta":  11.6, "owner": "LT"},
+    {"name": "Data",       "delta":   4.8, "owner": "CN"},
+    {"name": "Design",     "delta":  15.2, "owner": "MB"},
+    {"name": "Support",    "delta":  -1.1, "owner": "HW"},
+    {"name": "Security",   "delta":   9.5, "owner": "EF"}
+  ]
+}

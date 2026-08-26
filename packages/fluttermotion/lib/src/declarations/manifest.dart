@@ -70,6 +70,7 @@ class VideoDeclaration {
     this.trimStartInFrames = 0,
     this.decodeWidth,
     this.decodeHeight,
+    this.loop = false,
   });
 
   final String src;
@@ -85,11 +86,18 @@ class VideoDeclaration {
   final int? decodeWidth;
   final int? decodeHeight;
 
+  /// Whether the clip restarts when it reaches the end of the source.
+  ///
+  /// Off by default, because a clip running out is usually a mistake worth
+  /// hearing about. On, it is the normal way two seconds of B-roll sit under a
+  /// nine-second scene.
+  final bool loop;
+
   /// Identity for aggregation, and the key the decoder set is keyed by. Two
   /// clips differing only in decode size are two decoders, because they cannot
   /// share a pipe.
-  String get key =>
-      '$src|$trimStartInFrames|${decodeWidth ?? '-'}x${decodeHeight ?? '-'}';
+  String get key => '$src|$trimStartInFrames|'
+      '${decodeWidth ?? '-'}x${decodeHeight ?? '-'}|${loop ? 'loop' : 'once'}';
 
   @override
   bool operator ==(Object other) =>

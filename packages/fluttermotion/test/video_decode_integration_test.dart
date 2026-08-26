@@ -148,6 +148,123 @@ void main() {
       await short.dispose();
     });
 
+    test('the same clip placed twice keeps both placements', () async {
+      // Found by rendering a real 60-second reel: a composition that shows the
+      // same file in two different scenes rendered one of them black. The
+      // manifest split them correctly -- it was the decoder set that collapsed
+      // them, because VideoDeclaration has value equality and both placements
+      // hash to the same key.
+      final VideoFrames twice = await VideoPreloader.open(
+        const <VideoTimelineEntry>[
+          VideoTimelineEntry(declaration: declaration, startFrame: 0, endFrame: 19),
+          VideoTimelineEntry(declaration: declaration, startFrame: 60, endFrame: 79),
+        ],
+        fps: 60,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
+        projectPath: projectPath,
+      );
+
+      // Each placement starts the clip again from its own first frame, so both
+      // windows open on source frame 0.
+      await twice.advanceTo(0);
+      expect(await greyAt(twice, declaration), closeTo(0, 1));
+      await twice.advanceTo(5);
+      expect(await greyAt(twice, declaration), closeTo(2 * 5, 1));
+
+      await twice.advanceTo(60);
+      expect(await greyAt(twice, declaration), closeTo(0, 1),
+          reason: 'the second placement should restart the clip, not be black');
+      await twice.advanceTo(65);
+      expect(await greyAt(twice, declaration), closeTo(2 * 5, 1));
+
+      await twice.dispose();
+    });
+
+    test('between two placements of one clip, nothing paints', () async {
+      final VideoFrames twice = await VideoPreloader.open(
+        const <VideoTimelineEntry>[
+          VideoTimelineEntry(declaration: declaration, startFrame: 0, endFrame: 19),
+          VideoTimelineEntry(declaration: declaration, startFrame: 60, endFrame: 79),
+        ],
+        fps: 60,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
+        projectPath: projectPath,
+      );
+
+      await twice.advanceTo(0);
+      // The gap between the two windows is not a window.
+      await twice.advanceTo(40);
+      expect(twice[declaration], isNull);
+      await twice.dispose();
+    });
+
+    test('a looping clip restarts the source instead of freezing', () async {
+      // The probe is 120 frames; mount it for 300 and it has to wrap twice.
+      // Without loop this is the "held last frame" case, which is warned about
+      // but still a frozen picture under a nine-second scene.
+      const VideoDeclaration looping =
+          VideoDeclaration(src: probe, loop: true);
+      final VideoFrames frames = await VideoPreloader.open(
+        const <VideoTimelineEntry>[
+          VideoTimelineEntry(
+              declaration: looping, startFrame: 0, endFrame: 299),
+        ],
+        fps: 60,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
+        projectPath: projectPath,
+      );
+
+      // Nothing to warn about: outlasting the source is the whole point.
+      expect(frames.warnings, isEmpty);
+
+      for (final (int composition, int source) in <(int, int)>[
+        (0, 0),
+        (10, 10),
+        (119, 119),
+        (120, 0), // wraps
+        (125, 5),
+        (240, 0), // wraps again
+        (245, 5),
+      ]) {
+        await frames.advanceTo(composition);
+        expect(await greyAt(frames, looping), closeTo(2 * source, 1),
+            reason: 'composition frame $composition should show source $source');
+      }
+      await frames.dispose();
+    });
+
+    test('a looping clip wrapping mid-stream matches entering there', () async {
+      // The wrap is a discontinuity in source time inside a continuous run of
+      // composition frames, which is exactly the case a shard boundary also
+      // creates. They have to agree.
+      const VideoDeclaration looping =
+          VideoDeclaration(src: probe, loop: true);
+      Future<VideoFrames> open() => VideoPreloader.open(
+            const <VideoTimelineEntry>[
+              VideoTimelineEntry(
+                  declaration: looping, startFrame: 0, endFrame: 299),
+            ],
+            fps: 60,
+            backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
+            projectPath: projectPath,
+          );
+
+      final VideoFrames streamed = await open();
+      for (int f = 115; f <= 125; f++) {
+        await streamed.advanceTo(f);
+      }
+      final int afterStreaming = await greyAt(streamed, looping);
+
+      final VideoFrames direct = await open();
+      await direct.advanceTo(125);
+      final int afterSeeking = await greyAt(direct, looping);
+
+      expect(afterSeeking, afterStreaming);
+      expect(afterStreaming, closeTo(2 * 5, 1));
+      await streamed.dispose();
+      await direct.dispose();
+    });
+
     test('a missing file fails by name rather than rendering a hole', () async {
       await expectLater(
         VideoPreloader.open(

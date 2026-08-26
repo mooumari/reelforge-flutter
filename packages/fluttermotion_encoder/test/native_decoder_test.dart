@@ -168,6 +168,41 @@ void main() {
       await s.dispose();
     });
 
+    test('holding the last frame does not re-read the source', () async {
+      // Found by rendering a 60-second reel: a clip mounted seven seconds
+      // longer than it lasts re-opened the decoder on every frame past the
+      // end, decoded the whole file, and got nothing back. Three such clips
+      // dominated the render -- 63 seconds of work for 14 seconds of frames.
+      final VideoFrameSource s = source(endFrame: 200);
+      remaining = 1;
+      await s.frameAt(10);
+      await s.frameAt(11);
+      expect(s.exhausted, isTrue);
+
+      final int before = calls.length;
+      for (int f = 12; f < 60; f++) {
+        await s.frameAt(f);
+      }
+      expect(calls.length, before,
+          reason: '48 frames past the end should cost nothing');
+      await s.dispose();
+    });
+
+    test('scrubbing back before the end decodes again', () async {
+      final VideoFrameSource s = source(endFrame: 200);
+      remaining = 1;
+      await s.frameAt(10);
+      await s.frameAt(11);
+      await s.frameAt(30);
+      expect(s.exhausted, isTrue);
+
+      // Back inside the part of the source that does exist.
+      remaining = 5;
+      await s.frameAt(10);
+      expect(methods().where((String m) => m == 'seek'), hasLength(1));
+      await s.dispose();
+    });
+
     test('the next request after running dry re-enters the source', () async {
       final VideoFrameSource s = source();
       remaining = 1;
@@ -175,8 +210,10 @@ void main() {
       await s.frameAt(11);
       expect(s.exhausted, isTrue);
 
+      // A frame *before* the point it ran dry is a legitimate re-read: the
+      // source has those frames, it just did not have the later ones.
       remaining = 5;
-      await s.frameAt(12);
+      await s.frameAt(10);
       expect(methods().where((String m) => m == 'seek'), hasLength(1));
       expect(s.exhausted, isFalse);
       await s.dispose();
