@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../composition.dart';
+import '../export/encoder.dart';
 import 'player.dart';
 import 'theme.dart';
 
@@ -18,10 +19,17 @@ import 'theme.dart';
 /// [projectPath] is the root a video clip's `src` is resolved against. It
 /// defaults to the working directory, which is the project root under
 /// `flutter run`.
-void previewMain(List<Composition> compositions, {String? projectPath}) {
+void previewMain(
+  List<Composition> compositions, {
+  String? projectPath,
+  VideoEncoder Function()? encoderFactory,
+  String Function(Composition composition)? exportPathBuilder,
+}) {
   runApp(FlutterMotionPreview(
     compositions: compositions,
     projectPath: projectPath,
+    encoderFactory: encoderFactory,
+    exportPathBuilder: exportPathBuilder,
   ));
 }
 
@@ -30,12 +38,20 @@ class FlutterMotionPreview extends StatefulWidget {
     super.key,
     required this.compositions,
     this.projectPath,
+    this.encoderFactory,
+    this.exportPathBuilder,
   });
 
   final List<Composition> compositions;
 
   /// Root that a clip's `src` is resolved against.
   final String? projectPath;
+
+  /// Supplies an encoder for in-app export. Null hides the Export button.
+  final VideoEncoder Function()? encoderFactory;
+
+  /// Where an export is written.
+  final String Function(Composition composition)? exportPathBuilder;
 
   @override
   State<FlutterMotionPreview> createState() => _FlutterMotionPreviewState();
@@ -79,6 +95,8 @@ class _FlutterMotionPreviewState extends State<FlutterMotionPreview> {
         Expanded(
           child: CompositionPlayer(
             projectPath: widget.projectPath,
+            encoderFactory: widget.encoderFactory,
+            exportPathBuilder: widget.exportPathBuilder,
             // Rebuild player state from scratch when switching compositions,
             // rather than carrying a playhead across different durations.
             key: ValueKey<String>(composition.id),

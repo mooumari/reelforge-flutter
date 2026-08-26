@@ -9,10 +9,13 @@ import 'package:flutter/widgets.dart';
 import '../composition.dart';
 import '../declarations/assets.dart';
 import '../declarations/pass.dart';
+import '../export/encoder.dart';
+import '../export/exporter.dart';
 import '../frame.dart';
 import '../media/ffmpeg_paths.dart';
 import '../media/video_store.dart';
 import 'controls.dart';
+import 'export_panel.dart';
 import 'scrubber.dart';
 import 'theme.dart';
 
@@ -29,6 +32,8 @@ class CompositionPlayer extends StatefulWidget {
     super.key,
     required this.composition,
     this.projectPath,
+    this.encoderFactory,
+    this.exportPathBuilder,
   });
 
   final Composition composition;
@@ -36,6 +41,16 @@ class CompositionPlayer extends StatefulWidget {
   /// Root that a clip's `src` is resolved against. Defaults to the process's
   /// working directory, which is the project root under `flutter run`.
   final String? projectPath;
+
+  /// Supplies an encoder for in-app export. Null hides the Export button.
+  ///
+  /// Injected rather than imported so the framework never depends on a plugin
+  /// with native code: an app that only previews pays nothing for an encoder
+  /// it does not use.
+  final VideoEncoder Function()? encoderFactory;
+
+  /// Where an export is written. Defaults to the temp directory.
+  final String Function(Composition composition)? exportPathBuilder;
 
   @override
   State<CompositionPlayer> createState() => _CompositionPlayerState();
@@ -59,6 +74,13 @@ class _CompositionPlayerState extends State<CompositionPlayer>
   /// Video decodes asynchronously while the playhead moves on. Rather than
   /// queueing every frame the scrubber passes over -- a decoder is one pipe and
   /// cannot serve two reads at once -- only the most recent request is kept.
+  ExportProgress? _exportProgress;
+  ExportResult? _exportResult;
+  String? _exportError;
+  ExportCancellation? _exportCancellation;
+
+  bool get _exporting => _exportCancellation != null;
+
   bool _decoding = false;
   int? _queuedFrame;
   String? _videoError;
@@ -149,6 +171,63 @@ class _CompositionPlayerState extends State<CompositionPlayer>
       if (!mounted) return;
       setState(() => _videoError = '$error'.split('\n').first);
     });
+  }
+
+  Future<void> _startExport() async {
+    if (_exporting) return;
+    _pause();
+
+    final Composition composition = widget.composition;
+    final ExportCancellation cancellation = ExportCancellation();
+    final String path = widget.exportPathBuilder?.call(composition) ??
+        '${Directory.systemTemp.path}/${composition.id}.mp4';
+
+    setState(() {
+      _exportCancellation = cancellation;
+      _exportResult = null;
+      _exportError = null;
+      _exportProgress = ExportProgress(
+        frame: 0,
+        totalFrames: composition.durationInFrames,
+        elapsed: Duration.zero,
+      );
+    });
+
+    try {
+      final ExportResult result = await InAppExporter.export(
+        composition: composition,
+        encoder: widget.encoderFactory!(),
+        outputPath: path,
+        cancellation: cancellation,
+        ffmpeg: FfmpegPaths.find('ffmpeg'),
+        ffprobe: FfmpegPaths.find('ffprobe'),
+        projectPath: widget.projectPath ?? Directory.current.path,
+        onProgress: (ExportProgress progress) {
+          if (!mounted) return;
+          setState(() => _exportProgress = progress);
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _exportProgress = null;
+        _exportCancellation = null;
+        _exportResult = result;
+      });
+    } on ExportCancelled {
+      if (!mounted) return;
+      // Cancelling is a decision, not a failure -- just close the panel.
+      setState(() {
+        _exportProgress = null;
+        _exportCancellation = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _exportProgress = null;
+        _exportCancellation = null;
+        _exportError = '$error';
+      });
+    }
   }
 
   void _disposeVideo() {
@@ -275,6 +354,16 @@ class _CompositionPlayerState extends State<CompositionPlayer>
                 images: _images,
                 video: _video,
                 videoError: _videoError,
+                exportPanel: ExportPanel(
+                  progress: _exportProgress,
+                  result: _exportResult,
+                  error: _exportError,
+                  onCancel: () => _exportCancellation?.cancel(),
+                  onDismiss: () => setState(() {
+                    _exportResult = null;
+                    _exportError = null;
+                  }),
+                ),
               ),
             ),
             _transport(c),
@@ -369,6 +458,14 @@ class _CompositionPlayerState extends State<CompositionPlayer>
                     const SizedBox(width: 6),
                     InfoChip(label: '${c.fps} fps', dim: true),
                   ],
+                  if (widget.encoderFactory != null) ...<Widget>[
+                    const SizedBox(width: 10),
+                    PreviewButton(
+                      label: _exporting ? 'Exporting' : 'Export',
+                      primary: true,
+                      onPressed: _exporting ? null : _startExport,
+                    ),
+                  ],
                 ],
               );
             },
@@ -389,6 +486,7 @@ class _Canvas extends StatelessWidget {
     required this.images,
     required this.video,
     required this.videoError,
+    required this.exportPanel,
   });
 
   final Composition composition;
@@ -405,6 +503,10 @@ class _Canvas extends StatelessWidget {
   /// Set when video could not be prepared, so the canvas can say so rather
   /// than showing an unexplained gap.
   final String? videoError;
+
+  /// Drawn over the composition, so an export cannot be mistaken for the
+  /// frame itself.
+  final Widget exportPanel;
 
   /// The composition, wrapped in whatever has been prepared for it.
   Widget _content() {
@@ -490,6 +592,7 @@ class _Canvas extends StatelessWidget {
                   ],
                 ),
               ),
+              exportPanel,
             ],
           );
         },

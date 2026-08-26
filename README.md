@@ -30,7 +30,8 @@ frame number: `data -> widgets -> frames -> MP4`.
 
 Pre-alpha, but it works end to end: preview a composition with hot reload,
 then render it to MP4 with assets decoded first, video clips composited into
-the widget tree, and the declared audio mixed in.
+the widget tree, and the declared audio mixed in. The same composition also
+exports from inside a running app, on device, with no ffmpeg and no server.
 
 ## Preview
 
@@ -243,12 +244,60 @@ The CLI builds your project with that entry point, asks the resulting binary
 what compositions it defines, then spawns it once per shard to render
 contiguous frame ranges in parallel and stream-copies the segments together.
 
+## On-device export
+
+The CLI shells out to ffmpeg, which is fine on a laptop and impossible on a
+phone. So the same renderer also drives a platform encoder directly:
+
+```dart
+final ExportResult result = await InAppExporter.export(
+  composition: weeklyDeals,
+  encoder: NativeVideoEncoder(),
+  outputPath: '${Directory.systemTemp.path}/promo.mp4',
+  onProgress: (ExportProgress p) => setState(() => _progress = p.fraction),
+);
+```
+
+`fluttermotion_encoder` is a plugin wrapping **AVAssetWriter** on iOS and
+macOS. Frames go across the method channel as raw RGBA and are permuted to
+BGRA with `vImagePermuteChannels_ARGB8888` straight into the adaptor's pixel
+buffer -- no intermediate `ui.Image`, no PNG round trip. The writer input runs
+with `expectsMediaDataInRealTime = false` and the Dart side awaits
+`isReadyForMoreMediaData`, so a slow encode backpressures the renderer instead
+of queueing frames into memory.
+
+`VideoEncoder` is the seam. `InAppExporter` knows nothing about AVFoundation;
+an Android `MediaCodec` implementation is a new class, not a new exporter.
+
+Verified on both platforms against the ffmpeg CLI render of the same
+composition (1080x1920, 300 frames):
+
+| | frames | time | output |
+|---|---|---|---|
+| macOS, in-app | 300 | 6.24 s | 7.7 MB |
+| iOS simulator, in-app | 300 | 5.09 s | 8.0 MB |
+
+Per-frame SSIM against the ffmpeg render averages **0.99036**, minimum
+0.98794 -- h264 quantisation, not content drift. Mean channel values are
+`24.53/38.66/49.62` in-app against `22.52/38.45/50.01` from ffmpeg, which is
+the check that actually matters: a red/blue swap is the classic failure of
+this path and it would show up here as a swapped pair, not as a small delta.
+
+The preview has an **Export** button wired to the same call, so the moat is
+reachable from the tool you are already scrubbing in.
+
+What is not there yet: in-app **audio mixing** (an export with declared audio
+writes video only, and says so) and in-app **video decoding** (a composition
+containing a `VideoClip` refuses rather than exporting a hole -- decoding it
+needs `AVAssetReader`). Android needs a `MediaCodec` encoder.
+
 ## Layout
 
 | Path | What |
 |---|---|
 | `packages/fluttermotion` | The composition framework |
 | `packages/fluttermotion_cli` | `fluttermotion render` |
+| `packages/fluttermotion_encoder` | AVAssetWriter encoder plugin (iOS/macOS) |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification |
@@ -266,6 +315,8 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   exports in roughly 80 s.
 - **Video clips land on the exact source frame**, identically across 1, 2, 4
   and 8 shards, verified per frame by pixel value rather than by eye.
+- **On-device export matches the ffmpeg render.** Run headless on macOS and on
+  an iOS simulator with no ffmpeg present, mean SSIM 0.99036 per frame.
 - **Overlapping frames does not reliably help.** Across runs, serial ranged
   53-61 fps and pipelined 53-63 fps -- the difference is inside run-to-run
   variance, and depth 4 and 8 were measurably *worse*. The raster path is a
@@ -306,10 +357,13 @@ flutter build macos --release
 ## Tests
 
 ```bash
-cd packages/fluttermotion && flutter test
+cd packages/fluttermotion         && flutter test
+cd packages/fluttermotion_cli     && dart test
+cd packages/fluttermotion_encoder && flutter test
 ```
 
-47 tests. The ones that matter assert that a frame is byte-identical when
+105 tests across the three packages (88 framework, 11 CLI, 6 encoder).
+The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.
 
@@ -321,7 +375,8 @@ reached by scrubbing backward from later in the timeline.
    (video decode windows still to come)
 4. ~~Audio mixing~~ done
 5. ~~Video clips~~ done
-6. On-device export (the moat)
+6. ~~On-device export (the moat)~~ done for video on iOS/macOS
+   (in-app audio mixing, in-app video decode, and Android still to come)
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 

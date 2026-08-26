@@ -179,3 +179,70 @@ class InfoChip extends StatelessWidget {
     );
   }
 }
+
+/// A small labelled button for preview chrome that is not transport control.
+class PreviewButton extends StatefulWidget {
+  const PreviewButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.primary = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  /// Draws filled rather than outlined, for the one action a panel is about.
+  final bool primary;
+
+  @override
+  State<PreviewButton> createState() => _PreviewButtonState();
+}
+
+class _PreviewButtonState extends State<PreviewButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool enabled = widget.onPressed != null;
+    final Color accent =
+        enabled ? PreviewColors.accent : PreviewColors.border;
+
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: widget.primary
+                ? (_hovered && enabled
+                    ? accent
+                    : accent.withValues(alpha: enabled ? 0.85 : 0.3))
+                : (_hovered && enabled
+                    ? PreviewColors.border
+                    : const Color(0x00000000)),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: widget.primary ? accent : PreviewColors.border,
+            ),
+          ),
+          child: Text(
+            widget.label,
+            style: PreviewText.label.copyWith(
+              color: widget.primary
+                  ? const Color(0xFFFFFFFF)
+                  : (enabled
+                      ? PreviewColors.text
+                      : PreviewColors.border),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

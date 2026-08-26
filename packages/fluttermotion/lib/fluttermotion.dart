@@ -9,6 +9,8 @@ export 'src/declarations/assets.dart';
 export 'src/declarations/manifest.dart';
 export 'src/declarations/pass.dart';
 export 'src/declarations/scope.dart' show DeclarationCollector, DeclarationScope;
+export 'src/export/encoder.dart';
+export 'src/export/exporter.dart';
 export 'src/frame.dart';
 export 'src/interpolate.dart';
 export 'src/media/video_store.dart'
