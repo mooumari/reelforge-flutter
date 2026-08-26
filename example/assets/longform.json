@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "id": "LongformJson",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+
+  "theme": {"palette": "dark", "font": "Roboto"},
+
+  "bed": {"type": "audio", "src": "assets/music.mp3", "volume": 0.35, "loop": true},
+
+  "scenes": [
+    {
+      "seconds": 5,
+      "child": {
+        "type": "titleCard",
+        "kicker": "{{ period }}",
+        "headline": "{{ headline }}",
+        "subhead": "{{ totals.releases }} releases · {{ totals.incidents }} incidents"
+      }
+    },
+
+    {
+      "seconds": 9,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "labelledScene",
+        "label": "Shipped per week",
+        "child": {
+          "type": "barChart",
+          "bars": {
+            "repeat": "weeks",
+            "as": {"value": "{{ shipped }}", "label": "{{ label }}"}
+          }
+        }
+      }
+    },
+
+    {
+      "seconds": 9,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "footageOverlay",
+        "src": "assets/clip.mp4",
+        "caption": "Every frame is a widget,\nincluding the ones over footage."
+      }
+    },
+
+    {
+      "seconds": 8,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "labelledScene",
+        "label": "By team",
+        "padding": [70, 220, 70, 220],
+        "child": {
+          "type": "cardGrid",
+          "children": {
+            "repeat": "teams",
+            "as": {
+              "type": "enter",
+              "mode": "spring",
+              "child": {
+                "type": "statCard",
+                "badge": "{{ owner }}",
+                "title": "{{ name }}",
+                "value": "{{ delta | fixed(1) | sign }}%",
+                "signedBy": "{{ delta }}"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    {
+      "seconds": 9,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "splitScreen",
+        "first": {"type": "video", "src": "assets/clip.mp4", "fit": "cover", "loop": true},
+        "second": {
+          "type": "video",
+          "src": "assets/demo_clip.mp4",
+          "fit": "cover",
+          "loop": true,
+          "trimStartInFrames": 45
+        }
+      }
+    },
+
+    {
+      "seconds": 8,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "padding",
+        "padding": 80,
+        "child": {
+          "type": "bigStatList",
+          "children": [
+            {
+              "type": "bigStat",
+              "label": "releases",
+              "value": {"type": "counter", "to": "{{ totals.releases }}", "delay": 6}
+            },
+            {
+              "type": "bigStat",
+              "label": "percent uptime",
+              "color": "accent",
+              "value": {
+                "type": "counter",
+                "to": "{{ totals.uptime }}",
+                "delay": 20,
+                "decimals": 2
+              }
+            },
+            {
+              "type": "bigStat",
+              "label": "incidents",
+              "color": "warning",
+              "value": {"type": "counter", "to": "{{ totals.incidents }}", "delay": 34}
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "seconds": 7,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "labelledScene",
+        "label": "Reverts, week by week",
+        "child": {
+          "type": "lineChart",
+          "points": {
+            "repeat": "weeks",
+            "as": {"value": "{{ reverted }}", "label": "{{ label }}"}
+          }
+        }
+      }
+    },
+
+    {
+      "seconds": 5,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "theme",
+        "scale": 0.83,
+        "child": {
+          "type": "titleCard",
+          "centred": true,
+          "alignment": "center",
+          "headline": "{{ period }}",
+          "subhead": "rendered from a JSON file"
+        }
+      }
+    }
+  ]
+}

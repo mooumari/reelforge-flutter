@@ -884,6 +884,149 @@ Both bugs were found by the determinism suite's control test -- the one that
 checks the composition is *moving*, on the grounds that a determinism test
 passes trivially against a component that draws nothing.
 
+## JSON documents
+
+The kit is a vocabulary of scenes. `fluttermotion_json` makes that vocabulary
+serialisable: a composition described as data, parsed and built at runtime,
+rendering through exactly the same widgets and the same deterministic frame
+function as one written in Dart.
+
+```json
+{
+  "version": 1, "id": "Reel", "width": 1080, "height": 1920, "fps": 30,
+  "theme": {"palette": "dark", "font": "Roboto"},
+  "bed": {"type": "audio", "src": "assets/music.mp3", "volume": 0.35, "loop": true},
+  "scenes": [
+    {
+      "seconds": 5,
+      "child": {
+        "type": "titleCard",
+        "kicker": "{{ period }}",
+        "headline": "{{ headline }}",
+        "subhead": "{{ totals.releases }} releases"
+      }
+    },
+    {
+      "seconds": 9,
+      "sting": {"type": "audio", "src": "assets/chime.mp3", "volume": 0.5},
+      "child": {
+        "type": "labelledScene",
+        "label": "Shipped per week",
+        "child": {
+          "type": "barChart",
+          "bars": {"repeat": "weeks", "as": {"value": "{{ shipped }}", "label": "{{ label }}"}}
+        }
+      }
+    }
+  ]
+}
+```
+
+```dart
+final MotionDocument document = MotionDocument.parse(await rootBundle.loadString('assets/reel.json'));
+final Composition composition = document.toComposition(data: report);
+```
+
+A document is either a **storyboard** -- a list of scenes with durations, which
+is what a report or a reel is -- or a **`root`** tree over an explicit
+`durationInFrames`, for a timeline expressed inside the tree with `sequence`
+nodes instead. Thirty-odd node types cover the primitives (`column`, `stack`,
+`padding`, `text`, `box`, `transform`, `opacity`, `sequence`), the media
+(`video`, `audio`, `image`) and the kit (`titleCard`, `barChart`, `lineChart`,
+`statCard`, `cardGrid`, `footageOverlay`, `splitScreen`, `counter`, `enter`,
+`stagger`, `theme`). `knownNodeTypes` enumerates them and what each accepts,
+so an editor can offer the vocabulary rather than guess at it.
+
+### Data, not a template language
+
+`{{ path }}` reads from the data the document is filled with, walking maps by
+key and lists by index (`weeks.0.label`). A string that is *nothing but* a
+binding keeps its type, so `"to": "{{ totals.releases }}"` hands a counter a
+number rather than the string `"47"`. Five filters format for display --
+`fixed(n)`, `round`, `sign`, `upper`, `lower` -- because a template cannot
+render `+18.4%` from a raw double without them, and everything past that is a
+programming language nobody asked for.
+
+Lists come from `{"repeat": "weeks", "as": ...}`, and the same machinery serves
+both cases: `as` a node gives a list of widgets, `as` a plain object gives
+chart data. Inside a repeat, lookups check the item first and fall back to the
+root, so a template says `{{ label }}` for the week and `{{ period }}` for
+something from the top without either needing a prefix.
+
+### Animation is a value, not a schema
+
+Anywhere a number is expected, a document may give a literal, a binding, a
+keyframe track, or a spring:
+
+```json
+"opacity": {"keyframes": [[0, 0], [12, 1]], "ease": "outCubic"}
+"width":   {"spring": {"delay": 4, "from": 0, "to": 400, "stiffness": 130}}
+```
+
+Frames are local to the enclosing `sequence` and include any `stagger` above,
+so a scene's animations start at zero wherever the scene sits on the timeline
+and a repeated row comes in one after another. That required one thing of the
+implementation: every node gets an element of its own, so its properties are
+evaluated at *its* context rather than its parent's. Building children eagerly
+looked identical on screen until anything was nested in a sequence, at which
+point every animation inside it played against the composition's frame instead
+of the scene's.
+
+Colours are `#RRGGBB`, `#AARRGGBB`, or a palette role (`accent`, `muted`,
+`warning`, ...). A document written against `accent` follows whatever palette
+the app hands it; one written against `#4ADE80` is stuck being green.
+
+### Every problem, with its address
+
+`MotionDocument.parse` collects *every* problem and throws one
+`SchemaException` carrying all of them, each with a JSON path:
+
+```
+scenes[1].child.bars[0].value: must be a number, a "{{ }}" binding, or an
+  object with "keyframes" or "spring", got a string
+scenes[2].child.subhed: unknown property "subhed"; this node accepts
+  alignment, centred, headline, headlineColor, kicker, kickerColor, padding, subhead
+```
+
+A misspelt property is an error rather than a silent default -- `subhed`
+otherwise renders an empty subhead and sends the author looking in the wrong
+place. Keyframes out of order are named rather than tripping an assertion deep
+in the framework. `MotionDocument.problemsIn` answers "would this render"
+without building anything, which is what an editor or a server validating user
+input wants.
+
+A `src` containing `..` or starting with `/` is refused. A document is a thing
+a server can send to an app, which makes `src` untrusted input.
+
+### What the JSON layer proved
+
+The example reel now exists twice: `example/lib/longform.dart` and
+`example/assets/longform.json`, both rendering as `Longform` and
+`LongformJson`. That is the only test of a serialisation layer that means
+anything.
+
+- **Identical declaration manifests.** `example/test/longform_json_test.dart`
+  walks all 1800 frames of both and asserts the audio and video timelines match
+  exactly -- same eight stings at the same cuts, same two clips over the same
+  windows with the same trim.
+- **Pixel-equivalent output.** Both rendered at full size through the CLI and
+  compared frame by frame. Against a *control* of the same reel rendered twice,
+  the two agree to the encoder's own run-to-run noise: 593 frames below 0.9999
+  SSIM in both comparisons, minimum 0.99655 against 0.99707. Sampled frames
+  extracted as PNG are byte-identical to the control at every scene.
+- **It found a real bug, and only the full render found it.** The `enter`
+  node's spring defaulted to stiffness 120 where `Enter.spring` uses 130 -- a
+  restated default that had drifted. Nothing threw, nothing failed validation,
+  and the frame looked right; the team grid simply arrived a few pixels behind.
+  It surfaced as SSIM 0.994 on the one scene, and a contrast-boosted difference
+  of the two frames showed the cards ghosted against themselves.
+
+That bug is the failure mode a JSON layer invites: to pass an argument at all,
+a node has to restate every default, and a restated default that drifts is
+invisible. `test/defaults_test.dart` now pins each node's defaults against the
+kit widget's own, so the next one fails in a second rather than after a
+sixty-second render.
+
 ## Layout
 
 | Path | What |
@@ -892,6 +1035,7 @@ passes trivially against a component that draws nothing.
 | `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` |
 | `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
 | `packages/fluttermotion_kit` | Ready-made scenes, charts and motion primitives |
+| `packages/fluttermotion_json` | JSON document format and its runtime interpreter |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification (video clips, tickers) |
@@ -979,14 +1123,18 @@ flutter build macos --release
 
 ```bash
 cd packages/fluttermotion         && flutter test
-cd packages/fluttermotion_cli     && dart test
+cd packages/fluttermotion_kit     && flutter test
+cd packages/fluttermotion_json    && flutter test
 cd packages/fluttermotion_encoder && flutter test
+cd packages/fluttermotion_cli     && dart test
+cd example                        && flutter test
 ```
 
-187 tests across the three packages (123 framework, 40 CLI, 24 encoder).
-The ones that matter assert that a frame is byte-identical when
-rendered from a fresh renderer, when reached by playing forward, and when
-reached by scrubbing backward from later in the timeline.
+263 tests across the five packages and the example (127 framework, 36 kit,
+34 JSON, 24 encoder, 40 CLI, 2 example). The ones that matter assert that a
+frame is byte-identical when rendered from a fresh renderer, when reached by
+playing forward, and when reached by scrubbing backward from later in the
+timeline.
 
 ## Roadmap
 
@@ -1000,6 +1148,10 @@ reached by scrubbing backward from later in the timeline.
    decode, audio mixing and encode all in-app, no ffmpeg anywhere
 7. ~~Widgets from an existing app -- ambient state and their own clocks~~ done
    for the render, export and preview paths, including inside a live app
+8. ~~A kit of ready-made scenes, charts and motion primitives~~ done, extracted
+   from the example reel rather than invented
+9. ~~A JSON document format and its runtime interpreter~~ done, verified
+   pixel-equivalent to the Dart reel it was transcribed from
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 

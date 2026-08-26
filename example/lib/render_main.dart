@@ -3,6 +3,7 @@ import 'package:fluttermotion/fluttermotion.dart';
 
 import 'compositions.dart';
 import 'longform.dart';
+import 'longform_json.dart';
 import 'report_data.dart';
 import 'showreel.dart';
 
@@ -15,8 +16,10 @@ import 'showreel.dart';
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await loadReport();
+  await loadLongformJson();
   await renderMain(args, <Composition>[
     longform,
+    longformJson,
     showreel,
     helloFlutter,
     weeklyDeals,

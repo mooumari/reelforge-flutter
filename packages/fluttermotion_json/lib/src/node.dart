@@ -1,0 +1,382 @@
+import 'package:flutter/widgets.dart';
+
+import 'errors.dart';
+import 'scope.dart';
+import 'values.dart';
+
+/// One kind of node a document may contain.
+///
+/// Registered rather than switched on, so the vocabulary is a value the
+/// package can also *report* -- an editor can ask what exists and what each
+/// one accepts, and validation gets the list of legal keys for free instead of
+/// every node repeating it.
+class NodeType {
+  const NodeType({
+    required this.name,
+    required this.build,
+    this.properties = const <String>{},
+    this.slots = const <String>{},
+    this.lists = const <String>{},
+    this.specs = const <String>{},
+    this.validate,
+    this.parentData = false,
+  });
+
+  final String name;
+
+  /// Scalar property keys.
+  final Set<String> properties;
+
+  /// Keys holding one child node.
+  final Set<String> slots;
+
+  /// Keys holding a list of child nodes, or a `repeat` over one.
+  final Set<String> lists;
+
+  /// Keys holding a list of plain objects rather than nodes -- chart data.
+  final Set<String> specs;
+
+  /// Per-key checks beyond "is this key allowed".
+  final void Function(Reader reader)? validate;
+
+  /// Whether this node must sit *directly* under its parent widget.
+  ///
+  /// True for `expanded`, which is parent data: a `Flex` reads `Expanded` off
+  /// its own children list, and one element of indirection makes the flex
+  /// factor disappear. Such a node is built eagerly instead of getting an
+  /// element of its own, which is only safe because its properties are plain
+  /// numbers -- nothing it reads depends on the frame.
+  final bool parentData;
+
+  final Widget Function(BuildContext context, MotionNode node) build;
+
+  Set<String> get knownKeys =>
+      <String>{'type', ...properties, ...slots, ...lists, ...specs};
+}
+
+/// Every node type this package understands, by name.
+///
+/// Populated by the `register*` calls in the node libraries; `MotionDocument`
+/// makes sure they have run before anything parses.
+final Map<String, NodeType> nodeRegistry = <String, NodeType>{};
+
+void registerNode(NodeType type) => nodeRegistry[type.name] = type;
+
+/// A validated node, ready to build.
+///
+/// Properties stay as raw JSON: the value of `opacity` may be a number, a
+/// binding, or a keyframe track, and which one it is does not change until the
+/// frame it is evaluated on. Structure -- children, repeats -- is resolved at
+/// parse time, because a mistake there is a mistake in the document rather
+/// than in the data.
+class MotionNode {
+  MotionNode({
+    required this.type,
+    required this.props,
+    required this.path,
+    required this.slots,
+    required this.lists,
+    required this.specs,
+  });
+
+  final NodeType type;
+  final Map<String, Object?> props;
+  final String path;
+  final Map<String, MotionNode> slots;
+  final Map<String, ChildList> lists;
+  final Map<String, SpecList> specs;
+
+  /// The widget for this node, with an element of its own.
+  ///
+  /// The indirection is load-bearing. A node's properties are evaluated
+  /// against the context it builds in -- that is how a `sequence` rebases the
+  /// frame beneath it and a `stagger` offsets its children. Calling
+  /// `type.build` directly from the parent would evaluate the child at the
+  /// *parent's* context, so every animation inside a sequence would read the
+  /// composition's frame instead of the scene's and quietly play at the wrong
+  /// time.
+  Widget widget() => parentDataNode ? _build : _NodeWidget(this);
+
+  bool get parentDataNode => type.parentData;
+
+  Widget get _build => Builder(builder: buildDirect);
+
+  /// Builds against [context] with no element in between.
+  ///
+  /// Only for a [NodeType.parentData] node, and for the composition root,
+  /// which already has one.
+  Widget buildDirect(BuildContext context) => type.build(context, this);
+
+  // -- property access, all raw-spec aware ---------------------------------
+
+  Object? operator [](String key) => props[key];
+
+  Widget? slot(BuildContext context, String key) => slots[key]?.widget();
+
+  List<Widget> children(BuildContext context, String key) =>
+      lists[key]?.build(context) ?? const <Widget>[];
+
+  String text(BuildContext context, String key, {String fallback = ''}) =>
+      resolveString(context, props[key], fallback: fallback);
+
+  String? optionalText(BuildContext context, String key) =>
+      resolveOptionalString(context, props[key]);
+
+  double number(BuildContext context, String key, {double fallback = 0}) =>
+      resolveNumber(context, props[key], fallback: fallback);
+
+  double? optionalNumber(BuildContext context, String key) =>
+      resolveOptionalNumber(context, props[key]);
+
+  int integer(BuildContext context, String key, {int fallback = 0}) =>
+      props[key] == null ? fallback : number(context, key).round();
+
+  int? optionalInteger(BuildContext context, String key) =>
+      resolveOptionalInt(context, props[key]);
+
+  bool flag(BuildContext context, String key, {bool fallback = false}) =>
+      resolveBool(context, props[key], fallback: fallback);
+
+  Color? colour(BuildContext context, String key) =>
+      resolveColour(context, props[key]);
+
+  EdgeInsets? insets(BuildContext context, String key) =>
+      resolveInsets(context, props[key]);
+
+  Curve curve(String key, {Curve fallback = Curves.linear}) =>
+      resolveCurve(props[key], fallback: fallback);
+
+  /// A named enum value, already known valid from parse time.
+  T? named<T>(String key, Map<String, T> table) => table[props[key]];
+}
+
+// ---------------------------------------------------------------------------
+// Child lists
+// ---------------------------------------------------------------------------
+
+/// A list of children, either written out or repeated over data.
+abstract class ChildList {
+  List<Widget> build(BuildContext context);
+}
+
+class _FixedChildren implements ChildList {
+  _FixedChildren(this.nodes);
+
+  final List<MotionNode> nodes;
+
+  @override
+  List<Widget> build(BuildContext context) =>
+      <Widget>[for (final MotionNode node in nodes) node.widget()];
+}
+
+class _RepeatedChildren implements ChildList {
+  _RepeatedChildren(this.over, this.template);
+
+  final String over;
+  final MotionNode template;
+
+  @override
+  List<Widget> build(BuildContext context) {
+    final DataScope scope = MotionScope.of(context);
+    final Object? source = scope.resolve(over);
+    if (source is! List<Object?>) return const <Widget>[];
+    return <Widget>[
+      for (int i = 0; i < source.length; i++)
+        MotionScope(
+          scope: scope.forItem(source[i], i),
+          // The template has to build *below* the new scope, or it would read
+          // the enclosing one and every item would come out identical.
+          child: template.widget(),
+        ),
+    ];
+  }
+}
+
+/// A list of plain objects, either written out or repeated over data.
+///
+/// The same machinery as [ChildList] for things that are not widgets: chart
+/// data, mostly. Keeping them the same shape is what lets a document say
+/// `repeat` in both places and mean the same thing.
+class SpecList {
+  SpecList.fixed(this.items)
+      : over = null,
+        template = null;
+
+  SpecList.repeated(this.over, this.template) : items = const <Object?>[];
+
+  final String? over;
+  final Map<String, Object?>? template;
+  final List<Object?> items;
+
+  /// The objects to build from, each with the scope its bindings resolve in.
+  List<ScopedSpec> resolve(DataScope scope) {
+    if (over == null) {
+      return <ScopedSpec>[
+        for (final Object? item in items)
+          if (item is Map<String, Object?>) ScopedSpec(item, scope),
+      ];
+    }
+    final Object? source = scope.resolve(over!);
+    if (source is! List<Object?>) return const <ScopedSpec>[];
+    return <ScopedSpec>[
+      for (int i = 0; i < source.length; i++)
+        ScopedSpec(template!, scope.forItem(source[i], i)),
+    ];
+  }
+}
+
+/// One object from a [SpecList], and what its bindings mean.
+class ScopedSpec {
+  const ScopedSpec(this.json, this.scope);
+
+  final Map<String, Object?> json;
+  final DataScope scope;
+
+  String text(BuildContext context, String key, {String fallback = ''}) =>
+      resolveString(context, json[key], fallback: fallback, scope: scope);
+
+  double number(BuildContext context, String key, {double fallback = 0}) =>
+      resolveNumber(context, json[key], fallback: fallback, scope: scope);
+
+  Color? colour(BuildContext context, String key) =>
+      resolveColour(context, json[key], scope: scope);
+}
+
+// ---------------------------------------------------------------------------
+// Parsing
+// ---------------------------------------------------------------------------
+
+/// Turns one JSON value into a node, recording anything wrong along the way.
+///
+/// Returns null on a problem rather than throwing, so a document with three
+/// mistakes reports three rather than the first.
+MotionNode? parseNode(Object? json, String path, Problems problems) {
+  if (json is! Map<String, Object?>) {
+    problems.add(path, 'must be an object with a "type"');
+    return null;
+  }
+
+  final Object? name = json['type'];
+  if (name is! String) {
+    problems.add(child(path, 'type'), 'is required and must be a string');
+    return null;
+  }
+  final NodeType? type = nodeRegistry[name];
+  if (type == null) {
+    problems.add(
+      child(path, 'type'),
+      '"$name" is not a node type; known types are '
+      '${(nodeRegistry.keys.toList()..sort()).join(', ')}',
+    );
+    return null;
+  }
+
+  final Reader reader = Reader(json, path, problems);
+  reader.rejectUnknownKeys(type.knownKeys);
+  type.validate?.call(reader);
+
+  final Map<String, MotionNode> slots = <String, MotionNode>{};
+  for (final String key in type.slots) {
+    if (json[key] == null) continue;
+    final MotionNode? parsed =
+        parseNode(json[key], child(path, key), problems);
+    if (parsed != null) slots[key] = parsed;
+  }
+
+  final Map<String, ChildList> lists = <String, ChildList>{};
+  for (final String key in type.lists) {
+    if (json[key] == null) continue;
+    final ChildList? parsed =
+        _parseChildren(json[key], child(path, key), problems);
+    if (parsed != null) lists[key] = parsed;
+  }
+
+  final Map<String, SpecList> specs = <String, SpecList>{};
+  for (final String key in type.specs) {
+    if (json[key] == null) continue;
+    final SpecList? parsed =
+        _parseSpecs(json[key], child(path, key), problems);
+    if (parsed != null) specs[key] = parsed;
+  }
+
+  return MotionNode(
+    type: type,
+    props: json,
+    path: path,
+    slots: slots,
+    lists: lists,
+    specs: specs,
+  );
+}
+
+ChildList? _parseChildren(Object? json, String path, Problems problems) {
+  if (json is List<Object?>) {
+    final List<MotionNode> nodes = <MotionNode>[];
+    for (int i = 0; i < json.length; i++) {
+      final MotionNode? parsed = parseNode(json[i], index(path, i), problems);
+      if (parsed != null) nodes.add(parsed);
+    }
+    return _FixedChildren(nodes);
+  }
+  final _RepeatSpec? repeat = _parseRepeat(json, path, problems);
+  if (repeat == null) return null;
+  final MotionNode? template =
+      parseNode(repeat.template, child(path, 'as'), problems);
+  return template == null ? null : _RepeatedChildren(repeat.over, template);
+}
+
+SpecList? _parseSpecs(Object? json, String path, Problems problems) {
+  if (json is List<Object?>) {
+    for (int i = 0; i < json.length; i++) {
+      if (json[i] is! Map<String, Object?>) {
+        problems.add(index(path, i), 'must be an object');
+      }
+    }
+    return SpecList.fixed(json);
+  }
+  final _RepeatSpec? repeat = _parseRepeat(json, path, problems);
+  if (repeat == null) return null;
+  if (repeat.template is! Map<String, Object?>) {
+    problems.add(child(path, 'as'), 'must be an object');
+    return null;
+  }
+  return SpecList.repeated(
+    repeat.over,
+    repeat.template! as Map<String, Object?>,
+  );
+}
+
+class _RepeatSpec {
+  const _RepeatSpec(this.over, this.template);
+
+  final String over;
+  final Object? template;
+}
+
+_RepeatSpec? _parseRepeat(Object? json, String path, Problems problems) {
+  if (json is! Map<String, Object?>) {
+    problems.add(
+      path,
+      'must be a list, or a {"repeat": "<data path>", "as": ...} object',
+    );
+    return null;
+  }
+  final Reader reader = Reader(json, path, problems)
+    ..rejectUnknownKeys(<String>{'repeat', 'as'});
+  final String? over = reader.string('repeat', required: true);
+  if (json['as'] == null) {
+    problems.add(child(path, 'as'), 'is required alongside "repeat"');
+    return null;
+  }
+  return over == null ? null : _RepeatSpec(over, json['as']);
+}
+
+/// One node, with an element of its own so its context is its own.
+class _NodeWidget extends StatelessWidget {
+  const _NodeWidget(this.node);
+
+  final MotionNode node;
+
+  @override
+  Widget build(BuildContext context) => node.type.build(context, node);
+}

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'compositions.dart';
 import 'longform.dart';
+import 'longform_json.dart';
 import 'report_data.dart';
 
 /// Headless in-app export, for verifying that the *app* can make a video.
@@ -101,18 +102,6 @@ Future<_Options> _optionsFor(List<String> args) async {
 void main(List<String> args) {
   final WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
 
-  final List<Composition> compositions = <Composition>[
-    longform,
-    helloFlutter,
-    weeklyDeals,
-    videoShowcase,
-    videoProbe,
-    videoProbeHalf,
-    encoderProbe,
-    audioProbe,
-    tickerProbe,
-  ];
-
   // A RenderView needs the implicit view, which only exists once the engine
   // has produced a frame.
   binding.addPostFrameCallback((_) async {
@@ -121,7 +110,24 @@ void main(List<String> args) {
       _say('export_main options: ${options.values} in ${options.workingDir.path}');
 
       // Same bootstrap the render host runs: data first, then compositions.
+      // The list is built here rather than above because some of these are
+      // `late` until their data has loaded -- reading them any earlier is a
+      // LateInitializationError, not a video.
       await loadReport();
+      await loadLongformJson();
+      final List<Composition> compositions = <Composition>[
+        longform,
+        longformJson,
+        helloFlutter,
+        weeklyDeals,
+        videoShowcase,
+        videoProbe,
+        videoProbeHalf,
+        encoderProbe,
+        audioProbe,
+        tickerProbe,
+      ];
+
       final String id = options['composition'] ?? 'WeeklyDeals';
       final Composition composition = compositions.firstWhere(
         (Composition c) => c.id == id,
