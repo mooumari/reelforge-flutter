@@ -388,10 +388,33 @@ zero on the app's own timeline instead.
 
 ## Adding it to an app
 
+### Installing
+
+Nothing is on pub.dev yet -- see `RELEASING.md` for what is still gating that.
+Until then, depend on the checkout:
+
+```yaml
+dependencies:
+  fluttermotion:
+    path: ../fluttermotion/packages/fluttermotion
+  # Only if you want in-app export, on iOS or macOS:
+  fluttermotion_encoder:
+    path: ../fluttermotion/packages/fluttermotion_encoder
+```
+
+and put the CLI on your `PATH`:
+
 ```bash
-cd packages/fluttermotion_cli
-dart run bin/fluttermotion.dart init --project ../../my_app --fix-entitlements
-cd ../../my_app && flutter pub get
+dart pub global activate --source path <checkout>/packages/fluttermotion_cli
+```
+
+Once published, both become the usual `flutter pub add fluttermotion` and
+`dart pub global activate fluttermotion_cli`.
+
+### Starting a project
+
+```bash
+fluttermotion init
 ```
 
 `init` adds the dependency, writes a starter composition in `lib/video/`, the
@@ -407,7 +430,9 @@ ships through the Mac App Store has to be sandboxed. Put it back before you
 ship.
 
 From a bare `flutter create` to an MP4 is about 17 seconds, most of it the
-macOS build.
+macOS build. That path is checked from outside the repo -- `flutter create`,
+`pub add`, `fluttermotion init`, `fluttermotion render` -- rather than assumed
+from the fact that the tests pass.
 
 ## Preview from the CLI
 
