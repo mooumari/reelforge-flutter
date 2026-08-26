@@ -138,21 +138,31 @@ public class FluttermotionDecoderPlugin: NSObject, FlutterPlugin {
 
   // MARK: - nextFrame
 
-  /// The next frame as RGBA bytes, or nil once the source has run out.
+  /// The frame covering a source instant, as RGBA bytes, or nil past the end.
+  ///
+  /// The instant is asked for rather than assumed, because a source does not
+  /// have to run at the composition's frame rate. 60fps footage in a 30fps
+  /// composition has two source frames per composition frame, and simply
+  /// taking the next one plays the footage at half speed -- silently, and only
+  /// when the rates differ, which is why a 60fps probe in a 60fps composition
+  /// could never catch it.
   ///
   /// Running out is not an error: a clip mounted for longer than it lasts
   /// holds its last frame, and the framework has already warned about that by
   /// name during the declaration pass.
   private func nextFrame(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
-    guard let args = call.arguments as? [String: Any], let handle = args["handle"] as? Int
-    else { return result(argumentError("nextFrame needs a handle")) }
+    guard let args = call.arguments as? [String: Any], let handle = args["handle"] as? Int,
+      let sourceFrame = args["sourceFrame"] as? Int
+    else { return result(argumentError("nextFrame needs a handle and sourceFrame")) }
 
     queue.async {
       guard let source = self.sources[handle] else {
         return result(self.unknownHandle(handle))
       }
       do {
-        guard let bytes = try source.nextFrame() else { return result(nil) }
+        guard let bytes = try source.frame(atSourceFrame: Int64(sourceFrame)) else {
+          return result(nil)
+        }
         result(FlutterStandardTypedData(bytes: bytes))
       } catch {
         result(self.decodeError(source.path, error))
@@ -219,6 +229,13 @@ private class DecodeSource {
   private var reader: AVAssetReader?
   private var output: AVAssetReaderTrackOutput?
 
+  /// The frame currently being shown, and the one after it once it has been
+  /// read. The lookahead is what makes "is this frame still the right one for
+  /// this instant?" answerable without being able to put a sample back.
+  private var current: CMSampleBuffer?
+  private var lookahead: CMSampleBuffer?
+  private var ranOut = false
+
   /// Points the reader at an exact source frame.
   ///
   /// A reader cannot be rewound, so a seek is a new reader. That is the
@@ -255,15 +272,75 @@ private class DecodeSource {
 
     self.reader = reader
     self.output = output
+    current = nil
+    lookahead = nil
+    ranOut = false
   }
 
-  /// The next frame's pixels as RGBA, or nil at the end of the source.
-  func nextFrame() throws -> Data? {
+  /// The pixels of the frame on screen at a source instant, or nil past the end.
+  ///
+  /// [frame] is counted in the *composition's* frame rate, which is the rate
+  /// the whole engine speaks in; the source may run at any rate of its own.
+  /// Advancing while the following frame is still due at or before the instant
+  /// asked for is what ffmpeg's `fps` filter does, so the two decoders pick the
+  /// same frame. They can only disagree where an instant falls exactly between
+  /// two source frames -- which cannot happen when one rate divides the other.
+  func frame(atSourceFrame frame: Int64) throws -> Data? {
+    guard reader != nil, output != nil else { throw DecodeError.notOpen }
+    let target = CMTime(value: frame, timescale: fps)
+
+    if current == nil {
+      current = try read()
+      if current == nil { return nil }
+    }
+
+    while true {
+      if lookahead == nil { lookahead = try read() }
+      guard let next = lookahead else {
+        // Nothing follows. The frame on screen is the last one there is, and
+        // it stops being the right answer once the instant asked for is past
+        // the end of its own presentation.
+        if ranOut, let held = current,
+          CMTimeCompare(target, CMTimeAdd(
+            CMSampleBufferGetPresentationTimeStamp(held), duration(of: held))) >= 0
+        {
+          return nil
+        }
+        break
+      }
+      if CMTimeCompare(CMSampleBufferGetPresentationTimeStamp(next), target) <= 0 {
+        current = next
+        lookahead = nil
+        continue
+      }
+      break
+    }
+
+    guard let sample = current else { return nil }
+    return try pixels(of: sample)
+  }
+
+  /// One sample, or nil at the end of the source.
+  private func read() throws -> CMSampleBuffer? {
     guard let reader = reader, let output = output else { throw DecodeError.notOpen }
     guard let sample = output.copyNextSampleBuffer() else {
       if reader.status == .failed { throw reader.error ?? DecodeError.readFailed }
+      ranOut = true
       return nil
     }
+    return sample
+  }
+
+  /// How long a sample is on screen, falling back to the track's own rate when
+  /// the container does not say.
+  private func duration(of sample: CMSampleBuffer) -> CMTime {
+    let stated = CMSampleBufferGetDuration(sample)
+    if stated.isValid && stated.value > 0 { return stated }
+    let rate = track.nominalFrameRate > 0 ? track.nominalFrameRate : Float(fps)
+    return CMTime(seconds: 1.0 / Double(rate), preferredTimescale: 600)
+  }
+
+  private func pixels(of sample: CMSampleBuffer) throws -> Data {
     guard let buffer = CMSampleBufferGetImageBuffer(sample) else {
       throw DecodeError.notAnImage
     }
@@ -299,6 +376,9 @@ private class DecodeSource {
     reader?.cancelReading()
     reader = nil
     output = nil
+    current = nil
+    lookahead = nil
+    ranOut = false
   }
 
   deinit { cancel() }

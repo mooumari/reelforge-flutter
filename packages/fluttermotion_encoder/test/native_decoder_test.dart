@@ -129,16 +129,35 @@ void main() {
   });
 
   group('seeking', () {
-    test('a non-adjacent jump seeks, in source frames', () async {
+    test('a forward jump reads on rather than seeking', () async {
+      // Forward is the native side's job: it knows the source's own frame
+      // rate, so it drains to the instant asked for. Seeking here would be
+      // both slower and wrong, since it would land on a frame boundary of the
+      // composition's rate rather than the source's.
       final VideoFrameSource s = source();
       await s.frameAt(10);
       await s.frameAt(30);
 
-      expect(methods(), <String>['open', 'nextFrame', 'seek', 'nextFrame']);
-      final Map<Object?, Object?> seek =
+      expect(methods(), <String>['open', 'nextFrame', 'nextFrame']);
+      final Map<Object?, Object?> asked =
           calls[2].arguments as Map<Object?, Object?>;
-      expect(seek['sourceFrame'], 20);
-      expect(seek['handle'], 1);
+      expect(asked['sourceFrame'], 20);
+      expect(asked['handle'], 1);
+      await s.dispose();
+    });
+
+    test('every frame says which instant it wants', () async {
+      // The instant is what makes the two decoders agree when the source does
+      // not run at the composition's rate.
+      final VideoFrameSource s = source();
+      await s.frameAt(10);
+      await s.frameAt(11);
+
+      final Iterable<Map<Object?, Object?>> asked = calls
+          .where((MethodCall c) => c.method == 'nextFrame')
+          .map((MethodCall c) => c.arguments as Map<Object?, Object?>);
+      expect(asked.map((Map<Object?, Object?> a) => a['sourceFrame']),
+          <int>[0, 1]);
       await s.dispose();
     });
 

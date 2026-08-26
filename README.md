@@ -206,6 +206,13 @@ PASS
 
 All 200 frames, every shard count, identical to the single-process render.
 
+`VideoProbeHalf` is the same clip in a 30fps composition. That matters because
+`probe.mp4` runs at 60fps: a composition at the source's own rate wants one
+source frame per composition frame, so "the next frame" and "the frame due at
+this instant" are the same answer, and a decoder can be right by accident. At
+30fps they differ, and the footage plays at half speed. The script checks both,
+so a decoder can no longer pass by never being asked the question.
+
 ### Decoding, not buffering
 
 Images are decoded once up front; video cannot be, because a minute of raw
@@ -529,11 +536,22 @@ replacing one another and each can carry its own volume -- read back through
 `AVAssetReaderAudioMixOutput`, and written as an AAC track by the same
 `AVAssetWriter` that is writing the video.
 
-The whole sound goes in *before* the first frame, and its input is finished
-immediately. This is not an optimisation. An `AVAssetWriter` with two live
-inputs expects them to be fed in step: leave one silent and it stops readying
-the other, and the export stalls part way through with no error at all. Audio
-does not depend on any frame, so there is nothing to wait for.
+The writer *pulls* the sound, through `requestMediaDataWhenReady`, rather than
+being handed it. That detail is the difference between a working export and a
+hang, and both wrong answers look reasonable.
+
+An `AVAssetWriter` interleaves its inputs, and stops readying one that has run
+ahead of the others until they catch up. Push the whole sound in before the
+first frame and it is never readied again -- the writer is waiting for video
+that the Dart side cannot send, because it is still waiting for `start` to
+return. Leave audio until the end and it is the same deadlock the other way.
+Neither shows up on a short composition, whose audio fits inside the
+interleaving window whole; the 60-second reel hung on the first try, in the
+same place every time, with no error and a 33 KB file.
+
+Pulling gets it right by not choosing: the writer takes audio on its own queue
+whenever it has room, so both inputs advance together and neither waits on the
+other.
 
 Inside an app, `Audio(src: 'assets/music.mp3')` is an asset key rather than a
 path -- on iOS not even a file. Native code cannot open either, so an asset is
@@ -616,9 +634,15 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   and 8 shards, verified per frame by pixel value rather than by eye.
 - **On-device export matches the ffmpeg render.** Run headless on macOS and on
   an iOS simulator with no ffmpeg present, mean SSIM 0.99036 per frame.
-- **In-app video decoding lands on the same frames as ffmpeg.** All 200 frames
-  of `VideoProbe` identical between the in-app export and the CLI render,
-  including the clip's entry and exit, read per frame by pixel value.
+- **In-app video decoding lands on the same frames as ffmpeg**, at the source's
+  frame rate and at half it. All 200 frames of `VideoProbe` and all 60 clip
+  frames of `VideoProbeHalf` identical between the in-app export and the CLI
+  render, including the clip's entry and exit, read per frame by pixel value.
+- **The whole 60-second reel exports from inside an app**, no ffmpeg anywhere:
+  1800 frames at 1080x1920 with three looping clips and eight sounds, in
+  15.16 s single-process -- **3.96x realtime**. Mean SSIM against the CLI
+  render is 0.99767, worst frame 0.99384, nothing below 0.98; the residue is
+  two independent H.264 encodes of the same pixels.
 - **A 60-second, eight-scene reel renders deterministically.** 1800 frames at
   1080x1920, three video clips, eight audio clips and data loaded from JSON:
   worst per-frame difference between a 1-shard and a 4-shard render is 0.31
@@ -681,7 +705,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-186 tests across the three packages (123 framework, 40 CLI, 23 encoder).
+187 tests across the three packages (123 framework, 40 CLI, 24 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.
@@ -694,8 +718,8 @@ reached by scrubbing backward from later in the timeline.
    (video decode windows still to come)
 4. ~~Audio mixing~~ done
 5. ~~Video clips~~ done
-6. ~~On-device export (the moat)~~ done for video on iOS/macOS
-   (in-app audio mixing, in-app video decode, and Android still to come)
+6. ~~On-device export (the moat)~~ done on iOS/macOS -- video decode, audio
+   mixing and encode all in-app, no ffmpeg (Android still to come)
 7. ~~Widgets from an existing app -- ambient state and their own clocks~~ done
    for the render, export and preview paths, including inside a live app
 

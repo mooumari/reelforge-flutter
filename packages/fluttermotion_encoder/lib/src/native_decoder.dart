@@ -130,12 +130,16 @@ class NativeVideoFrameSource implements VideoFrameSource {
 
   int? _handle;
 
-  /// The next *source* frame the open reader will yield.
+  /// The last *source* frame asked of the open reader.
   ///
   /// Source rather than composition frames, because a looping clip runs the
   /// composition forward while sending the source back to the start. Checking
   /// continuity in source terms makes the wrap seek for the same reason a
   /// backwards scrub does, rather than needing a case of its own.
+  ///
+  /// Note this counts in the *composition's* frame rate, not the source's: a
+  /// source frame here is an instant, and the native side finds whichever of
+  /// its own frames is on screen then.
   int? _cursor;
 
   ui.Image? _current;
@@ -178,13 +182,17 @@ class NativeVideoFrameSource implements VideoFrameSource {
 
     if (_handle == null) {
       await _open(compositionFrame);
-    } else if (_cursor != sourceFrame) {
+    } else if (_cursor == null || sourceFrame < _cursor!) {
+      // Only backwards, or after running dry -- both leave the reader unable
+      // to reach the instant by reading on. A reader cannot be rewound, so
+      // going back is a new one; going forward is just more reading, and the
+      // native side does that itself on the way to the instant asked for.
       await _seekTo(compositionFrame);
     }
 
     final Uint8List? bytes = await _channel.invokeMethod<Uint8List>(
       'nextFrame',
-      <String, Object?>{'handle': _handle},
+      <String, Object?>{'handle': _handle, 'sourceFrame': sourceFrame},
     );
     if (bytes == null) {
       // The source is shorter than the window it was mounted for. Hold the
@@ -197,7 +205,7 @@ class NativeVideoFrameSource implements VideoFrameSource {
       return _current;
     }
 
-    _cursor = _cursor! + 1;
+    _cursor = sourceFrame;
     _currentFrame = compositionFrame;
     final ui.Image decoded = await _decodeRgba(bytes, width, height);
     _current?.dispose();

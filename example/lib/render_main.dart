@@ -22,6 +22,7 @@ Future<void> main(List<String> args) async {
     weeklyDeals,
     videoShowcase,
     videoProbe,
+    videoProbeHalf,
     audioProbe,
     tickerProbe,
   ]);

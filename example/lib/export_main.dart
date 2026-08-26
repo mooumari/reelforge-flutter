@@ -31,6 +31,7 @@ void main(List<String> args) {
     weeklyDeals,
     videoShowcase,
     videoProbe,
+    videoProbeHalf,
     audioProbe,
     tickerProbe,
   ];

@@ -27,6 +27,7 @@ Future<void> main() async {
         weeklyDeals,
         videoShowcase,
         videoProbe,
+    videoProbeHalf,
         audioProbe,
         tickerProbe,
       ],

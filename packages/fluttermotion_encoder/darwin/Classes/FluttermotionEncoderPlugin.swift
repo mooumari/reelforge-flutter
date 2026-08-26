@@ -30,6 +30,17 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
   private var audioComposition: AVMutableComposition?
   private var audioMix: AVAudioMix?
 
+  /// The live read of that timeline, pulled by the writer rather than pushed.
+  private var audioReader: AVAssetReader?
+  private var audioPumping = false
+  private var audioFinished = false
+  private let audioDone = DispatchSemaphore(value: 0)
+
+  /// The queue the writer calls back on to ask for more sound. Separate from
+  /// [queue], which is busy converting frames.
+  private let audioQueue = DispatchQueue(
+    label: "fluttermotion.encoder.audio", qos: .userInitiated)
+
   /// Frames are converted and appended off the platform thread so the UI keeps
   /// running -- an in-app export that freezes the app is not much of a feature.
   private let queue = DispatchQueue(label: "fluttermotion.encoder", qos: .userInitiated)
@@ -156,14 +167,8 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
       }
       assetWriter.startSession(atSourceTime: .zero)
 
-      // The whole sound goes in before the first frame, and the audio input is
-      // finished immediately. An AVAssetWriter with two live inputs expects
-      // them to be fed in step: leave one silent and it stops readying the
-      // other, which stalls the export part way through with no error at all.
-      // Audio does not depend on any frame, so there is nothing to wait for.
       if let audioInput = audioInput {
-        writeAudio(into: audioInput, writer: assetWriter)
-        audioInput.markAsFinished()
+        startAudioPump(into: audioInput, writer: assetWriter)
       }
 
       writer = assetWriter
@@ -277,7 +282,13 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
       return
     }
     queue.async { [weak self] in
+      // Video first. The writer only readies the audio input while it is still
+      // interleaving against a live video input, so finishing video is what
+      // lets the pump run out the tail it has been held back from.
       input.markAsFinished()
+      if let self = self, self.audioPumping {
+        _ = self.audioDone.wait(timeout: .now() + 30)
+      }
       writer.finishWriting {
         self?.finished = writer.status == .completed
         DispatchQueue.main.async {
@@ -307,6 +318,12 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     if deleteOutput, let url = outputURL {
       try? FileManager.default.removeItem(at: url)
     }
+    audioReader?.cancelReading()
+    // Nothing may be left waiting on a pump that is being torn down.
+    if audioPumping {
+      audioPumping = false
+      audioDone.signal()
+    }
     writer = nil
     input = nil
     adaptor = nil
@@ -314,6 +331,8 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     audioInput = nil
     audioComposition = nil
     audioMix = nil
+    audioReader = nil
+    audioFinished = false
   }
 
   // MARK: - audio
@@ -398,15 +417,38 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     return AudioTimeline(composition: composition, mix: mix)
   }
 
-  /// Reads the mixed timeline and hands it to the writer.
+  /// Starts feeding the audio track, without blocking anything.
+  ///
+  /// The whole sound cannot simply go in before the first frame. An
+  /// AVAssetWriter interleaves its inputs, and it stops readying one that has
+  /// run ahead of the others until they catch up -- so sixty seconds of audio
+  /// pushed in while no video frame has arrived yet is never readied again,
+  /// and whichever thread was pushing spins there forever. Doing it on the
+  /// platform thread, as this used to, hangs the whole export with no error:
+  /// the Dart side is still waiting for `start` to return, so the video frame
+  /// that would release the writer can never be sent. Short compositions hid
+  /// it, because their audio fits inside the interleaving window whole.
+  ///
+  /// Leaving audio until the end is the same deadlock facing the other way.
+  ///
+  /// `requestMediaDataWhenReady` is the way out, and is what AVFoundation
+  /// wants here: the writer pulls audio on its own queue whenever it has room,
+  /// so the two inputs advance together and neither one waits on the other.
+  /// [finish] drains whatever tail is left once video is marked finished.
   ///
   /// Clamped to the composition's own length, so a music bed longer than the
   /// video does not leave the file playing over a frozen last frame.
-  private func writeAudio(into audioInput: AVAssetWriterInput, writer: AVAssetWriter) {
-    guard let composition = audioComposition, totalFrames > 0 else { return }
+  private func startAudioPump(into audioInput: AVAssetWriterInput, writer: AVAssetWriter) {
+    guard let composition = audioComposition, totalFrames > 0 else {
+      audioInput.markAsFinished()
+      return
+    }
 
     let duration = CMTime(value: CMTimeValue(totalFrames), timescale: CMTimeScale(fps))
-    guard let reader = try? AVAssetReader(asset: composition) else { return }
+    guard let reader = try? AVAssetReader(asset: composition) else {
+      audioInput.markAsFinished()
+      return
+    }
     reader.timeRange = CMTimeRange(start: .zero, duration: duration)
 
     let output = AVAssetReaderAudioMixOutput(
@@ -421,17 +463,49 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
         AVLinearPCMIsNonInterleaved: false,
       ])
     output.audioMix = audioMix
-    guard reader.canAdd(output) else { return }
-    reader.add(output)
-    guard reader.startReading() else { return }
-
-    while reader.status == .reading {
-      guard let sample = output.copyNextSampleBuffer() else { break }
-      while !audioInput.isReadyForMoreMediaData {
-        if writer.status != .writing { return }
-        Thread.sleep(forTimeInterval: 0.002)
-      }
-      if !audioInput.append(sample) { return }
+    guard reader.canAdd(output) else {
+      audioInput.markAsFinished()
+      return
     }
+    reader.add(output)
+    guard reader.startReading() else {
+      audioInput.markAsFinished()
+      return
+    }
+
+    audioReader = reader
+    audioPumping = true
+    audioFinished = false
+
+    // Called repeatedly, whenever the writer has room. Each call takes as much
+    // as it will accept and returns; running the input dry is what asks to be
+    // called again.
+    audioInput.requestMediaDataWhenReady(on: audioQueue) { [weak self] in
+      while audioInput.isReadyForMoreMediaData {
+        guard writer.status == .writing,
+          reader.status == .reading,
+          let sample = output.copyNextSampleBuffer()
+        else {
+          self?.completeAudio(audioInput)
+          return
+        }
+        if !audioInput.append(sample) {
+          self?.completeAudio(audioInput)
+          return
+        }
+      }
+    }
+  }
+
+  /// Ends the audio track and releases anyone waiting on it, exactly once.
+  ///
+  /// The callback above can reach its end more than one way, and marking an
+  /// input finished twice is a crash rather than a no-op.
+  private func completeAudio(_ audioInput: AVAssetWriterInput) {
+    guard !audioFinished else { return }
+    audioFinished = true
+    audioPumping = false
+    audioInput.markAsFinished()
+    audioDone.signal()
   }
 }

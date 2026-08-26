@@ -53,6 +53,38 @@ final Composition videoProbe = Composition(
   builder: (BuildContext context) => const _VideoProbe(),
 );
 
+/// The same probe, at half the source's frame rate.
+///
+/// `probe.mp4` runs at 60fps, so a 60fps composition asks for one source frame
+/// per composition frame and a decoder that simply took the next one was
+/// right by accident. This composition asks for every second source frame
+/// instead, which is the case that told the ffmpeg decoder and the in-app
+/// decoder apart: composition frame *k* of the window must show source frame
+/// *2k*, and therefore grey `4k`.
+final Composition videoProbeHalf = Composition(
+  id: 'VideoProbeHalf',
+  width: 320,
+  height: 240,
+  fps: 30,
+  durationInFrames: 100,
+  builder: (BuildContext context) => const _VideoProbeHalf(),
+);
+
+class _VideoProbeHalf extends StatelessWidget {
+  const _VideoProbeHalf();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+        color: Color(0xFF000000),
+        child: Sequence(
+          from: 20,
+          // 60 composition frames at 30fps is the whole 2.0s source.
+          durationInFrames: 60,
+          child: VideoClip(src: 'assets/probe.mp4', fit: BoxFit.fill),
+        ),
+      );
+}
+
 class _VideoProbe extends StatelessWidget {
   const _VideoProbe();
 
