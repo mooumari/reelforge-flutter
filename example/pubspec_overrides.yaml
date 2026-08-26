@@ -1,0 +1,10 @@
+# Local development only. fluttermotion_encoder now depends on a *version* of
+# fluttermotion rather than the sibling directory, which is what makes it
+# publishable -- but it also means pub would go looking for that version on
+# pub.dev instead of using the checkout right here. These pin both to the
+# local source.
+dependency_overrides:
+  fluttermotion:
+    path: ../packages/fluttermotion
+  fluttermotion_encoder:
+    path: ../packages/fluttermotion_encoder

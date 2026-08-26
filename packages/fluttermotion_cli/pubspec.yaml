@@ -1,6 +1,6 @@
 name: fluttermotion_cli
 description: Command-line renderer for FlutterMotion compositions.
-version: 0.0.1-dev
+version: 0.1.0
 publish_to: none
 
 environment:
