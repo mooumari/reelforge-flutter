@@ -48,6 +48,25 @@ abstract final class SandboxCheck {
     return value?.group(1) == 'true';
   }
 
+  /// [plist] with App Sandbox turned off, or null if it already is.
+  ///
+  /// Only the one key, and only its value: an entitlements file is a security
+  /// document, and rewriting more of it than was asked for is not a service.
+  static String? withSandboxDisabled(String plist) {
+    final Match? key =
+        RegExp('<key>com.apple.security.app-sandbox</key>').firstMatch(plist);
+    if (key == null) return null;
+    final Match? value =
+        RegExp(r'<true\s*/>').matchAsPrefix(plist, key.end) ??
+            RegExp(r'\s*<true\s*/>').matchAsPrefix(plist, key.end);
+    if (value == null) return null;
+    return plist.replaceRange(
+      value.start,
+      value.end,
+      value.group(0)!.replaceFirst(RegExp(r'<true\s*/>'), '<false/>'),
+    );
+  }
+
   static String message(String path) =>
       'This app is sandboxed, and the render host is a macOS build of it.\n'
       '\n'

@@ -104,6 +104,8 @@ void main() {
     });
   });
 
+  _sandboxEditing();
+
   group('the gate in front of a build', () {
     late Directory dir;
 
@@ -135,6 +137,36 @@ void main() {
       // An escape hatch that does not actually reach the gate is worse than no
       // escape hatch, because it is only found when someone needs it.
       expect(() => hostFor(allowSandbox: true).checkSandbox(), returnsNormally);
+    });
+  });
+}
+
+void _sandboxEditing() {
+  group('turning the sandbox off', () {
+    test('flips the value and nothing else', () {
+      const String before = '<plist><dict>\n'
+          '\t<key>com.apple.security.network.client</key>\n\t<true/>\n'
+          '\t<key>com.apple.security.app-sandbox</key>\n\t<true/>\n'
+          '</dict></plist>\n';
+      final String after = SandboxCheck.withSandboxDisabled(before)!;
+      expect(SandboxCheck.enablesSandbox(after), isFalse);
+      // The other grants are somebody's decisions, not ours to revisit.
+      expect(after, contains('network.client</key>\n\t<true/>'));
+      expect(after.replaceFirst('<false/>', '<true/>'), before);
+    });
+
+    test('a file that is already off is left alone', () {
+      const String off = '<plist><dict>\n'
+          '<key>com.apple.security.app-sandbox</key>\n<false/>\n'
+          '</dict></plist>';
+      expect(SandboxCheck.withSandboxDisabled(off), isNull);
+    });
+
+    test('a file that never mentions the key is left alone', () {
+      expect(
+        SandboxCheck.withSandboxDisabled('<plist><dict></dict></plist>'),
+        isNull,
+      );
     });
   });
 }

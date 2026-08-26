@@ -352,12 +352,32 @@ zero on the app's own timeline instead.
 - `driveAnimationClock: false` on `CompositionRenderer` turns the whole
   mechanism off, which is also what makes it testable.
 
+## Adding it to an app
+
+```bash
+cd packages/fluttermotion_cli
+dart run bin/fluttermotion.dart init --project ../../my_app --fix-entitlements
+cd ../../my_app && flutter pub get
+```
+
+`init` adds the dependency, writes `lib/render_main.dart` and a starter
+composition in `lib/video/`, and checks the two things that are not obvious
+until they bite: that the project has a macOS target at all, and that App
+Sandbox will stop the render host reaching ffmpeg. It never overwrites, so
+running it twice is safe.
+
+`--fix-entitlements` is opt-in and says what it did. `flutter create`
+scaffolds a sandboxed macOS target, so every new project needs this -- but it
+edits the entitlements your *release* build is signed with, and an app that
+ships through the Mac App Store has to be sandboxed. Put it back before you
+ship.
+
+From a bare `flutter create` to an MP4 is about 17 seconds, most of it the
+macOS build.
+
 ## Render
 
 ```bash
-# lib/render_main.dart in your own Flutter project:
-#   void main(List<String> args) => renderMain(args, [myComposition]);
-
 cd packages/fluttermotion_cli
 dart run bin/fluttermotion.dart list   --project ../../example
 dart run bin/fluttermotion.dart render --project ../../example \
@@ -536,7 +556,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-132 tests across the three packages (105 framework, 21 CLI, 6 encoder).
+147 tests across the three packages (105 framework, 36 CLI, 6 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

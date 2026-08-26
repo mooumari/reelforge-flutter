@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fluttermotion_cli/src/args.dart';
 import 'package:fluttermotion_cli/src/cli_error.dart';
 import 'package:fluttermotion_cli/src/host.dart';
+import 'package:fluttermotion_cli/src/init_command.dart';
 import 'package:fluttermotion_cli/src/inspect_command.dart';
 import 'package:fluttermotion_cli/src/render_command.dart';
 
@@ -10,6 +11,7 @@ const String _usage = '''
 FlutterMotion — render Flutter compositions to video.
 
 Usage:
+  fluttermotion init   [options]
   fluttermotion render [options]
   fluttermotion inspect [options]
   fluttermotion list [options]
@@ -22,6 +24,12 @@ Common options:
   --ffmpeg <path>       ffmpeg binary (default: autodetected)
   --flutter <path>      flutter binary (default: flutter)
   --allow-sandbox       Build even though the app enables App Sandbox
+
+init options:
+  --fluttermotion <p>   Path to the fluttermotion package
+                        (default: alongside this CLI)
+  --fix-entitlements    Turn App Sandbox off in the macOS release
+                        entitlements, which a render host needs
 
 inspect options:
   --composition <id>    Which composition (default: all)
@@ -55,6 +63,8 @@ Future<void> main(List<String> arguments) async {
 
   try {
     switch (command) {
+      case 'init':
+        exit(await initCommand(args));
       case 'render':
         exit(await renderCommand(args));
       case 'inspect':
