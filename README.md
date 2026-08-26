@@ -534,7 +534,7 @@ final ExportResult result = await InAppExporter.export(
 ```
 
 `fluttermotion_encoder` is a plugin wrapping **AVAssetWriter** on iOS and
-macOS. Frames go across the method channel as raw RGBA and are permuted to
+macOS and **MediaCodec** plus **MediaMuxer** on Android. Frames go across the method channel as raw RGBA and are permuted to
 BGRA with `vImagePermuteChannels_ARGB8888` straight into the adaptor's pixel
 buffer -- no intermediate `ui.Image`, no PNG round trip. The writer input runs
 with `expectsMediaDataInRealTime = false` and the Dart side awaits
@@ -542,23 +542,58 @@ with `expectsMediaDataInRealTime = false` and the Dart side awaits
 of queueing frames into memory.
 
 `VideoEncoder` is the seam on the way out and `VideoBackend` the seam on the
-way in. `InAppExporter` knows nothing about AVFoundation or about ffmpeg; an
-Android `MediaCodec` implementation of either is a new class, not a new
-exporter.
+way in. `InAppExporter` knows nothing about AVFoundation, MediaCodec or
+ffmpeg, and adding Android was a new pair of classes rather than a new
+exporter -- which is the claim that seam was made to support.
 
-Verified on both platforms against the ffmpeg CLI render of the same
-composition (1080x1920, 300 frames):
+Android needs more of the work done by hand. AVAssetWriter takes a BGRA pixel
+buffer and converts; MediaCodec takes YUV, so the colour conversion lives in
+the plugin, and which matrix it uses is part of the file's meaning rather than
+an implementation detail. All three paths now choose by height -- BT.709 for
+high definition, BT.601 below -- convert accordingly and write it into the
+file. See [Colour is not a detail](#colour-is-not-a-detail).
 
-| | frames | time | output |
+Verified against the ffmpeg CLI render of the same composition
+(1080x1920, 300 frames, `WeeklyDeals`):
+
+| | frames | time | SSIM vs CLI |
 |---|---|---|---|
-| macOS, in-app | 300 | 6.24 s | 7.7 MB |
-| iOS simulator, in-app | 300 | 5.09 s | 8.0 MB |
+| macOS, in-app | 300 | 8.41 s | 0.99169 mean, 0.98964 min |
+| Android emulator, in-app | 300 | 21.69 s | 0.98202 mean, 0.98019 min |
 
-Per-frame SSIM against the ffmpeg render averages **0.99036**, minimum
-0.98794 -- h264 quantisation, not content drift. Mean channel values are
-`24.53/38.66/49.62` in-app against `22.52/38.45/50.01` from ffmpeg, which is
-the check that actually matters: a red/blue swap is the classic failure of
-this path and it would show up here as a swapped pair, not as a small delta.
+No frame on either falls below 0.98. Both probes are exact on both, at the
+source's frame rate and at half it.
+
+Run them with `tool/macos_export.sh` and `tool/android_export.sh`. Both scripts
+exist for reasons worth knowing. Android has no argv -- an activity is started
+rather than a process invoked, `--dart-entrypoint-args` arrives empty and
+`stdout` reaches nobody, so an export there reports neither success nor
+failure and simply leaves no file. And on macOS the CLI's own render step
+builds into the same path as the in-app app bundle, so a CLI render silently
+replaces the in-app binary with the render host; both accept `--composition`
+and both produce an mp4, so the substitution does not fail, it just measures
+ffmpeg twice and calls one of them the in-app path.
+
+#### Colour is not a detail
+
+ffmpeg converts RGB to YUV with BT.601 whatever the frame size, and writes no
+colour metadata at all. An HD render was therefore BT.601 pixels in a file
+that every player reads as BT.709. AVAssetWriter picked for itself and tagged
+nothing. The Android encoder hard-coded BT.601 and, alone among the three,
+said so in the file.
+
+Nothing about that fails loudly. It tints. And it cost something to find:
+matching Android to the CLI *before* fixing the CLI made the correct matrix
+score worse than the wrong one, because the reference was the thing that was
+wrong.
+
+#### Fonts travel with the composition
+
+A composition is a pure function of its frame number -- on one machine. Across
+two it is not, unless its fonts come with it. The example bundled none, so it
+drew in SF on macOS and Roboto on Android, and the two exports agreed on every
+shape and disagreed on every glyph: 3.4% of pixels off by more than 32 levels,
+all of them inside text, worth 0.033 of SSIM on its own. Bundle the fonts.
 
 The preview has an **Export** button wired to the same call, so the moat is
 reachable from the tool you are already scrubbing in.
@@ -596,7 +631,35 @@ decides what a file is by looking at it.
 Verified against the ffmpeg mix of the same composition, per 50 ms window:
 levels agree to within 0.2%, and both put the two chimes at 0.65 s and 3.00 s.
 `AudioProbe` measures it exactly -- one 20 ms click mounted on frame 60 lands
-at **1000.0 ms** in both the in-app export and the CLI render.
+at **1000.0 ms** in the CLI render, the macOS in-app export and the Android
+in-app export alike.
+
+#### Android has no AVMutableComposition
+
+None of the above exists on Android. `MediaMuxer` only muxes and `MediaCodec`
+only codes one stream at a time, so the mix itself is written out: every clip
+decoded to PCM, resampled to a common rate, summed onto one timeline at its
+own offset and volume, and encoded once. Summing rather than averaging, so
+two clips over the same frames are heard together rather than quietened by
+each other -- the same rule the Apple path gets from having one track per clip.
+
+It happens before the first video frame, because `MediaMuxer` will not accept
+a track added after `start()` and the video track cannot be added until the
+video encoder has produced its format. So the audio is encoded up front and
+held: a minute of stereo AAC at 128 kbps is under a megabyte.
+
+An AAC encoder emits priming samples ahead of the audio it was given, and
+nothing compensates for that on its own. On `AudioProbe` that put a click
+meant for frame 60 at frame 62.79 -- 46 ms, which is exactly 2048 samples at
+44.1kHz and exactly what the format specifies. The mixer pads the front to a
+whole number of AAC frames and drops that many packets, which cancels it
+exactly rather than approximately.
+
+Measured on `WeeklyDeals` -- music at volume 0.4 under two chimes -- the
+Android mix tracks the ffmpeg one to a median of 3.3% and a worst of 7.3% per
+100 ms window. Its track runs the full length of the video, where the CLI and
+the Apple path stop at the last sounding sample; the difference is trailing
+silence, not placement.
 
 The probe uses a WAV deliberately. An MP3 declares an encoder delay that ffmpeg
 strips and AVFoundation keeps, which showed up as the in-app mix running 12 ms
@@ -641,7 +704,14 @@ As with audio, `VideoClip(src: 'assets/clip.mp4')` is an asset key inside an
 app rather than a path, so it is spilled to a real file once; both go through
 the same `SourceFiles` resolver.
 
-What is not there yet: Android needs a `MediaCodec` encoder and decoder.
+On Android the same seam is filled by `MediaExtractor` and `MediaCodec`. The
+shape is the same as the Apple one -- hold the frame on screen and one
+lookahead, so "is this still the frame due at this instant?" stays answerable
+-- but the slack that question allows has to be half a *source* frame, not
+half a composition frame. It was the latter at first, which at 30fps into
+60fps footage is a whole source frame, so every instant landing exactly on a
+frame took the next one instead: 19 of `VideoProbeHalf`'s 60 clip frames
+wrong, and every one of them plausible.
 
 ## Layout
 
@@ -649,7 +719,7 @@ What is not there yet: Android needs a `MediaCodec` encoder and decoder.
 |---|---|
 | `packages/fluttermotion` | The composition framework |
 | `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` |
-| `packages/fluttermotion_encoder` | AVFoundation encoder + decoder plugin (iOS/macOS) |
+| `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification (video clips, tickers) |
@@ -754,8 +824,8 @@ reached by scrubbing backward from later in the timeline.
    (video decode windows still to come)
 4. ~~Audio mixing~~ done
 5. ~~Video clips~~ done
-6. ~~On-device export (the moat)~~ done on iOS/macOS -- video decode, audio
-   mixing and encode all in-app, no ffmpeg (Android still to come)
+6. ~~On-device export (the moat)~~ done on iOS, macOS and Android -- video
+   decode, audio mixing and encode all in-app, no ffmpeg anywhere
 7. ~~Widgets from an existing app -- ambient state and their own clocks~~ done
    for the render, export and preview paths, including inside a live app
 

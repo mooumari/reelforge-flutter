@@ -35,7 +35,15 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
   private var codec: MediaCodec? = null
   private var muxer: MediaMuxer? = null
   private var videoTrack = -1
+  private var audioTrack = -1
   private var muxerStarted = false
+
+  /// The mixed audio, encoded and waiting for a muxer to exist.
+  ///
+  /// See [AudioMixer]: it is built during `start`, because a track cannot be
+  /// added to a MediaMuxer after it has started and the video track cannot be
+  /// added before the video encoder has produced its format.
+  private var audio: AudioMixer.Result? = null
   private var finished = false
 
   private var width = 0
@@ -82,6 +90,10 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
     val h = call.argument<Int>("height")
     val rate = call.argument<Int>("fps")
     val bitrate = call.argument<Int>("bitrate")
+    val totalFrames = call.argument<Int>("totalFrames")
+    @Suppress("UNCHECKED_CAST")
+    val audioTracks =
+      (call.argument<List<Any?>>("audio") ?: emptyList()) as List<Map<String, Any?>>
     if (path == null || w == null || h == null || rate == null || bitrate == null) {
       return result.error("bad-args", "start() needs path, width, height, fps and bitrate", null)
     }
@@ -137,6 +149,14 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
             }
           )
           setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
+        }
+
+        // Before the video encoder, so a failure here fails the export rather
+        // than silently producing a file with a picture and no sound.
+        audio = if (audioTracks.isNotEmpty() && totalFrames != null) {
+          AudioMixer(audioTracks, rate, totalFrames).mix()
+        } else {
+          null
         }
 
         val encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
@@ -250,6 +270,15 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
   /// [endOfStream] keeps pulling until the encoder says it is done; otherwise
   /// this takes what is ready and returns, so a frame is never held up waiting
   /// for output that has not been produced yet.
+  private fun writeAudio(output: MediaMuxer, sound: AudioMixer.Result) {
+    val info = MediaCodec.BufferInfo()
+    for (packet in sound.packets) {
+      val buffer = ByteBuffer.wrap(packet.data)
+      info.set(0, packet.data.size, packet.timeUs, packet.flags)
+      output.writeSampleData(audioTrack, buffer, info)
+    }
+  }
+
   private fun drain(endOfStream: Boolean) {
     val encoder = codec ?: return
     val output = muxer ?: return
@@ -265,8 +294,14 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
           // with no decodable stream in it.
           if (muxerStarted) throw IllegalStateException("the output format changed twice")
           videoTrack = output.addTrack(encoder.outputFormat)
+          val sound = audio
+          if (sound != null) audioTrack = output.addTrack(sound.format)
           output.start()
           muxerStarted = true
+          // The whole audio track at once, here, because this is the first
+          // moment a muxer exists and there is nothing to be gained by
+          // dribbling it out between video frames: it is already encoded.
+          if (sound != null) writeAudio(output, sound)
         }
         index >= 0 -> {
           val encoded = encoder.getOutputBuffer(index)
@@ -296,6 +331,8 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
     muxer = null
     muxerStarted = false
     videoTrack = -1
+    audioTrack = -1
+    audio = null
     if (deleteOutput) outputPath?.let { File(it).delete() }
     outputPath = null
   }
@@ -309,7 +346,7 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
     /// bytes per pixel that 4:2:0 means.
     fun imageSize(image: Image): Int = image.width * image.height * 3 / 2
 
-    /// RGBA to YUV 4:2:0, BT.601 limited range.
+    /// RGBA to YUV 4:2:0, limited range, in the matrix the height implies.
     ///
     /// Written against the [Image] planes rather than a flat array, because
     /// planar and semi-planar encoders both appear behind
