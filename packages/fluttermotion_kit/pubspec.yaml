@@ -1,0 +1,19 @@
+name: fluttermotion_kit
+description: Ready-made scenes, charts and motion primitives for FlutterMotion compositions.
+version: 0.1.0
+publish_to: none # until the licensor entity and pub.dev strategy are settled
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.35.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fluttermotion:
+    path: ../fluttermotion
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

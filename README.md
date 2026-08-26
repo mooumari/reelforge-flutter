@@ -790,6 +790,100 @@ half a composition frame. It was the latter at first, which at 30fps into
 frame took the next one instead: 19 of `VideoProbeHalf`'s 60 clip frames
 wrong, and every one of them plausible.
 
+## The kit
+
+`fluttermotion` gives you a frame number and Flutter. That is the right
+foundation and the wrong starting point: `init` handed you a blank
+composition, and the distance from there to something worth watching was the
+whole problem.
+
+`fluttermotion_kit` is the other end. Every component in it was a bespoke
+widget in the example reel first, and what is in the package is what survived
+being made general -- a storyboard, four ways for something to arrive, a
+stagger, two charts, a card, and the two shapes footage takes in practice.
+Nothing was designed in advance, which is why the vocabulary is small.
+
+```dart
+const int fps = 30;
+
+final List<Scene> scenes = <Scene>[
+  Scene(seconds: 5, builder: (_) => TitleCard(
+    kicker: report.period,
+    headline: report.headline,
+    subhead: '${report.releases} releases',
+  )),
+  Scene(seconds: 9, sting: chime, builder: (_) => LabelledScene(
+    label: 'Shipped per week',
+    child: BarChart(bars: <BarDatum>[
+      for (final Week w in report.weeks)
+        BarDatum(value: w.shipped, label: w.label),
+    ]),
+  )),
+];
+
+final Composition reel = Composition(
+  id: 'Reel',
+  width: 1080, height: 1920, fps: fps,
+  durationInFrames: Storyboard.totalFrames(scenes, fps: fps),
+  wrapper: (BuildContext context, Widget child) => MotionSurface(
+    typography: const MotionTypography(fontFamily: 'Roboto'),
+    child: child,
+  ),
+  builder: (BuildContext context) => Storyboard(scenes: scenes, bed: music),
+);
+```
+
+Three rules the whole kit follows, and they are the interesting part:
+
+**Everything is still a function of the frame.** No controllers, no tickers,
+no clocks. A `Counter` interpolates against `Video.frame` rather than counting
+up, which is why scrubbing backwards through one lands on the number it showed
+on the way past. The kit's determinism suite renders every component forwards,
+backwards, and from a cold start, and compares bytes.
+
+**Timing is read from context, in frames.** A component inside a `Sequence`
+counts from that sequence's own zero, so a scene never knows where on the
+timeline it sits. `Scene` takes seconds and derives the frames; the start
+frames are derived from the lengths. Moving a scene moves its content, its
+sting and its transition together, and nothing anywhere holds a frame number.
+
+**Colour comes from `MotionTheme`, not from arguments.** Restyling is one
+widget at the top. The palette is named by role rather than by hue -- a
+component that asks for `accent` survives the accent turning orange -- and the
+sign-to-colour rule lives in `MotionPalette.forSign` so a card and the chart
+beside it cannot disagree about what green means.
+
+`Scene` takes a `builder` rather than a widget for a reason worth stating: a
+storyboard is a top-level `final`, and a `Composition` needs its length before
+`main` has finished loading data. The lengths are known that early. The data
+is not.
+
+### What the extraction proved
+
+The example reel was rewritten on top of the kit, and that is the only test of
+an extraction that means anything:
+
+- **735 lines to 186**, and what remains says what each scene *is* rather than
+  how it is drawn.
+- **The declaration pass produces a byte-identical manifest** -- same 1800
+  frames, same seven audio stings at frames 150 through 1650, same three video
+  windows with the same trim. The port changed how the reel is written and
+  nothing about what it declares.
+- **It found two real bugs.** `SplitScreen` used a `Flex` with the default
+  centre cross-alignment, so a panel with no intrinsic size -- which is most of
+  what goes in one -- collapsed to zero width and rendered an empty frame.
+  And `LineChart`'s reveal was a fixed 82 frames, tuned for the nine-second
+  scene it came from; dropped into a two-second scene it showed an empty box
+  for the whole of it. It now spans whatever scene it is in.
+- **The colour warning earned itself on the first run.** Rendering the rewired
+  reel printed a warning for `assets/demo_clip.mp4`, a file nobody had thought
+  to check. It was untagged 720p, the same trap that cost 249 frames on the
+  iPhone.
+
+Both bugs were found by the determinism suite's control test -- the one that
+checks the composition is *moving*, on the grounds that a determinism test
+passes trivially against a component that draws nothing.
+
 ## Layout
 
 | Path | What |
@@ -797,6 +891,7 @@ wrong, and every one of them plausible.
 | `packages/fluttermotion` | The composition framework |
 | `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` |
 | `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
+| `packages/fluttermotion_kit` | Ready-made scenes, charts and motion primitives |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification (video clips, tickers) |

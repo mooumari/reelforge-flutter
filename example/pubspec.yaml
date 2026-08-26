@@ -32,6 +32,8 @@ dependencies:
     sdk: flutter
   fluttermotion:
     path: ../packages/fluttermotion
+  fluttermotion_kit:
+    path: ../packages/fluttermotion_kit
   fluttermotion_encoder:
     path: ../packages/fluttermotion_encoder
 
