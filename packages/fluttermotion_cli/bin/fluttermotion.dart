@@ -17,13 +17,16 @@ Usage:
   fluttermotion init     [options]
   fluttermotion preview  [<document.json>] [options]
   fluttermotion render   [<document.json>] [options]
-  fluttermotion validate <document.json> [options]
+  fluttermotion validate <document.json>
   fluttermotion inspect  [options]
   fluttermotion list     [<document.json>] [options]
 
 A composition is either Dart in your project (the default, found through
 --entry) or a JSON document. Passing a .json file renders it through a
 generated two-line host, so both take exactly the same path from there on.
+
+`validate` is the exception: it needs no project and no build, because a
+document is data and checking it is a question about JSON.
 
 Common options:
   --project <dir>       Flutter project to render from (default: .)

@@ -146,17 +146,33 @@ class MotionTypography {
   double get captionSize => caption * scale;
   double get statisticSize => statistic * scale;
 
-  MotionTypography copyWith({String? fontFamily, double? scale}) =>
+  /// A copy with the named fields replaced.
+  ///
+  /// Every size is here so that a caller overriding one does not have to
+  /// restate the other six. A restated default is a default that drifts: the
+  /// JSON layer used to rewrite all seven to change one, and the numbers had
+  /// to be kept in step by hand.
+  MotionTypography copyWith({
+    String? fontFamily,
+    double? scale,
+    double? display,
+    double? headline,
+    double? title,
+    double? body,
+    double? label,
+    double? caption,
+    double? statistic,
+  }) =>
       MotionTypography(
         fontFamily: fontFamily ?? this.fontFamily,
         scale: scale ?? this.scale,
-        display: display,
-        headline: headline,
-        title: title,
-        body: body,
-        label: label,
-        caption: caption,
-        statistic: statistic,
+        display: display ?? this.display,
+        headline: headline ?? this.headline,
+        title: title ?? this.title,
+        body: body ?? this.body,
+        label: label ?? this.label,
+        caption: caption ?? this.caption,
+        statistic: statistic ?? this.statistic,
       );
 
   @override

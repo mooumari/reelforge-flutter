@@ -1,13 +1,14 @@
 # Releasing
 
-Three packages ship together: `fluttermotion`, `fluttermotion_cli` and
-`fluttermotion_encoder`. All three are at 0.1.0 and none has been published.
+Six packages ship together: `fluttermotion`, `fluttermotion_schema`,
+`fluttermotion_kit`, `fluttermotion_json`, `fluttermotion_encoder` and
+`fluttermotion_cli`. All are at 0.1.0 and none has been published.
 
 ## What is still gating a first release
 
 Both are decisions, not work.
 
-1. **The licensor.** `LICENSE.md` and the three package copies of it say
+1. **The licensor.** `LICENSE.md` and the package copies of it say
    `REPLACE WITH LEGAL ENTITY BEFORE FIRST PUBLIC RELEASE`. The FSL grant is
    made by a named licensor; a placeholder makes the licence unenforceable and
    the release unretractable, which is the wrong order to do those in.
@@ -16,16 +17,22 @@ Both are decisions, not work.
    warns about the missing `repository:` field, and without a public URL a
    source-available licence is a promise nobody can check.
 
-Neither blocks development, and everything else is ready: the dry run is clean
-on all three but for that one warning.
+Neither blocks development. One piece of work does remain: the packages depend
+on each other by `path:` inside this repo, and pub will not accept that. Each
+inter-package dependency has to become a version constraint with a
+`pubspec_overrides.yaml` pointing back at the local checkout, which is the
+arrangement `fluttermotion_encoder` already uses and the others do not yet.
 
 ## Before publishing
 
 ```bash
 tool/verify_video_mapping.sh              # both probes, several shard counts
 (cd packages/fluttermotion         && flutter test)
-(cd packages/fluttermotion_cli     && dart test)
+(cd packages/fluttermotion_kit     && flutter test)
+(cd packages/fluttermotion_json    && flutter test)
 (cd packages/fluttermotion_encoder && flutter test)
+(cd packages/fluttermotion_schema  && dart test)
+(cd packages/fluttermotion_cli     && dart test)
 flutter analyze packages example
 ```
 
@@ -40,14 +47,24 @@ flutter pub publish --dry-run
 Publishing is irreversible. A version can be retracted but never removed, and
 the package name is claimed permanently.
 
-1. Fill in the licensor in `LICENSE.md` and the three package `LICENSE` files.
+1. Fill in the licensor in `LICENSE.md` and each package's `LICENSE` file.
 2. Add `repository:` to each `pubspec.yaml`.
 3. Delete the `publish_to: none` line from each `pubspec.yaml`.
-4. Publish **`fluttermotion` first**. `fluttermotion_encoder` depends on
-   `^0.1.0` of it, and pub will not accept a package whose dependency does not
-   resolve.
-5. Then `fluttermotion_encoder`, then `fluttermotion_cli` (which depends on
-   neither -- it drives `flutter` as a subprocess).
+4. Publish in dependency order, because pub will not accept a package whose
+   dependencies do not resolve:
+
+   ```
+   fluttermotion          (depends on nothing here)
+   fluttermotion_schema   (depends on nothing at all -- pure Dart)
+   fluttermotion_kit      -> fluttermotion
+   fluttermotion_encoder  -> fluttermotion
+   fluttermotion_json     -> fluttermotion, _kit, _schema
+   fluttermotion_cli      -> fluttermotion_schema
+   ```
+
+   `fluttermotion_cli` used to depend on nothing -- it drove `flutter` as a
+   subprocess and nothing else. It now reads the document format directly, so
+   that `validate` needs no build.
 
 ## Why pubspec_overrides.yaml exists
 

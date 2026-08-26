@@ -1,4 +1,4 @@
-/// Describe a FlutterMotion composition in JSON and build it at runtime.
+/// Build a FlutterMotion composition from a JSON document.
 ///
 /// The kit is a vocabulary of scenes; this is that vocabulary made
 /// serialisable. A document is data, so it can be written by a designer, sent
@@ -10,12 +10,40 @@
 /// final MotionDocument document = MotionDocument.parse(jsonString);
 /// final Composition composition = document.toComposition(data: report);
 /// ```
+///
+/// The *format* -- the node vocabulary, the binding language, and every check
+/// a document has to pass -- lives in `fluttermotion_schema`, which has no
+/// Flutter dependency. Validating a document therefore needs neither this
+/// package nor an engine. Everything public there is re-exported here, so a
+/// renderer needs only this one import.
 library;
 
-export 'src/document.dart'
-    show MotionDocument, currentDocumentVersion, knownNodeTypes;
-export 'src/errors.dart' show SchemaException, SchemaProblem;
-export 'src/node.dart' show MotionNode, NodeType, ScopedSpec, SpecList;
-export 'src/scope.dart' show DataScope, MotionScope, knownFilters;
+export 'package:fluttermotion_schema/fluttermotion_schema.dart';
+
+export 'src/document.dart' show MotionDocument, sceneTransition;
+export 'src/motion_scope.dart' show MotionScope;
+export 'src/node.dart'
+    show
+        MotionNodeBuilding,
+        NodeBuilder,
+        NodeWidget,
+        ScopedSpecBuilding,
+        builderFor,
+        registerBuilder,
+        unbuildableNodeTypes;
 export 'src/values.dart'
-    show namedAlignments, namedCurves, namedFits, paletteRoles;
+    show
+        basePalette,
+        namedAlignments,
+        namedAxes,
+        namedCrossAxis,
+        namedCurves,
+        namedFits,
+        namedKitCrossAxis,
+        namedMainAxis,
+        namedMainAxisSize,
+        namedStackFits,
+        namedTextAligns,
+        namedWeights,
+        roleColour,
+        roleSize;

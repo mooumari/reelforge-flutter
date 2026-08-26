@@ -13,6 +13,11 @@ final MotionDocument document = MotionDocument.parse(jsonString);
 final Composition composition = document.toComposition(data: report);
 ```
 
+The format itself -- the node vocabulary, the binding language and every check
+a document has to pass -- lives in [`fluttermotion_schema`](../fluttermotion_schema),
+which has no Flutter dependency and is re-exported from here. Validating a
+document therefore needs neither this package nor an engine.
+
 Or point the CLI at the document and skip the Dart entirely:
 
 ```

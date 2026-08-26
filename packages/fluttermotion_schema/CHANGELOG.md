@@ -1,0 +1,11 @@
+## 0.1.0
+
+- Initial release: the FlutterMotion document format as pure Dart.
+- `DocumentSpec.parse` and `DocumentSpec.problemsIn` — the whole document as
+  data, or every problem in it with a JSON path, without building anything.
+- The node vocabulary (`NodeType`, `knownNodeTypes`) and every closed name set,
+  enumerable for editors and validators.
+- `DataScope` and the `{{ path | filter }}` binding language.
+- Extracted from `fluttermotion_json` so that validating a document needs
+  neither Flutter nor a build: `fluttermotion validate reel.json` went from a
+  macOS release build to about half a second.

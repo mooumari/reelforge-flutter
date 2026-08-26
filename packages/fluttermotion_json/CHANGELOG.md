@@ -15,3 +15,7 @@
   `fluttermotion render reel.json` and `fluttermotion preview reel.json`
   generate, plus `--validate` for reporting a document's problems without
   rendering.
+- The format moved to `fluttermotion_schema`, a package with no Flutter
+  dependency, and is re-exported from here unchanged. This package is now the
+  half that builds widgets: a builder per node type, registered against that
+  schema and refused if the schema has never heard of the name.

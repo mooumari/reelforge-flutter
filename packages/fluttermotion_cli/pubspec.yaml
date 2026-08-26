@@ -9,6 +9,10 @@ environment:
 executables:
   fluttermotion: fluttermotion
 
+dependencies:
+  fluttermotion_schema:
+    path: ../fluttermotion_schema
+
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.25.0

@@ -998,6 +998,61 @@ input wants.
 A `src` containing `..` or starting with `/` is refused. A document is a thing
 a server can send to an app, which makes `src` untrusted input.
 
+### Checking a document without Flutter
+
+The obvious way to validate a document is to ask the widgets, since the node
+vocabulary *is* Flutter code -- a `titleCard` knows what it accepts because it
+is the widget. That is what the first version did, and it worked: the CLI built
+a macOS release host and ran it with `--validate`. It also meant that answering
+"is this JSON valid" cost a release build the first time, which is minutes, and
+that nothing outside a Flutter process could answer it at all.
+
+So the format moved out into `packages/fluttermotion_schema`, a package with no
+Flutter dependency:
+
+| `fluttermotion_schema` | `fluttermotion_json` |
+|---|---|
+| `curveNames` -- `outCubic` is a curve | `namedCurves` -- which `Curve` it is |
+| `NodeType` -- a `titleCard` accepts a `headline` | the builder that draws one |
+| `ThemeSpec` -- `accent` is `0xFF4ADE80` | the `MotionPalette` it becomes |
+| `DataScope` -- what `{{ weeks.0.label }}` means | reading it on a frame |
+
+`DocumentSpec.parse` produces the entire document as data, and
+`MotionDocument` wraps one to build widgets from it. There is **one parse**: the
+tree a validator walks is the same tree a renderer builds, so a document cannot
+validate as one thing and render as another.
+
+**The split is the risk, so it is what the tests are about.** Two halves that
+name the same things can disagree, and both directions fail quietly -- a curve
+the validator accepts with no entry in the table renders as `linear`, and a node
+the builder draws with no schema renders in the app and fails `validate`. Both
+look like the document is wrong when the build is. So:
+
+- `registerBuilder` **throws** for a name the schema has never heard of. That
+  direction is impossible rather than tested.
+- `fluttermotion_json/test/vocabulary_test.dart` asserts every name set has
+  exactly the values behind it: eleven tables, plus palette roles and text roles
+  checked by asking whether any two of them resolve to the same thing (which is
+  what a role falling through a `switch` looks like).
+- Both guards were checked by breaking them: deleting one curve from the table
+  fails with *"curves: the schema and the table disagree ... does not contain
+  'outBounce'"*, and deleting the `image` schema fails with *"No schema for node
+  type \"image\""*.
+
+What it bought:
+
+```
+$ time fluttermotion validate reel.json
+reel.json is a valid composition document.
+0.42s total
+```
+
+against a macOS release build before -- and 36 of the format's tests moved from
+`flutter test` to plain `dart test`, where they run in well under a second. It
+also means a server can check a document it is about to send to an app, and an
+editor can check one as it is typed, with a package that has never heard of
+`dart:ui`.
+
 ### Documents from the CLI
 
 A document is not a second renderer, and the CLI does not treat it as one:
@@ -1031,11 +1086,16 @@ binary was born with.
 fluttermotion validate other.json --no-build     # ~1s, no build
 ```
 
-`validate` runs inside that host rather than in the CLI process, deliberately.
-The node vocabulary *is* Flutter code -- a `titleCard` knows what it accepts
-because it is the widget -- so there is no second copy of the schema in the CLI
-to drift away from it. The cost is one build the first time; the alternative is
-a validator that is confidently wrong.
+`validate` is the exception to all of that: it needs no project, no build and
+no Flutter at all.
+
+```
+fluttermotion validate reel.json                 # ~0.4s, from anywhere
+```
+
+That is because the document format lives in its own pure-Dart package,
+`fluttermotion_schema`, which the CLI depends on directly. See
+[Checking a document without Flutter](#checking-a-document-without-flutter).
 
 ### What the JSON layer proved
 
@@ -1071,6 +1131,7 @@ sixty-second render.
 | Path | What |
 |---|---|
 | `packages/fluttermotion` | The composition framework |
+| `packages/fluttermotion_schema` | The document format: parsing and validation, no Flutter |
 | `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` / `validate` |
 | `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
 | `packages/fluttermotion_kit` | Ready-made scenes, charts and motion primitives |
@@ -1165,12 +1226,16 @@ cd packages/fluttermotion         && flutter test
 cd packages/fluttermotion_kit     && flutter test
 cd packages/fluttermotion_json    && flutter test
 cd packages/fluttermotion_encoder && flutter test
+cd packages/fluttermotion_schema  && dart test
 cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-280 tests across the five packages and the example (127 framework, 36 kit,
-34 JSON, 24 encoder, 57 CLI, 2 example). The ones that matter assert that a
+332 tests across the six packages and the example (127 framework, 36 kit,
+43 JSON, 36 schema, 24 encoder, 64 CLI, 2 example). The schema and CLI suites
+are plain `dart test` and finish in about a second between them, which is why
+document validation is now something you run rather than something you wait
+for. The ones that matter assert that a
 frame is byte-identical when rendered from a fresh renderer, when reached by
 playing forward, and when reached by scrubbing backward from later in the
 timeline.
@@ -1193,6 +1258,8 @@ timeline.
    pixel-equivalent to the Dart reel it was transcribed from
 10. ~~Documents from the CLI -- `init --json`, `validate`, `preview reel.json`,
     `render reel.json --data report.json`~~ done
+11. ~~The document format as pure Dart, so `validate` needs no Flutter and no
+    build~~ done, verified pixel-neutral against the reel it refactored
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 

@@ -1,5 +1,3 @@
-import 'package:flutter/widgets.dart';
-
 /// The data a document draws from, and the item a `repeat` is currently on.
 ///
 /// A document is a template; this is what fills it. Lookups inside a repeat
@@ -63,30 +61,6 @@ class DataScope {
     }
     return current;
   }
-}
-
-/// Carries a [DataScope] down the widget tree.
-class MotionScope extends InheritedWidget {
-  const MotionScope({super.key, required this.scope, required super.child});
-
-  final DataScope scope;
-
-  static DataScope of(BuildContext context) {
-    final MotionScope? found =
-        context.dependOnInheritedWidgetOfExactType<MotionScope>();
-    assert(
-      found != null,
-      'No MotionScope found. A document built by MotionDocument always '
-      'provides one; a node used on its own has to be wrapped in it.',
-    );
-    return found?.scope ?? const DataScope(data: <String, Object?>{});
-  }
-
-  @override
-  bool updateShouldNotify(MotionScope oldWidget) =>
-      !identical(scope.data, oldWidget.scope.data) ||
-      !identical(scope.item, oldWidget.scope.item) ||
-      scope.itemIndex != oldWidget.scope.itemIndex;
 }
 
 /// Whether [value] is a string containing at least one `{{ }}` binding.
@@ -171,13 +145,13 @@ const Set<String> knownFilters = <String>{
 
 /// Every filter name used anywhere in [expression].
 List<String> filtersIn(String expression) => <String>[
-      for (final Match match in _binding.allMatches(expression))
-        ...match
-            .group(1)!
-            .split('|')
-            .skip(1)
-            .map((String f) => f.trim().replaceAll(RegExp(r'\(.*\)'), '')),
-    ];
+  for (final Match match in _binding.allMatches(expression))
+    ...match
+        .group(1)!
+        .split('|')
+        .skip(1)
+        .map((String f) => f.trim().replaceAll(RegExp(r'\(.*\)'), '')),
+];
 
 String _stringify(Object? value) {
   if (value == null) return '';
