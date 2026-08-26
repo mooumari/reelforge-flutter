@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../animation/ticker_gate.dart';
 import '../composition.dart';
 import '../export/encoder.dart';
+import '../media/video_backend.dart';
 import 'player.dart';
 import 'theme.dart';
 
@@ -24,6 +25,7 @@ void previewMain(
   List<Composition> compositions, {
   String? projectPath,
   VideoEncoder Function()? encoderFactory,
+  VideoBackend Function()? videoBackendFactory,
   String Function(Composition composition)? exportPathBuilder,
 }) {
   runApp(
@@ -31,6 +33,7 @@ void previewMain(
       compositions: compositions,
       projectPath: projectPath,
       encoderFactory: encoderFactory,
+      videoBackendFactory: videoBackendFactory,
       exportPathBuilder: exportPathBuilder,
     ),
   );
@@ -42,6 +45,7 @@ class FlutterMotionPreview extends StatefulWidget {
     required this.compositions,
     this.projectPath,
     this.encoderFactory,
+    this.videoBackendFactory,
     this.exportPathBuilder,
   });
 
@@ -52,6 +56,9 @@ class FlutterMotionPreview extends StatefulWidget {
 
   /// Supplies an encoder for in-app export. Null hides the Export button.
   final VideoEncoder Function()? encoderFactory;
+
+  /// Supplies a decoder for video clips. Null falls back to ffmpeg on PATH.
+  final VideoBackend Function()? videoBackendFactory;
 
   /// Where an export is written.
   final String Function(Composition composition)? exportPathBuilder;
@@ -102,6 +109,7 @@ class _FlutterMotionPreviewState extends State<FlutterMotionPreview> {
           child: CompositionPlayer(
             projectPath: widget.projectPath,
             encoderFactory: widget.encoderFactory,
+            videoBackendFactory: widget.videoBackendFactory,
             exportPathBuilder: widget.exportPathBuilder,
             // Rebuild player state from scratch when switching compositions,
             // rather than carrying a playhead across different durations.

@@ -66,7 +66,18 @@ class _Intro extends StatelessWidget {
     final int frame = Video.frame(context);
 
     // Every value below depends on `frame` and nothing else.
+    //
+    // A spring overshoots its target and settles back -- that overshoot is
+    // what makes the motion feel like motion, and it is why `rise` drives the
+    // offset rather than the opacity. `Opacity` asserts 0..1 and a spring will
+    // hand it 1.03.
     final double rise = spring(frame - 6, fps: 30, stiffness: 120, damping: 14);
+    final double fade = interpolate(
+      frame,
+      <num>[6, 22],
+      <num>[0, 1],
+      easing: Curves.easeOut,
+    );
     final double settle = interpolate(
       frame,
       <num>[24, 54],
@@ -78,7 +89,7 @@ class _Intro extends StatelessWidget {
       color: const Color(0xFF101216),
       child: Center(
         child: Opacity(
-          opacity: rise,
+          opacity: fade,
           child: Transform.translate(
             offset: Offset(0, (1 - rise) * 40),
             child: Column(
@@ -114,4 +125,39 @@ class _Intro extends StatelessWidget {
     );
   }
 }
+''';
+
+String previewMainTemplate() => r'''
+import 'package:fluttermotion/fluttermotion.dart';
+
+import 'compositions.dart';
+
+/// Preview app. Run it with `fluttermotion preview`, then scrub.
+///
+/// Hot reload applies to compositions like any other Flutter code: edit a
+/// widget, save, and the frame you are parked on redraws immediately. Because
+/// the preview draws through the same rasteriser the exporter uses, what you
+/// scrub to is what renders -- there is one rasteriser, so there is nothing for
+/// the two paths to disagree about.
+///
+/// This is the same list `render_main.dart` serves. Keeping them in one place
+/// is worth doing once there is more than one composition:
+///
+/// ```dart
+/// // lib/video/compositions.dart
+/// final List<Composition> compositions = <Composition>[intro];
+/// ```
+///
+/// If your app has the `fluttermotion_encoder` plugin, passing it here adds an
+/// Export button that writes the MP4 inside this app, and lets video clips
+/// decode without ffmpeg on the machine:
+///
+/// ```dart
+/// previewMain(
+///   <Composition>[intro],
+///   encoderFactory: NativeVideoEncoder.new,
+///   videoBackendFactory: NativeVideoBackend.new,
+/// );
+/// ```
+void main() => previewMain(<Composition>[intro]);
 ''';

@@ -5,14 +5,16 @@ import 'package:fluttermotion_cli/src/cli_error.dart';
 import 'package:fluttermotion_cli/src/host.dart';
 import 'package:fluttermotion_cli/src/init_command.dart';
 import 'package:fluttermotion_cli/src/inspect_command.dart';
+import 'package:fluttermotion_cli/src/preview_command.dart';
 import 'package:fluttermotion_cli/src/render_command.dart';
 
 const String _usage = '''
 FlutterMotion — render Flutter compositions to video.
 
 Usage:
-  fluttermotion init   [options]
-  fluttermotion render [options]
+  fluttermotion init    [options]
+  fluttermotion preview [options]
+  fluttermotion render  [options]
   fluttermotion inspect [options]
   fluttermotion list [options]
 
@@ -20,6 +22,8 @@ Common options:
   --project <dir>       Flutter project to render from (default: .)
   --entry <path>        Entry point calling renderMain
                         (default: lib/render_main.dart)
+                        For `preview`, the one calling previewMain
+                        (default: lib/video/preview_main.dart)
   --no-build            Reuse the existing release build
   --ffmpeg <path>       ffmpeg binary (default: autodetected)
   --flutter <path>      flutter binary (default: flutter)
@@ -30,6 +34,9 @@ init options:
                         (default: alongside this CLI)
   --fix-entitlements    Turn App Sandbox off in the macOS release
                         entitlements, which a render host needs
+
+preview options:
+  --device <id>         Device to run on (default: this desktop)
 
 inspect options:
   --composition <id>    Which composition (default: all)
@@ -65,6 +72,8 @@ Future<void> main(List<String> arguments) async {
     switch (command) {
       case 'init':
         exit(await initCommand(args));
+      case 'preview':
+        exit(await previewCommand(args));
       case 'render':
         exit(await renderCommand(args));
       case 'inspect':

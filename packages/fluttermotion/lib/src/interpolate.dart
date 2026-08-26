@@ -98,6 +98,12 @@ double _segment(
 ///
 /// Unlike a physics simulation stepped over real time, this is deterministic:
 /// the same frame always yields the same value.
+///
+/// An underdamped spring **overshoots** [to] and settles back, which is the
+/// point of using one. It also means the result is not bounded by `from..to`:
+/// driving an `Opacity` with it asserts, since 1.03 is not a legal opacity.
+/// Use it for offsets and scales, and [interpolate] -- which clamps -- for
+/// anything with a range.
 double spring(
   int frame, {
   int fps = 60,

@@ -40,6 +40,7 @@ class CompositionPlayer extends StatefulWidget {
     required this.composition,
     this.projectPath,
     this.encoderFactory,
+    this.videoBackendFactory,
     this.exportPathBuilder,
     this.stopwatchFactory,
   });
@@ -56,6 +57,14 @@ class CompositionPlayer extends StatefulWidget {
   /// with native code: an app that only previews pays nothing for an encoder
   /// it does not use.
   final VideoEncoder Function()? encoderFactory;
+
+  /// Supplies a decoder for video clips. Defaults to whatever ffmpeg is
+  /// installed, and to nothing at all if none is.
+  ///
+  /// Injected for the same reason as [encoderFactory]: on macOS an app that
+  /// already has the encoder plugin can pass `NativeVideoBackend.new` and
+  /// scrub video with no ffmpeg on the machine.
+  final VideoBackend Function()? videoBackendFactory;
 
   /// Where an export is written. Defaults to the temp directory.
   final String Function(Composition composition)? exportPathBuilder;
@@ -116,6 +125,10 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
 
   int get _lastFrame => widget.composition.durationInFrames - 1;
 
+  /// Whatever can decode video here, or null if nothing can.
+  VideoBackend? _videoBackend() =>
+      widget.videoBackendFactory?.call() ?? FfmpegVideoBackend.findOnPath();
+
   @override
   void initState() {
     super.initState();
@@ -158,7 +171,7 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
     try {
       final PreparedComposition prepared = await DeclarationPass.prepare(
         composition,
-        videoBackend: FfmpegVideoBackend.findOnPath(),
+        videoBackend: _videoBackend(),
         projectPath: widget.projectPath ?? Directory.current.path,
       );
       if (!mounted || !identical(widget.composition, composition)) {
@@ -178,7 +191,8 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
         // so beats scrubbing past a silently empty rectangle.
         _videoError = prepared.manifest.video.isNotEmpty &&
                 prepared.videoFrames == null
-            ? 'ffmpeg not found -- video is not shown'
+            ? 'No video decoder -- install ffmpeg, or pass '
+                'videoBackendFactory to preview video'
             : null;
       });
       _requestFrame(_frame);
@@ -268,7 +282,7 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
         encoder: widget.encoderFactory!(),
         outputPath: path,
         cancellation: cancellation,
-        videoBackend: FfmpegVideoBackend.findOnPath(),
+        videoBackend: _videoBackend(),
         projectPath: widget.projectPath ?? Directory.current.path,
         onProgress: (ExportProgress progress) {
           if (!mounted) return;

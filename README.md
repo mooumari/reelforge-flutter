@@ -43,7 +43,7 @@ void main() => previewMain(<Composition>[helloFlutter, weeklyDeals]);
 ```
 
 ```bash
-cd example && flutter run -d macos
+cd example && flutter run -d macos    # or: fluttermotion preview
 ```
 
 Scrub the timeline, then edit a widget and save -- hot reload applies to
@@ -360,11 +360,11 @@ dart run bin/fluttermotion.dart init --project ../../my_app --fix-entitlements
 cd ../../my_app && flutter pub get
 ```
 
-`init` adds the dependency, writes `lib/render_main.dart` and a starter
-composition in `lib/video/`, and checks the two things that are not obvious
-until they bite: that the project has a macOS target at all, and that App
-Sandbox will stop the render host reaching ffmpeg. It never overwrites, so
-running it twice is safe.
+`init` adds the dependency, writes a starter composition in `lib/video/`, the
+preview entry point beside it and `lib/render_main.dart`, and checks the two
+things that are not obvious until they bite: that the project has a macOS
+target at all, and that App Sandbox will stop the render host reaching ffmpeg.
+It never overwrites, so running it twice is safe.
 
 `--fix-entitlements` is opt-in and says what it did. `flutter create`
 scaffolds a sandboxed macOS target, so every new project needs this -- but it
@@ -374,6 +374,29 @@ ship.
 
 From a bare `flutter create` to an MP4 is about 17 seconds, most of it the
 macOS build.
+
+## Preview from the CLI
+
+```bash
+dart run bin/fluttermotion.dart preview --project ../../my_app
+```
+
+`flutter run` on the preview entry point `init` wrote, on this desktop, with
+the terminal handed straight through -- so `r` still hot reloads. It saves
+remembering `-d macos -t lib/video/preview_main.dart`, which is worth saving
+because this is where the work happens; a render is what you do when it already
+looks right.
+
+An app that has the encoder plugin can hand the preview both halves of the
+in-app pipeline:
+
+```dart
+previewMain(
+  <Composition>[intro],
+  encoderFactory: NativeVideoEncoder.new,      // adds an Export button
+  videoBackendFactory: NativeVideoBackend.new, // scrub video without ffmpeg
+);
+```
 
 ## Render
 
@@ -545,7 +568,7 @@ What is not there yet: Android needs a `MediaCodec` encoder and decoder.
 | Path | What |
 |---|---|
 | `packages/fluttermotion` | The composition framework |
-| `packages/fluttermotion_cli` | `fluttermotion render` |
+| `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` |
 | `packages/fluttermotion_encoder` | AVFoundation encoder + decoder plugin (iOS/macOS) |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
@@ -625,7 +648,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-174 tests across the three packages (117 framework, 36 CLI, 21 encoder).
+180 tests across the three packages (119 framework, 40 CLI, 21 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

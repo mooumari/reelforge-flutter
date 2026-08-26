@@ -49,11 +49,13 @@ Future<int> initCommand(CliArgs args) async {
     did.add('added fluttermotion (path: $relative) to pubspec.yaml');
   }
 
-  // 2. Somewhere for compositions to live, and 3. the entry point that serves
-  // them. Written in that order so the entry point never points at nothing.
+  // 2. Somewhere for compositions to live, then 3. the two entry points that
+  // serve them -- the preview you work in and the host the CLI renders with.
+  // Written in that order so an entry point never points at nothing.
   final String appName = packageNameOf(original) ?? 'your app';
   for (final _Template template in <_Template>[
     _Template('lib/video/compositions.dart', compositionsTemplate(appName)),
+    _Template('lib/video/preview_main.dart', previewMainTemplate()),
     _Template('lib/render_main.dart', renderMainTemplate()),
   ]) {
     final File file = File('${projectDir.path}/${template.path}');
@@ -81,11 +83,16 @@ Future<int> initCommand(CliArgs args) async {
     }
   }
 
+  // Preview first, deliberately: scrubbing is a few seconds and shows you the
+  // composition, where a render is a release build and shows you a file.
+  final String project = args.value('project', '.');
+  final String where = project == '.' ? '' : ' --project $project';
   stdout.writeln(
     '\nNext:\n'
     '  flutter pub get\n'
-    '  fluttermotion render --project ${args.value('project', '.')} '
-    '--composition Intro --out intro.mp4',
+    '  fluttermotion preview$where\n'
+    '\nand when it looks right:\n'
+    '  fluttermotion render$where --composition Intro --out intro.mp4',
   );
   return 0;
 }
