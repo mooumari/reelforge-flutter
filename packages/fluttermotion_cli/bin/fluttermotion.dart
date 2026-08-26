@@ -33,6 +33,7 @@ render options:
   --shards <n|auto>     Renderer processes to run (default: auto)
   --codec <name>        Video codec (default: h264_videotoolbox)
   --bitrate <rate>      Target bitrate (default: 12M)
+  --ffprobe <path>      ffprobe binary (default: alongside ffmpeg)
   --audio-codec <name>  Audio codec (default: aac)
   --audio-bitrate <r>   Audio bitrate (default: 192k)
   --no-audio            Skip mixing, even if clips are declared

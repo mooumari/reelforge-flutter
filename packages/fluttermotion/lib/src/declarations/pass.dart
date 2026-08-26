@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../composition.dart';
 import '../renderer.dart';
+import '../media/video_store.dart';
 import 'assets.dart';
 import 'manifest.dart';
 import 'scope.dart';
@@ -41,13 +42,44 @@ abstract final class DeclarationPass {
     );
   }
 
-  /// Runs the pass and decodes everything it found.
-  static Future<PreparedComposition> prepare(Composition composition) async {
+  /// Runs the pass and gets everything it found ready to paint.
+  ///
+  /// Images are decoded in full; video clips get an open decoder each, since
+  /// buffering a whole clip's pixels would cost gigabytes. Both are ready
+  /// before the first frame is rasterised, which is what lets a frame be
+  /// painted synchronously.
+  ///
+  /// Video needs [ffmpeg], [ffprobe] and [projectPath]; without them a
+  /// composition containing a [VideoClip] still renders, just without its
+  /// video. That is the preview's position before it has a decoder, not a
+  /// silent failure in the exporter -- `renderMain` always supplies them.
+  static Future<PreparedComposition> prepare(
+    Composition composition, {
+    String? ffmpeg,
+    String? ffprobe,
+    String? projectPath,
+  }) async {
     final RenderManifest manifest = run(composition);
+
+    VideoFrames? video;
+    if (manifest.video.isNotEmpty &&
+        ffmpeg != null &&
+        ffprobe != null &&
+        projectPath != null) {
+      video = await VideoPreloader.open(
+        manifest.video,
+        fps: composition.fps,
+        ffmpeg: ffmpeg,
+        ffprobe: ffprobe,
+        projectPath: projectPath,
+      );
+    }
+
     return PreparedComposition(
       composition: composition,
       manifest: manifest,
       images: await ImagePreloader.resolveAll(manifest.images),
+      videoFrames: video,
     );
   }
 }
@@ -59,17 +91,27 @@ class PreparedComposition {
     required this.composition,
     required this.manifest,
     required this.images,
+    this.videoFrames,
   });
 
   final Composition composition;
   final RenderManifest manifest;
   final Map<ImageProvider<Object>, ui.Image> images;
 
+  /// Open decoders, or null if the composition has no video (or no ffmpeg to
+  /// decode it with).
+  final VideoFrames? videoFrames;
+
   CompositionRenderer createRenderer({double scale = 1.0}) {
     return CompositionRenderer(
       composition,
       scale: scale,
       images: images,
+      videoFrames: videoFrames,
     );
+  }
+
+  Future<void> dispose() async {
+    await videoFrames?.dispose();
   }
 }

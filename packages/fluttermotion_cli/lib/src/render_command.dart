@@ -106,6 +106,8 @@ Future<int> renderCommand(CliArgs args) async {
           fps: fps,
           frames: frames,
           ffmpeg: ffmpeg,
+          ffprobe: args.optional('ffprobe'),
+          projectPath: projectDir.absolute.path,
           codec: args.value('codec', 'h264_videotoolbox'),
           bitrate: args.value('bitrate', '12M'),
           onFrame: reportProgress,
@@ -113,6 +115,7 @@ Future<int> renderCommand(CliArgs args) async {
         ),
     ]);
     stdout.writeln();
+    _reportVideoWarnings(manifest);
 
     final List<AudioClip> clips = args.flag('no-audio')
         ? const <AudioClip>[]
@@ -205,6 +208,8 @@ Future<void> _runShard({
   required int fps,
   required int frames,
   required String ffmpeg,
+  required String? ffprobe,
+  required String projectPath,
   required String codec,
   required String bitrate,
   required void Function() onFrame,
@@ -220,6 +225,10 @@ Future<void> _runShard({
     '--fps', '$fps',
     '--duration-in-frames', '$frames',
     '--ffmpeg', ffmpeg,
+    if (ffprobe != null) ...<String>['--ffprobe', ffprobe],
+    // The host resolves audio and video paths against this; its own working
+    // directory is the CLI's, not the project's.
+    '--project', projectPath,
     '--codec', codec,
     '--bitrate', bitrate,
   ]);
@@ -290,6 +299,16 @@ Future<void> _concat(
   ]);
   if (result.exitCode != 0) {
     throw StateError('Concat failed:\n${result.stderr}');
+  }
+}
+
+/// A clip whose source runs out mid-window is a real mistake that would
+/// otherwise show up as an unexplained freeze in the export.
+void _reportVideoWarnings(Map<String, Object?>? manifest) {
+  final List<Object?> warnings =
+      (manifest?['videoWarnings'] as List<Object?>?) ?? const <Object?>[];
+  for (final Object? warning in warnings) {
+    stdout.writeln('Warning: $warning');
   }
 }
 

@@ -11,6 +11,8 @@ export 'src/declarations/pass.dart';
 export 'src/declarations/scope.dart' show DeclarationCollector, DeclarationScope;
 export 'src/frame.dart';
 export 'src/interpolate.dart';
+export 'src/media/video_store.dart'
+    show DecodedVideoFrames, VideoFrames, VideoPreloader;
 export 'src/preview/preview_app.dart' show FlutterMotionPreview, previewMain;
 export 'src/preview/player.dart' show CompositionPlayer;
 export 'src/preview/scrubber.dart' show Scrubber;
@@ -19,3 +21,4 @@ export 'src/renderer.dart';
 export 'src/sequence.dart';
 export 'src/widgets/audio.dart';
 export 'src/widgets/motion_image.dart';
+export 'src/widgets/video_clip.dart';

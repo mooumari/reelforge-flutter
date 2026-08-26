@@ -6,4 +6,6 @@ import 'compositions.dart';
 void main(List<String> args) => renderMain(args, <Composition>[
       helloFlutter,
       weeklyDeals,
+      videoShowcase,
+      videoProbe,
     ]);

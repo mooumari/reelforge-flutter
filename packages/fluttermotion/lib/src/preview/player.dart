@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -9,6 +10,8 @@ import '../composition.dart';
 import '../declarations/assets.dart';
 import '../declarations/pass.dart';
 import '../frame.dart';
+import '../media/ffmpeg_paths.dart';
+import '../media/video_store.dart';
 import 'controls.dart';
 import 'scrubber.dart';
 import 'theme.dart';
@@ -22,9 +25,17 @@ import 'theme.dart';
 /// Wall-clock time is used in exactly one place: choosing which frame the
 /// playhead is on. The composition itself never sees it.
 class CompositionPlayer extends StatefulWidget {
-  const CompositionPlayer({super.key, required this.composition});
+  const CompositionPlayer({
+    super.key,
+    required this.composition,
+    this.projectPath,
+  });
 
   final Composition composition;
+
+  /// Root that a clip's `src` is resolved against. Defaults to the process's
+  /// working directory, which is the project root under `flutter run`.
+  final String? projectPath;
 
   @override
   State<CompositionPlayer> createState() => _CompositionPlayerState();
@@ -43,6 +54,14 @@ class _CompositionPlayerState extends State<CompositionPlayer>
   bool _wasPlayingBeforeScrub = false;
 
   Map<ImageProvider<Object>, ui.Image>? _images;
+  VideoFrames? _video;
+
+  /// Video decodes asynchronously while the playhead moves on. Rather than
+  /// queueing every frame the scrubber passes over -- a decoder is one pipe and
+  /// cannot serve two reads at once -- only the most recent request is kept.
+  bool _decoding = false;
+  int? _queuedFrame;
+  String? _videoError;
 
   int get _lastFrame => widget.composition.durationInFrames - 1;
 
@@ -61,7 +80,11 @@ class _CompositionPlayerState extends State<CompositionPlayer>
       _seek(_lastFrame);
     }
     if (!identical(widget.composition, oldWidget.composition)) {
-      setState(() => _images = null);
+      _disposeVideo();
+      setState(() {
+        _images = null;
+        _videoError = null;
+      });
       _prepare();
     }
   }
@@ -70,20 +93,74 @@ class _CompositionPlayerState extends State<CompositionPlayer>
   /// the preview cannot show something the render would not.
   Future<void> _prepare() async {
     final Composition composition = widget.composition;
+    final String? ffmpeg = FfmpegPaths.find('ffmpeg');
+    final String? ffprobe = FfmpegPaths.find('ffprobe');
+
     try {
-      final PreparedComposition prepared =
-          await DeclarationPass.prepare(composition);
-      if (!mounted || !identical(widget.composition, composition)) return;
-      setState(() => _images = prepared.images);
+      final PreparedComposition prepared = await DeclarationPass.prepare(
+        composition,
+        ffmpeg: ffmpeg,
+        ffprobe: ffprobe,
+        projectPath: widget.projectPath ?? Directory.current.path,
+      );
+      if (!mounted || !identical(widget.composition, composition)) {
+        await prepared.dispose();
+        return;
+      }
+      setState(() {
+        _images = prepared.images;
+        _video = prepared.videoFrames;
+        // A composition with video and no ffmpeg previews without it. Saying
+        // so beats scrubbing past a silently empty rectangle.
+        _videoError = prepared.manifest.video.isNotEmpty &&
+                prepared.videoFrames == null
+            ? 'ffmpeg not found -- video is not shown'
+            : null;
+      });
+      _requestVideo(_frame);
     } catch (error) {
       if (!mounted) return;
-      setState(() => _images = const <ImageProvider<Object>, ui.Image>{});
+      setState(() {
+        _images = const <ImageProvider<Object>, ui.Image>{};
+        _videoError = '$error'.split('\n').first;
+      });
       debugPrint('FlutterMotion: preparing assets failed: $error');
     }
   }
 
+  /// Decodes [frame]'s video, coalescing anything that arrives mid-decode.
+  void _requestVideo(int frame) {
+    final VideoFrames? video = _video;
+    if (video == null || video.isEmpty) return;
+    if (_decoding) {
+      _queuedFrame = frame;
+      return;
+    }
+    _decoding = true;
+    video.advanceTo(frame).then((_) {
+      _decoding = false;
+      if (!mounted) return;
+      setState(() {});
+      final int? queued = _queuedFrame;
+      _queuedFrame = null;
+      if (queued != null && queued != frame) _requestVideo(queued);
+    }).catchError((Object error) {
+      _decoding = false;
+      if (!mounted) return;
+      setState(() => _videoError = '$error'.split('\n').first);
+    });
+  }
+
+  void _disposeVideo() {
+    final VideoFrames? video = _video;
+    _video = null;
+    _queuedFrame = null;
+    video?.dispose();
+  }
+
   @override
   void dispose() {
+    _disposeVideo();
     _ticker.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -110,7 +187,10 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     }
     _playhead = next;
     final int rounded = next.floor().clamp(0, _lastFrame);
-    if (rounded != _frame) setState(() => _frame = rounded);
+    if (rounded != _frame) {
+      setState(() => _frame = rounded);
+      _requestVideo(rounded);
+    }
   }
 
   void _play() {
@@ -137,7 +217,13 @@ class _CompositionPlayerState extends State<CompositionPlayer>
   void _seek(int frame) {
     final int clamped = frame.clamp(0, _lastFrame);
     _playhead = clamped.toDouble();
-    if (clamped != _frame) setState(() => _frame = clamped);
+    if (clamped != _frame) {
+      setState(() => _frame = clamped);
+      // Scrubbing backwards restarts the decoder, which is the one expensive
+      // path -- coalescing in _requestVideo keeps a fast drag to one restart
+      // per settled position rather than one per frame crossed.
+      _requestVideo(clamped);
+    }
   }
 
   void _step(int delta) {
@@ -187,6 +273,8 @@ class _CompositionPlayerState extends State<CompositionPlayer>
                 composition: c,
                 frame: _frame,
                 images: _images,
+                video: _video,
+                videoError: _videoError,
               ),
             ),
             _transport(c),
@@ -299,6 +387,8 @@ class _Canvas extends StatelessWidget {
     required this.composition,
     required this.frame,
     required this.images,
+    required this.video,
+    required this.videoError,
   });
 
   final Composition composition;
@@ -308,6 +398,25 @@ class _Canvas extends StatelessWidget {
   /// an empty map means "preloaded, and this image genuinely is missing",
   /// which declaring widgets are entitled to treat as an error.
   final Map<ImageProvider<Object>, ui.Image>? images;
+
+  /// Open decoders, or null when the composition has no video.
+  final VideoFrames? video;
+
+  /// Set when video could not be prepared, so the canvas can say so rather
+  /// than showing an unexplained gap.
+  final String? videoError;
+
+  /// The composition, wrapped in whatever has been prepared for it.
+  Widget _content() {
+    Widget child = Builder(builder: composition.builder);
+    if (video != null) {
+      child = DecodedVideoFrames(frames: video, child: child);
+    }
+    if (images != null) {
+      child = ResolvedImages(images: images!, child: child);
+    }
+    return child;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -355,13 +464,7 @@ class _Canvas extends StatelessWidget {
                               durationInFrames: composition.durationInFrames,
                               width: composition.width,
                               height: composition.height,
-                              child: images == null
-                                  ? Builder(builder: composition.builder)
-                                  : ResolvedImages(
-                                      images: images!,
-                                      child: Builder(
-                                          builder: composition.builder),
-                                    ),
+                              child: _content(),
                             ),
                           ),
                         ),
@@ -377,6 +480,10 @@ class _Canvas extends StatelessWidget {
                   children: <Widget>[
                     if (images == null) ...<Widget>[
                       const InfoChip(label: 'preparing assets', dim: true),
+                      const SizedBox(width: 6),
+                    ],
+                    if (videoError != null) ...<Widget>[
+                      InfoChip(label: videoError!, dim: true),
                       const SizedBox(width: 6),
                     ],
                     InfoChip(label: '${(scale * 100).round()}%', dim: true),

@@ -76,6 +76,17 @@ class _HostSurface extends StatelessWidget {
       const ColoredBox(color: Color(0xFF000000));
 }
 
+/// ffprobe lives next to ffmpeg in every distribution, so deriving it beats
+/// making every caller pass both.
+String _ffprobeFor(_Args args) {
+  final String? explicit = args.optional('ffprobe');
+  if (explicit != null) return explicit;
+  final String ffmpeg = args.optional('ffmpeg') ?? 'ffmpeg';
+  final int slash = ffmpeg.lastIndexOf('/');
+  if (slash == -1) return 'ffprobe';
+  return '${ffmpeg.substring(0, slash)}/ffprobe';
+}
+
 Future<void> _emitManifest(_Args args, List<Composition> compositions) async {
   final Composition composition = _select(args, compositions);
   final RenderManifest manifest = DeclarationPass.run(composition);
@@ -132,22 +143,31 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
   ffmpeg.stderr.transform(utf8.decoder).listen(ffmpegErrors.write);
   ffmpeg.stdout.drain<void>();
 
-  // Sweep the timeline and decode every declared asset before rasterising, so
-  // no frame can ever wait on I/O mid-render.
-  final PreparedComposition prepared =
-      await DeclarationPass.prepare(composition);
+  // Sweep the timeline and get every declared asset ready before rasterising,
+  // so no frame can ever wait on I/O mid-render.
+  final PreparedComposition prepared = await DeclarationPass.prepare(
+    composition,
+    ffmpeg: ffmpegPath,
+    ffprobe: _ffprobeFor(args),
+    projectPath: Directory(args.optional('project') ?? '.').absolute.path,
+  );
   final CompositionRenderer renderer = prepared.createRenderer();
 
   stdout.writeln(jsonEncode(<String, Object?>{
     'event': 'manifest',
     'composition': composition.id,
     ...prepared.manifest.toJson(),
+    'videoWarnings': prepared.videoFrames?.warnings ?? const <String>[],
   }));
 
   final Stopwatch stopwatch = Stopwatch()..start();
 
   try {
     for (int frame = start; frame < end; frame++) {
+      // Decode this frame's video before building, so the tree can paint it
+      // synchronously and the render stays a pure function of frame number.
+      await prepared.videoFrames?.advanceTo(frame);
+
       final ByteData rgba = await renderer.renderFrameRgba(frame);
       ffmpeg.stdin.add(rgba.buffer.asUint8List(
         rgba.offsetInBytes,
@@ -163,6 +183,7 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
     }
   } finally {
     renderer.dispose();
+    await prepared.dispose();
   }
 
   await ffmpeg.stdin.close();

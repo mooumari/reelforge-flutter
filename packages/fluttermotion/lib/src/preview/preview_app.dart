@@ -14,14 +14,28 @@ import 'theme.dart';
 /// Then `flutter run -d macos` and scrub. Hot reload applies to compositions
 /// like any other Flutter code -- edit a widget, save, and the frame you are
 /// parked on redraws immediately.
-void previewMain(List<Composition> compositions) {
-  runApp(FlutterMotionPreview(compositions: compositions));
+///
+/// [projectPath] is the root a video clip's `src` is resolved against. It
+/// defaults to the working directory, which is the project root under
+/// `flutter run`.
+void previewMain(List<Composition> compositions, {String? projectPath}) {
+  runApp(FlutterMotionPreview(
+    compositions: compositions,
+    projectPath: projectPath,
+  ));
 }
 
 class FlutterMotionPreview extends StatefulWidget {
-  const FlutterMotionPreview({super.key, required this.compositions});
+  const FlutterMotionPreview({
+    super.key,
+    required this.compositions,
+    this.projectPath,
+  });
 
   final List<Composition> compositions;
+
+  /// Root that a clip's `src` is resolved against.
+  final String? projectPath;
 
   @override
   State<FlutterMotionPreview> createState() => _FlutterMotionPreviewState();
@@ -64,6 +78,7 @@ class _FlutterMotionPreviewState extends State<FlutterMotionPreview> {
           ),
         Expanded(
           child: CompositionPlayer(
+            projectPath: widget.projectPath,
             // Rebuild player state from scratch when switching compositions,
             // rather than carrying a playhead across different durations.
             key: ValueKey<String>(composition.id),

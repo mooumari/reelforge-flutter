@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'composition.dart';
 import 'declarations/assets.dart';
 import 'declarations/scope.dart';
+import 'media/video_store.dart';
 import 'frame.dart';
 
 /// Rasterises a [Composition] frame by frame, off screen.
@@ -20,6 +21,7 @@ class CompositionRenderer {
     this.composition, {
     this.scale = 1.0,
     this.collector,
+    this.videoFrames,
     Map<ImageProvider<Object>, ui.Image>? images,
   }) : images = images ?? const <ImageProvider<Object>, ui.Image>{} {
     final Size size = composition.size;
@@ -52,15 +54,19 @@ class CompositionRenderer {
               collector: collector,
               child: ResolvedImages(
                 images: this.images,
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _frame,
-                  builder: (BuildContext context, int frame, _) => VideoFrame(
-                    frame: frame,
-                    fps: composition.fps,
-                    durationInFrames: composition.durationInFrames,
-                    width: composition.width,
-                    height: composition.height,
-                    child: Builder(builder: composition.builder),
+                child: DecodedVideoFrames(
+                  frames: videoFrames,
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _frame,
+                    builder: (BuildContext context, int frame, _) =>
+                        VideoFrame(
+                      frame: frame,
+                      fps: composition.fps,
+                      durationInFrames: composition.durationInFrames,
+                      width: composition.width,
+                      height: composition.height,
+                      child: Builder(builder: composition.builder),
+                    ),
                   ),
                 ),
               ),
@@ -82,6 +88,10 @@ class CompositionRenderer {
 
   /// Images already decoded by the preloader.
   final Map<ImageProvider<Object>, ui.Image> images;
+
+  /// Video frames for the frame currently being rendered. The caller must
+  /// have awaited [VideoFrames.advanceTo] for that frame before pumping.
+  final VideoFrames? videoFrames;
 
   final ValueNotifier<int> _frame = ValueNotifier<int>(-1);
 

@@ -29,8 +29,8 @@ frame number: `data -> widgets -> frames -> MP4`.
 ## Status
 
 Pre-alpha, but it works end to end: preview a composition with hot reload,
-then render it to MP4 with assets decoded first and the declared audio mixed
-in. Video clips are not built yet.
+then render it to MP4 with assets decoded first, video clips composited into
+the widget tree, and the declared audio mixed in.
 
 ## Preview
 
@@ -96,13 +96,18 @@ dart run bin/fluttermotion.dart inspect --project ../../example
 
 ```text
 WeeklyDeals  1080x1920  60fps  300 frames  (5.00s)
-  swept 300 frames in 34ms
+  swept 300 frames in 32ms
   audio:
     assets/music.mp3  frames 0-299 (300)  vol 0.4
     assets/chime.mp3  frames 40-64 (25)  vol 1.0
     assets/chime.mp3  frames 180-204 (25)  vol 1.0
   images:
     assets/badge.png
+
+VideoShowcase  1280x720  60fps  120 frames  (2.00s)
+  swept 120 frames in 2ms
+  video:
+    assets/clip.mp4  frames 0-119 (120)  decode 960x540
 ```
 
 **Every frame is visited, not sampled.** That is affordable only because of
@@ -141,6 +146,87 @@ Three details are deliberate:
 Pass `--no-audio` to skip mixing, `--audio-codec` / `--audio-bitrate` to change
 the encode (default `aac` at `192k`).
 
+## Video clips
+
+```dart
+Sequence(
+  from: 60,
+  durationInFrames: 120,
+  child: VideoClip(src: 'assets/clip.mp4', decodeWidth: 960),
+)
+```
+
+A `VideoClip` is a real part of the widget tree. It can be rounded, tilted,
+masked, blurred, or drawn under Flutter text -- the example does all of those
+at once.
+
+That is the whole reason this exists rather than wrapping `video_player`. A
+platform view renders in its own layer, outside Flutter's scene graph, so
+`RenderRepaintBoundary.toImage()` cannot see it: a `video_player` inside a
+composition exports as a **black hole** in every frame. `VideoClip` decodes
+with ffmpeg and paints the pixels through `RawImage`, so what you see is what
+gets encoded. It also makes playback a function of frame number rather than of
+the wall clock, which is what keeps the render deterministic.
+
+### Frame accuracy across shards
+
+Frames are rendered by several processes over different ranges, so a clip must
+land on the *same* source frame whether decoding entered at the clip's start
+or half way through it. Getting this wrong is nearly invisible -- video that is
+one frame out still looks like video.
+
+Naive `-ss` cannot promise it: input seeking rebases timestamps to zero, so the
+`fps` filter's sampling grid ends up anchored wherever the seek landed, and a
+seek that falls between two source frames shifts everything after it. Anchoring
+the grid at absolute zero instead is worse -- the filter *pads* from its anchor,
+so entering a clip an hour in emits an hour of duplicated first frames. That
+bug is what the probe below caught: entry frames were exact and every frame
+after them was frozen.
+
+What works is `-copyts` (keep the source's absolute timestamps) with the grid
+anchored at the seek point, which is itself an exact multiple of `1 / fps` and
+therefore a suffix of the same absolute grid a full decode would use.
+
+`tool/verify_video_mapping.sh` proves it rather than asserting it.
+`example/assets/probe.mp4` encodes each frame's own index as its grey value
+(frame *i* is `rgb(2i, 2i, 2i)`), so reading one pixel out of an exported frame
+says exactly which source frame landed there:
+
+```text
+   1 shard(s): 200 frames, OK
+   2 shard(s): 200 frames, OK
+   4 shard(s): 200 frames, OK
+   8 shard(s): 200 frames, OK
+PASS
+```
+
+All 200 frames, every shard count, identical to the single-process render.
+
+### Decoding, not buffering
+
+Images are decoded once up front; video cannot be, because a minute of raw
+1080p frames is about 15 GB. Instead each clip owns one ffmpeg process and the
+renderer pulls one frame per composition frame, awaiting the decode *before* the
+frame is built so the tree still paints synchronously. Reads are backpressured,
+so ffmpeg never runs more than a few frames ahead.
+
+Scrubbing backwards restarts the decoder; that is the only expensive path, and
+the preview coalesces scrub requests so a fast drag costs one restart rather
+than one per frame crossed.
+
+`decodeWidth` / `decodeHeight` are the biggest lever on cost. A 4K source drawn
+into a 1080p composition decodes four times the pixels it will ever paint, on
+every frame, and nothing downstream recovers that.
+
+A clip whose source runs out mid-window holds its last frame and says so by
+name, rather than freezing silently:
+
+```text
+Warning: assets/clip.mp4 is mounted for frames 0-179 and needs 180 source
+frames at 60fps, but the file only has 120 (2.00s). The last frame will be
+held for the remaining 60.
+```
+
 ## Render
 
 ```bash
@@ -165,6 +251,7 @@ contiguous frame ranges in parallel and stream-copies the segments together.
 | `packages/fluttermotion_cli` | `fluttermotion render` |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
+| `tool` | Frame-accuracy verification |
 
 ## Validated so far
 
@@ -177,6 +264,8 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   `toImage()` is ~17 ms; GPU readback is 0.2 ms.
 - **~0.75x realtime end-to-end** to MP4, single process. A 60 s vertical video
   exports in roughly 80 s.
+- **Video clips land on the exact source frame**, identically across 1, 2, 4
+  and 8 shards, verified per frame by pixel value rather than by eye.
 - **Overlapping frames does not reliably help.** Across runs, serial ranged
   53-61 fps and pipelined 53-63 fps -- the difference is inside run-to-run
   variance, and depth 4 and 8 were measurably *worse*. The raster path is a
@@ -231,7 +320,7 @@ reached by scrubbing backward from later in the timeline.
 3. ~~Declaration pass — asset preloading and audio scheduling~~ done
    (video decode windows still to come)
 4. ~~Audio mixing~~ done
-5. Video clips
+5. ~~Video clips~~ done
 6. On-device export (the moat)
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.

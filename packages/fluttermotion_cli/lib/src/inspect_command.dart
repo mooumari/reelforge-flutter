@@ -67,6 +67,8 @@ Future<Map<String, Object?>?> readManifest(File binary, String id) async {
 void printManifest(Map<String, Object?> manifest, {String indent = ''}) {
   final List<Object?> audio =
       (manifest['audio'] as List<Object?>?) ?? const <Object?>[];
+  final List<Object?> video =
+      (manifest['video'] as List<Object?>?) ?? const <Object?>[];
   final List<Object?> images =
       (manifest['images'] as List<Object?>?) ?? const <Object?>[];
 
@@ -75,7 +77,7 @@ void printManifest(Map<String, Object?> manifest, {String indent = ''}) {
     'in ${manifest['elapsedMs']}ms',
   );
 
-  if (audio.isEmpty && images.isEmpty) {
+  if (audio.isEmpty && video.isEmpty && images.isEmpty) {
     stdout.writeln('${indent}nothing declared');
     return;
   }
@@ -93,6 +95,27 @@ void printManifest(Map<String, Object?> manifest, {String indent = ''}) {
             ? '  trim ${a['trimStartInFrames']}'
             : ''}'
         '${a['loop'] == true ? '  loop' : ''}',
+      );
+    }
+  }
+
+  if (video.isNotEmpty) {
+    stdout.writeln('${indent}video:');
+    for (final Object? entry in video) {
+      final Map<String, Object?> v = entry! as Map<String, Object?>;
+      final int start = v['startFrame']! as int;
+      final int end = v['endFrame']! as int;
+      final int? decodeWidth = v['decodeWidth'] as int?;
+      final int? decodeHeight = v['decodeHeight'] as int?;
+      stdout.writeln(
+        '$indent  ${v['src']}  frames $start-$end '
+        '(${end - start + 1})'
+        '${(v['trimStartInFrames'] as int) > 0
+            ? '  trim ${v['trimStartInFrames']}'
+            : ''}'
+        '${decodeWidth != null || decodeHeight != null
+            ? '  decode ${decodeWidth ?? 'auto'}x${decodeHeight ?? 'auto'}'
+            : ''}',
       );
     }
   }

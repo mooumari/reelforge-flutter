@@ -26,6 +26,129 @@ final Composition weeklyDeals = Composition(
   builder: (BuildContext context) => const _WeeklyDeals(),
 );
 
+/// A video clip composited like any other widget: rounded, shadowed, tilted,
+/// and with Flutter drawing on top of it. None of that is possible with a
+/// platform view, which renders in its own layer and exports as a black hole.
+final Composition videoShowcase = Composition(
+  id: 'VideoShowcase',
+  width: 1280,
+  height: 720,
+  fps: 60,
+  durationInFrames: 120,
+  builder: (BuildContext context) => const _VideoShowcase(),
+);
+
+/// Exists to verify frame accuracy, not to look good.
+///
+/// `assets/probe.mp4` encodes each frame's own index as its grey value
+/// (frame i is rgb(2i, 2i, 2i)), so reading one pixel out of an exported frame
+/// says exactly which source frame landed there. That is how the shard
+/// boundary test proves the mapping is independent of where decoding started.
+final Composition videoProbe = Composition(
+  id: 'VideoProbe',
+  width: 320,
+  height: 240,
+  fps: 60,
+  durationInFrames: 200,
+  builder: (BuildContext context) => const _VideoProbe(),
+);
+
+class _VideoProbe extends StatelessWidget {
+  const _VideoProbe();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+        color: Color(0xFF000000),
+        child: Sequence(
+          from: 40,
+          durationInFrames: 120,
+          child: VideoClip(src: 'assets/probe.mp4', fit: BoxFit.fill),
+        ),
+      );
+}
+
+class _VideoShowcase extends StatelessWidget {
+  const _VideoShowcase();
+
+  @override
+  Widget build(BuildContext context) {
+    final int frame = Video.frame(context);
+    final double enter = spring(frame, stiffness: 90, damping: 16);
+
+    return ColoredBox(
+      color: const Color(0xFF07070C),
+      child: Center(
+        child: Transform.scale(
+          scale: 0.6 + 0.4 * enter,
+          child: Transform.rotate(
+            angle: interpolate(frame, <num>[0, 120], <num>[-0.06, 0.06],
+                easing: Curves.easeInOut),
+            child: Container(
+              width: 900,
+              height: 506,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.6),
+                    blurRadius: 60,
+                    offset: const Offset(0, 30),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    // Decoding at 640 wide rather than the source's native size
+                    // is the single biggest lever on video render cost.
+                    const VideoClip(
+                      src: 'assets/clip.mp4',
+                      decodeWidth: 960,
+                      decodeHeight: 540,
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: <Color>[
+                              const Color(0x00000000),
+                              const Color(0xFF000000).withValues(alpha: 0.85),
+                            ],
+                          ),
+                        ),
+                        child: Opacity(
+                          opacity: interpolate(frame, <num>[20, 45], <num>[0, 1])
+                              .toDouble(),
+                          child: const Text(
+                            'Video, inside the widget tree',
+                            style: TextStyle(
+                              color: Color(0xFFFFFFFF),
+                              fontSize: 34,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HelloFlutter extends StatelessWidget {
   const _HelloFlutter();
 

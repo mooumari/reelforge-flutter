@@ -62,6 +62,70 @@ class AudioTimelineEntry {
       '${declaration.src} @ $startFrame-$endFrame ($durationInFrames frames)';
 }
 
+/// A video clip a composition asked for.
+@immutable
+class VideoDeclaration {
+  const VideoDeclaration({
+    required this.src,
+    this.trimStartInFrames = 0,
+    this.decodeWidth,
+    this.decodeHeight,
+  });
+
+  final String src;
+
+  /// How far into the source file the clip begins.
+  final int trimStartInFrames;
+
+  /// Decode size. Null decodes at the source's native resolution.
+  ///
+  /// Worth setting when a 4K source is being drawn into a 1080p composition:
+  /// every frame is decoded, uploaded, and scaled, so decoding at the size you
+  /// actually paint at is the single biggest lever on video render cost.
+  final int? decodeWidth;
+  final int? decodeHeight;
+
+  /// Identity for aggregation, and the key the decoder set is keyed by. Two
+  /// clips differing only in decode size are two decoders, because they cannot
+  /// share a pipe.
+  String get key =>
+      '$src|$trimStartInFrames|${decodeWidth ?? '-'}x${decodeHeight ?? '-'}';
+
+  @override
+  bool operator ==(Object other) =>
+      other is VideoDeclaration && other.key == key;
+
+  @override
+  int get hashCode => key.hashCode;
+
+  @override
+  String toString() => 'Video($src)';
+}
+
+/// A video clip placed on the composition's timeline.
+@immutable
+class VideoTimelineEntry {
+  const VideoTimelineEntry({
+    required this.declaration,
+    required this.startFrame,
+    required this.endFrame,
+  });
+
+  final VideoDeclaration declaration;
+
+  /// First frame the clip is visible on.
+  final int startFrame;
+
+  /// Last frame the clip is visible on, inclusive.
+  final int endFrame;
+
+  int get durationInFrames => endFrame - startFrame + 1;
+
+  @override
+  String toString() =>
+      '${declaration.src} @ $startFrame-$endFrame ($durationInFrames frames)';
+}
+
 /// An image the composition needs resolved before rendering starts.
 @immutable
 class ImageDeclaration {
@@ -101,12 +165,14 @@ class ImageDeclaration {
 class RenderManifest {
   const RenderManifest({
     required this.audio,
+    required this.video,
     required this.images,
     required this.framesVisited,
     required this.elapsed,
   });
 
   final List<AudioTimelineEntry> audio;
+  final List<VideoTimelineEntry> video;
   final List<ImageDeclaration> images;
 
   /// How many frames the pass built. Every frame, not a sample.
@@ -114,7 +180,7 @@ class RenderManifest {
 
   final Duration elapsed;
 
-  bool get isEmpty => audio.isEmpty && images.isEmpty;
+  bool get isEmpty => audio.isEmpty && video.isEmpty && images.isEmpty;
 
   Map<String, Object?> toJson() => <String, Object?>{
         'framesVisited': framesVisited,
@@ -130,6 +196,17 @@ class RenderManifest {
               'loop': entry.declaration.loop,
             },
         ],
+        'video': <Object?>[
+          for (final VideoTimelineEntry entry in video)
+            <String, Object?>{
+              'src': entry.declaration.src,
+              'startFrame': entry.startFrame,
+              'endFrame': entry.endFrame,
+              'trimStartInFrames': entry.declaration.trimStartInFrames,
+              'decodeWidth': entry.declaration.decodeWidth,
+              'decodeHeight': entry.declaration.decodeHeight,
+            },
+        ],
         'images': <Object?>[
           for (final ImageDeclaration image in images) image.debugLabel,
         ],
@@ -138,7 +215,8 @@ class RenderManifest {
   @override
   String toString() {
     if (isEmpty) return 'RenderManifest(nothing declared)';
-    return 'RenderManifest(${audio.length} audio, ${images.length} images, '
+    return 'RenderManifest(${audio.length} audio, ${video.length} video, '
+        '${images.length} images, '
         '$framesVisited frames in ${elapsed.inMilliseconds}ms)';
   }
 }

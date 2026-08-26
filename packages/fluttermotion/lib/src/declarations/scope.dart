@@ -11,7 +11,10 @@ import 'manifest.dart';
 class DeclarationCollector {
   int _frame = 0;
 
-  final Map<String, _Run> _audio = <String, _Run>{};
+  final Map<String, _Run<AudioDeclaration>> _audio =
+      <String, _Run<AudioDeclaration>>{};
+  final Map<String, _Run<VideoDeclaration>> _video =
+      <String, _Run<VideoDeclaration>>{};
   final Map<ImageProvider<Object>, ImageDeclaration> _images =
       <ImageProvider<Object>, ImageDeclaration>{};
 
@@ -21,15 +24,22 @@ class DeclarationCollector {
   set frame(int value) => _frame = value;
 
   void declareAudio(AudioDeclaration declaration) {
-    final _Run? existing = _audio[declaration.key];
-    if (existing == null) {
-      _audio[declaration.key] = _Run(declaration, _frame, _frame);
-      return;
-    }
     // A gap means the clip was unmounted and remounted -- two placements of
-    // the same sound. Keep the earliest start and latest end for now and let
-    // the split happen below.
-    existing.observe(_frame);
+    // the same sound, which _Run splits apart.
+    _observe(_audio, declaration.key, declaration);
+  }
+
+  void declareVideo(VideoDeclaration declaration) {
+    _observe(_video, declaration.key, declaration);
+  }
+
+  void _observe<T>(Map<String, _Run<T>> runs, String key, T declaration) {
+    final _Run<T>? existing = runs[key];
+    if (existing == null) {
+      runs[key] = _Run<T>(declaration, _frame, _frame);
+    } else {
+      existing.observe(_frame);
+    }
   }
 
   void declareImage(ImageDeclaration declaration) {
@@ -41,7 +51,7 @@ class DeclarationCollector {
     required Duration elapsed,
   }) {
     final List<AudioTimelineEntry> audio = <AudioTimelineEntry>[
-      for (final _Run run in _audio.values)
+      for (final _Run<AudioDeclaration> run in _audio.values)
         for (final (int start, int end) in run.ranges)
           AudioTimelineEntry(
             declaration: run.declaration,
@@ -51,8 +61,20 @@ class DeclarationCollector {
     ]..sort((AudioTimelineEntry a, AudioTimelineEntry b) =>
         a.startFrame.compareTo(b.startFrame));
 
+    final List<VideoTimelineEntry> video = <VideoTimelineEntry>[
+      for (final _Run<VideoDeclaration> run in _video.values)
+        for (final (int start, int end) in run.ranges)
+          VideoTimelineEntry(
+            declaration: run.declaration,
+            startFrame: start,
+            endFrame: end,
+          ),
+    ]..sort((VideoTimelineEntry a, VideoTimelineEntry b) =>
+        a.startFrame.compareTo(b.startFrame));
+
     return RenderManifest(
       audio: audio,
+      video: video,
       images: _images.values.toList(),
       framesVisited: framesVisited,
       elapsed: elapsed,
@@ -63,11 +85,11 @@ class DeclarationCollector {
 /// Tracks the frames a declaration was seen on, splitting on gaps so the same
 /// sound used twice in a composition becomes two entries rather than one long
 /// one spanning the silence between them.
-class _Run {
+class _Run<T> {
   _Run(this.declaration, int start, int end)
       : ranges = <(int, int)>[(start, end)];
 
-  final AudioDeclaration declaration;
+  final T declaration;
   final List<(int, int)> ranges;
 
   void observe(int frame) {
