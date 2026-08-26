@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import '../declarations/manifest.dart';
 import 'frame_reader.dart';
+import 'spawn.dart';
 
 /// What ffprobe knows about a video file.
 class VideoSourceInfo {
@@ -29,7 +30,7 @@ class VideoSourceInfo {
 
 /// Reads a video file's dimensions and duration without decoding it.
 Future<VideoSourceInfo> probeVideo(String ffprobe, String path) async {
-  final ProcessResult result = await Process.run(ffprobe, <String>[
+  final ProcessResult result = await Spawn.run(ffprobe, <String>[
     '-v', 'error',
     '-select_streams', 'v:0',
     '-show_entries', 'stream=width,height:format=duration',
@@ -185,7 +186,7 @@ class VideoDecoder {
       'format=rgba',
     ].join(',');
 
-    final Process process = await Process.start(ffmpeg, <String>[
+    final Process process = await Spawn.start(ffmpeg, <String>[
       '-hide_banner',
       '-loglevel', 'error',
       // Seek before -i so ffmpeg skips rather than decodes the skipped part.

@@ -14,6 +14,7 @@ Future<int> inspectCommand(CliArgs args) async {
     projectDir: Directory(args.value('project', '.')),
     entryPoint: args.value('entry', 'lib/render_main.dart'),
     flutter: args.value('flutter', 'flutter'),
+    allowSandbox: args.flag('allow-sandbox'),
   );
   final File binary = args.flag('no-build')
       ? host.locateBinary()

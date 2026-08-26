@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:fluttermotion_cli/src/args.dart';
+import 'package:fluttermotion_cli/src/cli_error.dart';
 import 'package:fluttermotion_cli/src/host.dart';
 import 'package:fluttermotion_cli/src/inspect_command.dart';
 import 'package:fluttermotion_cli/src/render_command.dart';
@@ -20,6 +21,7 @@ Common options:
   --no-build            Reuse the existing release build
   --ffmpeg <path>       ffmpeg binary (default: autodetected)
   --flutter <path>      flutter binary (default: flutter)
+  --allow-sandbox       Build even though the app enables App Sandbox
 
 inspect options:
   --composition <id>    Which composition (default: all)
@@ -64,6 +66,9 @@ Future<void> main(List<String> arguments) async {
         stderr.write(_usage);
         exit(64);
     }
+  } on CliError catch (error) {
+    stderr.writeln(error.message);
+    exit(1);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     exit(64);
@@ -78,6 +83,7 @@ Future<int> _listCommand(CliArgs args) async {
     projectDir: Directory(args.value('project', '.')),
     entryPoint: args.value('entry', 'lib/render_main.dart'),
     flutter: args.value('flutter', 'flutter'),
+    allowSandbox: args.flag('allow-sandbox'),
   );
   final File binary =
       args.flag('no-build') ? host.locateBinary() : await host.build(

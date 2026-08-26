@@ -368,6 +368,45 @@ The CLI builds your project with that entry point, asks the resulting binary
 what compositions it defines, then spawns it once per shard to render
 contiguous frame ranges in parallel and stream-copies the segments together.
 
+### The host inherits your app's entitlements
+
+The render host is a macOS build of *your app*, which is what makes any of this
+work -- your plugins, fonts, assets and pubspec all come along. It is also what
+makes App Sandbox a problem: a sandboxed app may not execute a binary outside
+its own bundle, and reaching ffmpeg is exactly that. A sandboxed project builds
+for as long as your app takes to build and then dies at the encode step with a
+bare `Operation not permitted`.
+
+So the CLI reads `macos/Runner/Release.entitlements` *before* building and says
+so if `com.apple.security.app-sandbox` is `<true/>`. The host is a developer
+tool that is never distributed, so it is safe to build it without the sandbox:
+turn that key off while you render, or give the host its own build
+configuration with its own entitlements. `--allow-sandbox` builds anyway, which
+is correct if the host reaches ffmpeg some other way, such as a copy inside the
+bundle.
+
+This is the one adoption step that is not just "add a dependency", and it will
+apply to most shipping apps.
+
+### What an app has to supply
+
+Anything the app normally sets up before its first frame has to be set up
+before the first *rendered* frame too. If your widgets read providers, and
+those providers read a store that is opened asynchronously at startup, the
+render entry point has to open it as well:
+
+```dart
+Future<void> main(List<String> args) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await preparePromo();               // whatever your app's bootstrap does
+  await renderMain(args, <Composition>[solveReel]);
+}
+```
+
+The ambient state itself goes in `Composition.wrapper`, assembled the way
+`main.dart` assembles it -- a `ProviderScope` with the same overrides, the app's
+`Theme`, and whatever `InheritedWidget`s the app's own widgets expect to find.
+
 ## On-device export
 
 The CLI shells out to ffmpeg, which is fine on a laptop and impossible on a
@@ -444,6 +483,14 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
 - **Widgets that animate on their own `Ticker` are frame-exact**, and identical
   across 1, 2, 4 and 8 shards -- including one mounted mid-timeline by a
   `Sequence`.
+- **Two real third-party apps host a render.** A puzzle game (riverpod,
+  `shared_preferences`, custom painters, custom fonts) rendered a 16 s
+  1080x1920 promo drawn by its own `CustomPainter`, from its own models and
+  theme, in 2.29 s of render time -- 6.98x realtime -- for a path dependency
+  and one entry point. A plugin-heavy editor (flutter_rust_bridge with a Rust
+  cdylib, `audio_session`, `image_picker`, `file_picker`, `path_provider`) also
+  built and ran a headless host; it is where the entitlements rule above came
+  from.
 - **Overlapping frames does not reliably help.** Across runs, serial ranged
   53-61 fps and pipelined 53-63 fps -- the difference is inside run-to-run
   variance, and depth 4 and 8 were measurably *worse*. The raster path is a
@@ -489,7 +536,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-118 tests across the three packages (101 framework, 11 CLI, 6 encoder).
+132 tests across the three packages (105 framework, 21 CLI, 6 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

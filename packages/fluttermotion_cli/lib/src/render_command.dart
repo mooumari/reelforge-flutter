@@ -25,6 +25,7 @@ Future<int> renderCommand(CliArgs args) async {
     projectDir: projectDir,
     entryPoint: args.value('entry', 'lib/render_main.dart'),
     flutter: args.value('flutter', 'flutter'),
+    allowSandbox: args.flag('allow-sandbox'),
   );
 
   final File binary = args.flag('no-build')

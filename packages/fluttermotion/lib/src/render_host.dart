@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'composition.dart';
 import 'declarations/manifest.dart';
 import 'declarations/pass.dart';
+import 'media/spawn.dart';
 import 'renderer.dart';
 
 /// Entry point for a render host binary.
@@ -124,7 +125,7 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
   final String codec = args.optional('codec') ?? 'h264_videotoolbox';
   final String bitrate = args.optional('bitrate') ?? '12M';
 
-  final Process ffmpeg = await Process.start(ffmpegPath, <String>[
+  final Process ffmpeg = await Spawn.start(ffmpegPath, <String>[
     '-y',
     '-hide_banner',
     '-loglevel', 'error',
