@@ -204,6 +204,13 @@ PASS
 
 All 200 frames, every shard count, identical to the single-process render.
 
+The asset is deliberately not encoded losslessly. `-crf 0` makes x264 emit a
+*High 4:4:4 Predictive* stream even from yuv420p input, and iOS's VideoToolbox
+refuses to decode that -- "Cannot Decode", with nothing to say the profile was
+the reason. macOS, ffmpeg and Android all accept it, so a test asset can look
+correct everywhere it is made and fail on a platform under test. The profile
+is pinned to `high` now.
+
 The probe used to carry its index as a grey value instead, and that was a
 mistake worth describing. An exported frame has been through two limited-range
 colour round trips and a quantiser, and the two or three levels that costs is
@@ -559,6 +566,7 @@ Verified against the ffmpeg CLI render of the same composition
 | | frames | time | SSIM vs CLI |
 |---|---|---|---|
 | macOS, in-app | 300 | 8.41 s | 0.99169 mean, 0.98964 min |
+| iOS simulator, in-app (debug) | 300 | 5.45 s | 0.98122 mean, 0.97902 min |
 | Android emulator, in-app | 300 | 21.69 s | 0.98202 mean, 0.98019 min |
 
 And on the whole 60-second reel -- 1800 frames of 1080x1920 with footage,
@@ -566,18 +574,23 @@ charts and a mixed soundtrack -- the Android export runs in **206.6 s** on the
 emulator and scores **0.99416** mean SSIM against the CLI render, minimum
 0.98291.
 
-No frame on either falls below 0.98. Both probes are exact on both, at the
-source's frame rate and at half it.
+Nine iOS frames sit just under 0.98; nothing else does. Both probes are exact
+on all three, at the source's frame rate and at half it, and `AudioProbe`'s
+click lands at 1000.0 ms on every one of them.
 
-Run them with `tool/macos_export.sh` and `tool/android_export.sh`. Both scripts
-exist for reasons worth knowing. Android has no argv -- an activity is started
-rather than a process invoked, `--dart-entrypoint-args` arrives empty and
-`stdout` reaches nobody, so an export there reports neither success nor
-failure and simply leaves no file. And on macOS the CLI's own render step
-builds into the same path as the in-app app bundle, so a CLI render silently
-replaces the in-app binary with the render host; both accept `--composition`
-and both produce an mp4, so the substitution does not fail, it just measures
-ffmpeg twice and calls one of them the in-app path.
+Run them with `tool/macos_export.sh`, `tool/ios_export.sh` and
+`tool/android_export.sh`. The scripts exist for reasons worth knowing. Neither
+phone platform has argv: an app is launched rather than a process invoked, so
+`--dart-entrypoint-args` arrives empty and the working directory is `/`, which
+is not writable. On Android `stdout` reaches nobody either, so an export there
+reported neither success nor failure and simply left no file. Both now read
+their options from `export_args.txt` in a directory the app owns.
+
+And on macOS the CLI's own render step builds into the same path as the
+in-app app bundle, so a CLI render silently replaces the in-app binary with
+the render host. Both accept `--composition` and both produce an mp4, so the
+substitution does not fail -- it just measures ffmpeg twice and calls one of
+them the in-app path.
 
 #### Colour is not a detail
 

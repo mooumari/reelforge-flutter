@@ -2,20 +2,27 @@ PODS:
   - Flutter (1.0.0)
   - fluttermotion_encoder (0.0.1):
     - Flutter
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - fluttermotion_encoder (from `.symlinks/plugins/fluttermotion_encoder/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
   fluttermotion_encoder:
     :path: ".symlinks/plugins/fluttermotion_encoder/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   fluttermotion_encoder: b2cca3330955fac4602e1819f8e675c8cd2b285b
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
 
 PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
 

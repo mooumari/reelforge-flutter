@@ -58,11 +58,15 @@ def main():
         [FFMPEG, "-y", "-v", "error",
          "-f", "rawvideo", "-pix_fmt", "rgba",
          "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS), "-i", "-",
-         # Near-lossless: the point of the file is that it says exactly what it
-         # says. Its own encode should not be a source of error on top of the
-         # ones under test.
-         "-c:v", "libx264", "-preset", "veryslow", "-crf", "0",
-         "-pix_fmt", "yuv420p", OUT],
+         # High quality, but deliberately not lossless. `-crf 0` makes x264
+         # emit a High 4:4:4 Predictive stream even from yuv420p input, and
+         # iOS's VideoToolbox refuses to decode that -- "Cannot Decode", with
+         # nothing to say it was the profile. macOS accepts it, so the asset
+         # can look fine everywhere it is made and fail on the device that
+         # matters. Pinning the profile is the point; the crf is just high
+         # enough that the pattern is exact and the grey barely moves.
+         "-c:v", "libx264", "-preset", "veryslow", "-crf", "12",
+         "-profile:v", "high", "-pix_fmt", "yuv420p", OUT],
         stdin=subprocess.PIPE,
     )
     for i in range(FRAMES):

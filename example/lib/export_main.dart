@@ -19,7 +19,7 @@ import 'report_data.dart';
 ///     .../example.app/Contents/MacOS/example \
 ///         --composition WeeklyDeals --out /tmp/inapp.mp4
 ///
-/// On Android there is no argv -- an activity is started, not a process
+/// On Android and iOS there is no argv -- an app is launched, not a process
 /// invoked, and `--dart-entrypoint-args` arrives empty. See [_optionsFor].
 
 /// Says something everywhere it might be read.
@@ -34,12 +34,14 @@ void _say(String message) => print(message);
 
 /// Where a headless run reads its options and writes its output.
 ///
-/// On a desktop that is the command line and the current directory. Android
-/// has neither, so the same options are read from `export_args.txt` in the
-/// app's external files directory -- one token per line, exactly the argv the
-/// desktop build would have been given. `adb push` writes it, `adb pull` takes
-/// the result back, and the app needs no permission for either because it is
-/// the app's own directory.
+/// On a desktop that is the command line and the current directory. A phone
+/// has neither: an app is launched rather than a process invoked, so
+/// `--dart-entrypoint-args` arrives empty, and the working directory is `/`,
+/// which is not writable. Both platforms read the same options from
+/// `export_args.txt` in a directory the app owns -- one token per line,
+/// exactly the argv the desktop build would have been given -- and write the
+/// result beside it. `adb push`/`adb pull` reach Android's; the simulator's
+/// container path reaches iOS's.
 class _Options {
   const _Options(this.values, this.workingDir);
 
@@ -53,8 +55,10 @@ Future<_Options> _optionsFor(List<String> args) async {
   Directory dir = Directory.current;
   List<String> tokens = args;
 
-  if (Platform.isAndroid) {
-    dir = (await getExternalStorageDirectory()) ?? await getTemporaryDirectory();
+  if (Platform.isAndroid || Platform.isIOS) {
+    dir = Platform.isAndroid
+        ? (await getExternalStorageDirectory()) ?? await getTemporaryDirectory()
+        : await getApplicationDocumentsDirectory();
     final File argsFile = File('${dir.path}/export_args.txt');
     if (argsFile.existsSync()) {
       tokens = argsFile
