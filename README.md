@@ -998,6 +998,45 @@ input wants.
 A `src` containing `..` or starting with `/` is refused. A document is a thing
 a server can send to an app, which makes `src` untrusted input.
 
+### Documents from the CLI
+
+A document is not a second renderer, and the CLI does not treat it as one:
+
+```
+fluttermotion init --json                  # a starter document, not three Dart files
+fluttermotion validate reel.json           # every problem, no frames rendered
+fluttermotion preview  reel.json --data report.json
+fluttermotion render   reel.json --data report.json --out reel.mp4
+```
+
+`render reel.json` writes a two-line entry point under `.dart_tool/` that loads
+the document and hands the resulting `Composition` to `renderMain`, then builds
+and shards it exactly as a hand-written host is built and sharded. The
+generated file is a build artefact: regenerated every run, never in a diff.
+
+The host has to be *your* project, because that is what carries the fonts,
+assets and plugins the document names -- which is also why `init --json` adds
+`fluttermotion_json` and `fluttermotion_kit` to the pubspec, and why pointing
+the CLI at a project that lacks them says so rather than failing inside a
+generated file nobody has read.
+
+The document is baked into that entry point *and* passed on argv, and argv
+wins. That is what makes `--no-build` honest: the binary is a release build and
+costs minutes, the JSON costs nothing, so one built host serves every document
+in the project. Validating a fresh document against yesterday's binary is
+instant, and it validates the document you asked for rather than the one the
+binary was born with.
+
+```
+fluttermotion validate other.json --no-build     # ~1s, no build
+```
+
+`validate` runs inside that host rather than in the CLI process, deliberately.
+The node vocabulary *is* Flutter code -- a `titleCard` knows what it accepts
+because it is the widget -- so there is no second copy of the schema in the CLI
+to drift away from it. The cost is one build the first time; the alternative is
+a validator that is confidently wrong.
+
 ### What the JSON layer proved
 
 The example reel now exists twice: `example/lib/longform.dart` and
@@ -1032,7 +1071,7 @@ sixty-second render.
 | Path | What |
 |---|---|
 | `packages/fluttermotion` | The composition framework |
-| `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` |
+| `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` / `validate` |
 | `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
 | `packages/fluttermotion_kit` | Ready-made scenes, charts and motion primitives |
 | `packages/fluttermotion_json` | JSON document format and its runtime interpreter |
@@ -1130,8 +1169,8 @@ cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-263 tests across the five packages and the example (127 framework, 36 kit,
-34 JSON, 24 encoder, 40 CLI, 2 example). The ones that matter assert that a
+280 tests across the five packages and the example (127 framework, 36 kit,
+34 JSON, 24 encoder, 57 CLI, 2 example). The ones that matter assert that a
 frame is byte-identical when rendered from a fresh renderer, when reached by
 playing forward, and when reached by scrubbing backward from later in the
 timeline.
@@ -1152,6 +1191,8 @@ timeline.
    from the example reel rather than invented
 9. ~~A JSON document format and its runtime interpreter~~ done, verified
    pixel-equivalent to the Dart reel it was transcribed from
+10. ~~Documents from the CLI -- `init --json`, `validate`, `preview reel.json`,
+    `render reel.json --data report.json`~~ done
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 

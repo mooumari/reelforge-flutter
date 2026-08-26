@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'args.dart';
 import 'audio_mixer.dart';
+import 'document_entry.dart';
 import 'host.dart';
 
 /// Renders a composition to MP4 by sharding frame ranges across host
@@ -21,11 +22,13 @@ Future<int> renderCommand(CliArgs args) async {
   }
 
   final String ffmpeg = await _resolveFfmpeg(args.optional('ffmpeg'));
+  final HostTarget target = hostTargetFor(args, projectDir);
   final RenderHost host = RenderHost(
     projectDir: projectDir,
-    entryPoint: args.value('entry', 'lib/render_main.dart'),
+    entryPoint: target.entryPoint,
     flutter: args.value('flutter', 'flutter'),
     allowSandbox: args.flag('allow-sandbox'),
+    hostArgs: target.hostArgs,
   );
 
   final File binary = args.flag('no-build')
@@ -113,6 +116,7 @@ Future<int> renderCommand(CliArgs args) async {
           bitrate: args.value('bitrate', '12M'),
           onFrame: reportProgress,
           onManifest: (Map<String, Object?> m) => manifest ??= m,
+          hostArgs: target.hostArgs,
         ),
     ]);
     stdout.writeln();
@@ -215,6 +219,7 @@ Future<void> _runShard({
   required String bitrate,
   required void Function() onFrame,
   required void Function(Map<String, Object?>) onManifest,
+  List<String> hostArgs = const <String>[],
 }) async {
   final Process process = await Process.start(binary.path, <String>[
     '--composition', compositionId,
@@ -232,6 +237,7 @@ Future<void> _runShard({
     '--project', projectPath,
     '--codec', codec,
     '--bitrate', bitrate,
+    ...hostArgs,
   ]);
 
   String? failure;

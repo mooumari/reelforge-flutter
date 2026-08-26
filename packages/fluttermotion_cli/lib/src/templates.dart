@@ -161,3 +161,79 @@ import 'compositions.dart';
 /// ```
 void main() => previewMain(<Composition>[intro]);
 ''';
+
+/// A starter composition document.
+///
+/// Deliberately not a hello-world rectangle: the thing a document is *for* is a
+/// video that is a function of data, so the starter binds to some, repeats over
+/// a list, and counts a number. Change `reel_data.json` and every frame
+/// changes with it, which is the whole idea in three scenes.
+String documentTemplate() => r'''
+{
+  "version": 1,
+  "id": "Reel",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+
+  "theme": {"palette": "dark"},
+
+  "scenes": [
+    {
+      "seconds": 4,
+      "child": {
+        "type": "titleCard",
+        "kicker": "{{ period }}",
+        "headline": "{{ headline }}",
+        "subhead": "{{ weeks.0.label }} to {{ weeks.3.label }}"
+      }
+    },
+    {
+      "seconds": 6,
+      "child": {
+        "type": "labelledScene",
+        "label": "Shipped per week",
+        "child": {
+          "type": "barChart",
+          "bars": {
+            "repeat": "weeks",
+            "as": {"value": "{{ shipped }}", "label": "{{ label }}"}
+          }
+        }
+      }
+    },
+    {
+      "seconds": 4,
+      "child": {
+        "type": "padding",
+        "padding": 80,
+        "child": {
+          "type": "bigStatList",
+          "children": [
+            {
+              "type": "bigStat",
+              "label": "shipped in total",
+              "value": {"type": "counter", "to": "{{ total }}", "delay": 6}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+''';
+
+/// The data the starter document reads.
+String documentDataTemplate() => r'''
+{
+  "period": "Q3 2026",
+  "headline": "Shipped more, broke less",
+  "total": 83,
+  "weeks": [
+    {"label": "W27", "shipped": 12},
+    {"label": "W28", "shipped": 18},
+    {"label": "W29", "shipped": 24},
+    {"label": "W30", "shipped": 29}
+  ]
+}
+''';

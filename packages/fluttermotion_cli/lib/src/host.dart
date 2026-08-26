@@ -12,6 +12,7 @@ class RenderHost {
     required this.entryPoint,
     required this.flutter,
     this.allowSandbox = false,
+    this.hostArgs = const <String>[],
   });
 
   final Directory projectDir;
@@ -20,6 +21,15 @@ class RenderHost {
 
   /// Build even though the app is sandboxed. See [SandboxCheck].
   final bool allowSandbox;
+
+  /// Appended to every invocation of the host binary.
+  ///
+  /// This is how a document reaches a host that was built for a different one.
+  /// The generated entry point bakes in a path, which is convenient but wrong
+  /// the moment `--no-build` reuses yesterday's binary for today's document;
+  /// argv is authoritative, so one built host serves any document and the
+  /// reuse is honest.
+  final List<String> hostArgs;
 
   /// Builds the host binary. This is a normal `flutter build`, so the user's
   /// pubspec, assets, fonts, and plugins all come along.
@@ -88,7 +98,7 @@ class RenderHost {
   /// Asks the host what compositions it defines.
   Future<List<CompositionInfo>> list(File binary) async {
     final ProcessResult result =
-        await Process.run(binary.path, <String>['--list']);
+        await Process.run(binary.path, <String>['--list', ...hostArgs]);
     if (result.exitCode != 0) {
       throw StateError('Host --list failed:\n${result.stdout}${result.stderr}');
     }

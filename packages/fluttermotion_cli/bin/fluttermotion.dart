@@ -2,21 +2,28 @@ import 'dart:io';
 
 import 'package:fluttermotion_cli/src/args.dart';
 import 'package:fluttermotion_cli/src/cli_error.dart';
+import 'package:fluttermotion_cli/src/document_entry.dart';
 import 'package:fluttermotion_cli/src/host.dart';
 import 'package:fluttermotion_cli/src/init_command.dart';
 import 'package:fluttermotion_cli/src/inspect_command.dart';
 import 'package:fluttermotion_cli/src/preview_command.dart';
 import 'package:fluttermotion_cli/src/render_command.dart';
+import 'package:fluttermotion_cli/src/validate_command.dart';
 
 const String _usage = '''
 FlutterMotion — render Flutter compositions to video.
 
 Usage:
-  fluttermotion init    [options]
-  fluttermotion preview [options]
-  fluttermotion render  [options]
-  fluttermotion inspect [options]
-  fluttermotion list [options]
+  fluttermotion init     [options]
+  fluttermotion preview  [<document.json>] [options]
+  fluttermotion render   [<document.json>] [options]
+  fluttermotion validate <document.json> [options]
+  fluttermotion inspect  [options]
+  fluttermotion list     [<document.json>] [options]
+
+A composition is either Dart in your project (the default, found through
+--entry) or a JSON document. Passing a .json file renders it through a
+generated two-line host, so both take exactly the same path from there on.
 
 Common options:
   --project <dir>       Flutter project to render from (default: .)
@@ -29,7 +36,12 @@ Common options:
   --flutter <path>      flutter binary (default: flutter)
   --allow-sandbox       Build even though the app enables App Sandbox
 
+document options:
+  --document <path>     The document to render (or pass it positionally)
+  --data <path>         JSON object the document's {{ bindings }} read from
+
 init options:
+  --json                Scaffold a JSON document instead of a Dart composition
   --fluttermotion <p>   Path to the fluttermotion package
                         (default: alongside this CLI)
   --fix-entitlements    Turn App Sandbox off in the macOS release
@@ -76,6 +88,8 @@ Future<void> main(List<String> arguments) async {
         exit(await previewCommand(args));
       case 'render':
         exit(await renderCommand(args));
+      case 'validate':
+        exit(await validateCommand(args));
       case 'inspect':
         exit(await inspectCommand(args));
       case 'list':
@@ -98,11 +112,14 @@ Future<void> main(List<String> arguments) async {
 }
 
 Future<int> _listCommand(CliArgs args) async {
+  final Directory projectDir = Directory(args.value('project', '.'));
+  final HostTarget target = hostTargetFor(args, projectDir);
   final RenderHost host = RenderHost(
-    projectDir: Directory(args.value('project', '.')),
-    entryPoint: args.value('entry', 'lib/render_main.dart'),
+    projectDir: projectDir,
+    entryPoint: target.entryPoint,
     flutter: args.value('flutter', 'flutter'),
     allowSandbox: args.flag('allow-sandbox'),
+    hostArgs: target.hostArgs,
   );
   final File binary =
       args.flag('no-build') ? host.locateBinary() : await host.build(

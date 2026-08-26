@@ -11,3 +11,7 @@
 - Palette roles and hex colours, so a document stays themeable.
 - Validation that reports every problem at once with a JSON path, and refuses
   a `src` that leaves the project directory.
+- `host.dart`: `documentRenderMain` and `documentPreviewMain`, the entry points
+  `fluttermotion render reel.json` and `fluttermotion preview reel.json`
+  generate, plus `--validate` for reporting a document's problems without
+  rendering.

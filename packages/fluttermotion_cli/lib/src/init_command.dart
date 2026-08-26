@@ -49,15 +49,46 @@ Future<int> initCommand(CliArgs args) async {
     did.add('added fluttermotion (path: $relative) to pubspec.yaml');
   }
 
+  // A document needs the interpreter and the components it names; a Dart
+  // composition needs neither, so neither is added unless asked for.
+  final bool json = args.flag('json');
+  if (json) {
+    for (final String extra in <String>[
+      'fluttermotion_kit',
+      'fluttermotion_json',
+    ]) {
+      final String current = pubspec.readAsStringSync();
+      final String? withExtra = withDependency(
+        current,
+        name: extra,
+        path: relativePath(
+          from: projectDir.path,
+          to: '${_packagesDir(packagePath)}/$extra',
+        ),
+      );
+      if (withExtra == null) {
+        skipped.add('pubspec.yaml already depends on $extra');
+      } else {
+        pubspec.writeAsStringSync(withExtra);
+        did.add('added $extra to pubspec.yaml');
+      }
+    }
+  }
+
   // 2. Somewhere for compositions to live, then 3. the two entry points that
   // serve them -- the preview you work in and the host the CLI renders with.
   // Written in that order so an entry point never points at nothing.
   final String appName = packageNameOf(original) ?? 'your app';
-  for (final _Template template in <_Template>[
-    _Template('lib/video/compositions.dart', compositionsTemplate(appName)),
-    _Template('lib/video/preview_main.dart', previewMainTemplate()),
-    _Template('lib/render_main.dart', renderMainTemplate()),
-  ]) {
+  for (final _Template template in json
+      ? <_Template>[
+          _Template('video/reel.json', documentTemplate()),
+          _Template('video/reel_data.json', documentDataTemplate()),
+        ]
+      : <_Template>[
+          _Template('lib/video/compositions.dart', compositionsTemplate(appName)),
+          _Template('lib/video/preview_main.dart', previewMainTemplate()),
+          _Template('lib/render_main.dart', renderMainTemplate()),
+        ]) {
     final File file = File('${projectDir.path}/${template.path}');
     if (file.existsSync()) {
       skipped.add('${template.path} already exists');
@@ -88,13 +119,27 @@ Future<int> initCommand(CliArgs args) async {
   final String project = args.value('project', '.');
   final String where = project == '.' ? '' : ' --project $project';
   stdout.writeln(
-    '\nNext:\n'
-    '  flutter pub get\n'
-    '  fluttermotion preview$where\n'
-    '\nand when it looks right:\n'
-    '  fluttermotion render$where --composition Intro --out intro.mp4',
+    json
+        ? '\nNext:\n'
+            '  flutter pub get\n'
+            '  fluttermotion preview video/reel.json '
+            '--data video/reel_data.json$where\n'
+            '\nand when it looks right:\n'
+            '  fluttermotion render video/reel.json '
+            '--data video/reel_data.json$where --out reel.mp4'
+        : '\nNext:\n'
+            '  flutter pub get\n'
+            '  fluttermotion preview$where\n'
+            '\nand when it looks right:\n'
+            '  fluttermotion render$where --composition Intro --out intro.mp4',
   );
   return 0;
+}
+
+/// The directory the sibling packages sit in, given the framework's path.
+String _packagesDir(String frameworkPath) {
+  final List<String> parts = frameworkPath.split('/');
+  return parts.sublist(0, parts.length - 1).join('/');
 }
 
 /// Turns App Sandbox off, and says plainly what that means.
@@ -163,8 +208,12 @@ String _locateFrameworkPackage() {
 /// Inserted at the top of `dependencies:` rather than appended, because the end
 /// of that block is wherever the next top-level key happens to start and a
 /// pubspec's comments make that hard to find honestly.
-String? withDependency(String original, {required String path}) {
-  if (RegExp(r'^\s+fluttermotion:', multiLine: true).hasMatch(original)) {
+String? withDependency(
+  String original, {
+  required String path,
+  String name = 'fluttermotion',
+}) {
+  if (RegExp('^\\s+$name:', multiLine: true).hasMatch(original)) {
     return null;
   }
   final Match? anchor =
@@ -176,7 +225,7 @@ String? withDependency(String original, {required String path}) {
     );
   }
   return original.substring(0, anchor.end) +
-      '  fluttermotion:\n'
+      '  $name:\n'
       '    path: $path\n' +
       original.substring(anchor.end);
 }

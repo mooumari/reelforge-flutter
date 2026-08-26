@@ -13,6 +13,13 @@ final MotionDocument document = MotionDocument.parse(jsonString);
 final Composition composition = document.toComposition(data: report);
 ```
 
+Or point the CLI at the document and skip the Dart entirely:
+
+```
+fluttermotion validate reel.json
+fluttermotion render   reel.json --data report.json --out reel.mp4
+```
+
 See the JSON section of the [repository README](../../README.md) for the
 document shape, the node vocabulary, the binding language and what the layer
 was verified against.

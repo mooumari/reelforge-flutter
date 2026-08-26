@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:fluttermotion_cli/src/args.dart';
 import 'package:fluttermotion_cli/src/cli_error.dart';
 import 'package:fluttermotion_cli/src/init_command.dart';
 import 'package:fluttermotion_cli/src/sandbox_check.dart';
@@ -124,6 +126,102 @@ void main() {
     test('a macOS project with the sandbox off has nothing to say', () {
       Directory('${dir.path}/macos').createSync();
       expect(warnings(dir), isEmpty);
+    });
+  });
+
+  group('init --json', () {
+    late Directory project;
+
+    setUp(() {
+      project = Directory.systemTemp.createTempSync('fluttermotion_init_json');
+      File('${project.path}/pubspec.yaml').writeAsStringSync(_pubspec);
+    });
+
+    tearDown(() => project.deleteSync(recursive: true));
+
+    Future<void> init(List<String> extra) => initCommand(
+      CliArgs(<String>[
+        '--project',
+        project.path,
+        '--fluttermotion',
+        Directory.current.parent.path + '/fluttermotion',
+        ...extra,
+      ]),
+    );
+
+    String read(String path) =>
+        File('${project.path}/$path').readAsStringSync();
+
+    test('writes a document and its data, not three Dart files', () async {
+      await init(<String>['--json']);
+      expect(File('${project.path}/video/reel.json').existsSync(), isTrue);
+      expect(File('${project.path}/video/reel_data.json').existsSync(), isTrue);
+      expect(
+        File('${project.path}/lib/render_main.dart').existsSync(),
+        isFalse,
+        reason: 'a document needs no hand-written host; the CLI writes one',
+      );
+    });
+
+    test(
+      'the starter document is a document, and it binds to its data',
+      () async {
+        await init(<String>['--json']);
+        final Map<String, Object?> document =
+            jsonDecode(read('video/reel.json')) as Map<String, Object?>;
+        final Map<String, Object?> data =
+            jsonDecode(read('video/reel_data.json')) as Map<String, Object?>;
+
+        expect(document['fps'], isA<int>());
+        expect(document['scenes'], isA<List<Object?>>());
+
+        // Every `{{ name }}` in the document has something to bind to -- at
+        // the root, or on an item of a list a `repeat` walks. A starter that
+        // renders three blanks is worse than no starter.
+        final Set<String> bindable = <String>{
+          ...data.keys,
+          for (final Object? value in data.values)
+            if (value is List<Object?>)
+              for (final Object? item in value)
+                if (item is Map<String, Object?>) ...item.keys,
+        };
+        final Iterable<RegExpMatch> bindings = RegExp(
+          r'\{\{\s*([a-zA-Z0-9_.@]+)',
+        ).allMatches(read('video/reel.json'));
+        expect(bindings, isNotEmpty);
+        for (final RegExpMatch match in bindings) {
+          final String root = match.group(1)!.split('.').first;
+          if (root.startsWith('@')) continue; // @item / @index, from a repeat
+          expect(
+            bindable,
+            contains(root),
+            reason: '{{ $root }} has nothing to bind to in reel_data.json',
+          );
+        }
+      },
+    );
+
+    test('the interpreter and the components come along', () async {
+      await init(<String>['--json']);
+      final String pubspec = read('pubspec.yaml');
+      expect(pubspec, contains('fluttermotion:'));
+      expect(pubspec, contains('fluttermotion_json:'));
+      expect(pubspec, contains('fluttermotion_kit:'));
+    });
+
+    test('without --json none of that is added', () async {
+      await init(<String>[]);
+      final String pubspec = read('pubspec.yaml');
+      expect(pubspec, contains('fluttermotion:'));
+      expect(pubspec, isNot(contains('fluttermotion_json:')));
+      expect(File('${project.path}/lib/render_main.dart').existsSync(), isTrue);
+    });
+
+    test('running it twice leaves the document alone', () async {
+      await init(<String>['--json']);
+      File('${project.path}/video/reel.json').writeAsStringSync('{"mine": 1}');
+      await init(<String>['--json']);
+      expect(read('video/reel.json'), '{"mine": 1}');
     });
   });
 }

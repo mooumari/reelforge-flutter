@@ -116,10 +116,13 @@ class Reader {
   void rejectUnknownKeys(Set<String> known) {
     for (final String key in json.keys) {
       if (!known.contains(key)) {
+        // `type` is in the known set but is not a property anyone sets by
+        // choice, so listing it in the suggestion is noise.
+        final List<String> named = known.where((String k) => k != 'type').toList()
+          ..sort();
         problems.add(
           at(key),
-          'unknown property "$key"; this node accepts '
-          '${(known.toList()..sort()).join(', ')}',
+          'unknown property "$key"; this node accepts ${named.join(', ')}',
         );
       }
     }
@@ -131,7 +134,13 @@ class Reader {
       if (required) problems.add(at(key), 'is required');
       return null;
     }
-    if (value is String) return value;
+    if (value is String) {
+      // A binding in any string, not only in an animated number: `{{ period |
+      // shout }}` in a headline renders as nothing at all, which is the least
+      // debuggable failure the format has.
+      if (isBinding(value)) checkFilters(value, at(key), problems);
+      return value;
+    }
     problems.add(at(key), 'must be a string, got ${_kind(value)}');
     return null;
   }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'args.dart';
+import 'document_entry.dart';
 import 'host.dart';
 
 /// Reports what a composition declares, without rendering a frame.
@@ -10,11 +11,14 @@ import 'host.dart';
 /// exact answer rather than a sample: a sound that plays for two frames inside
 /// a Sequence shows up here.
 Future<int> inspectCommand(CliArgs args) async {
+  final Directory projectDir = Directory(args.value('project', '.'));
+  final HostTarget target = hostTargetFor(args, projectDir);
   final RenderHost host = RenderHost(
-    projectDir: Directory(args.value('project', '.')),
-    entryPoint: args.value('entry', 'lib/render_main.dart'),
+    projectDir: projectDir,
+    entryPoint: target.entryPoint,
     flutter: args.value('flutter', 'flutter'),
     allowSandbox: args.flag('allow-sandbox'),
+    hostArgs: target.hostArgs,
   );
   final File binary = args.flag('no-build')
       ? host.locateBinary()
@@ -36,7 +40,7 @@ Future<int> inspectCommand(CliArgs args) async {
 
   for (final CompositionInfo info in targets) {
     final Map<String, Object?>? manifest =
-        await readManifest(binary, info.id);
+        await readManifest(binary, info.id, hostArgs: target.hostArgs);
     stdout.writeln('');
     stdout.writeln(info.toString());
     if (manifest == null) {
@@ -49,10 +53,14 @@ Future<int> inspectCommand(CliArgs args) async {
 }
 
 /// Runs the host in manifest-only mode.
-Future<Map<String, Object?>?> readManifest(File binary, String id) async {
+Future<Map<String, Object?>?> readManifest(
+  File binary,
+  String id, {
+  List<String> hostArgs = const <String>[],
+}) async {
   final ProcessResult result = await Process.run(
     binary.path,
-    <String>['--manifest', '--composition', id],
+    <String>['--manifest', '--composition', id, ...hostArgs],
   );
   for (final String line in const LineSplitter().convert('${result.stdout}')) {
     final Map<String, Object?>? event = decodeHostEvent(line);

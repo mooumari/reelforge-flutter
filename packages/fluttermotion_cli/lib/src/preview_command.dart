@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'args.dart';
 import 'cli_error.dart';
+import 'document_entry.dart';
 
 /// Runs the preview app: `flutter run` on the project's preview entry point.
 ///
@@ -13,15 +14,37 @@ import 'cli_error.dart';
 /// interpreting it.
 Future<int> previewCommand(CliArgs args) async {
   final Directory projectDir = Directory(args.value('project', '.')).absolute;
-  final String entry = args.value('entry', 'lib/video/preview_main.dart');
-  final File entryFile = File('${projectDir.path}/$entry');
+  final String? document =
+      documentPathFrom(args.rest, args.optional('document'));
 
-  if (!entryFile.existsSync()) {
-    throw CliError(
-      'No preview entry point at $entry\n\n'
-      'Run `fluttermotion init` to write one, or point --entry at the file '
-      'that calls previewMain().',
+  final String entry;
+  if (document == null) {
+    entry = args.value('entry', 'lib/video/preview_main.dart');
+    final File entryFile = File('${projectDir.path}/$entry');
+    if (!entryFile.existsSync()) {
+      throw CliError(
+        'No preview entry point at $entry\n\n'
+        'Run `fluttermotion init` to write one, or point --entry at the file '
+        'that calls previewMain().',
+      );
+    }
+  } else {
+    if (!File(document).existsSync()) {
+      throw CliError('No document at $document');
+    }
+    final String? data = args.optional('data');
+    if (data != null && !File(data).existsSync()) {
+      throw CliError('No data file at $data');
+    }
+    // A document previews through a generated host, the same way it renders.
+    // Hot reload applies to the interpreter, not to the JSON: edit the
+    // document and press `R` to restart, not `r`.
+    entry = (DocumentEntry(projectDir)..requireDependency())
+        .writePreviewEntry(
+      documentPath: document,
+      dataPath: args.optional('data'),
     );
+
   }
 
   final String device = args.value('device', _defaultDevice());

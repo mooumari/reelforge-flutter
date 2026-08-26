@@ -171,7 +171,13 @@ void registerKitNodes() {
       'barSpacing',
       'valueHeadroom',
     },
-    specs: <String>{'bars'},
+    specs: <String, void Function(Reader)>{
+      'bars': (Reader r) => r
+        ..rejectUnknownKeys(<String>{'value', 'label', 'color'})
+        ..animated('value', required: true)
+        ..string('label')
+        ..colour('color'),
+    },
     validate: (Reader r) => r
       ..plainNumber('maxValue')
       ..plainInt('delay')
@@ -219,7 +225,12 @@ void registerKitNodes() {
       'dotRadius',
       'showLabels',
     },
-    specs: <String>{'points'},
+    specs: <String, void Function(Reader)>{
+      'points': (Reader r) => r
+        ..rejectUnknownKeys(<String>{'value', 'label'})
+        ..animated('value', required: true)
+        ..string('label'),
+    },
     validate: (Reader r) => r
       ..plainNumber('maxValue')
       ..plainInt('delay')
