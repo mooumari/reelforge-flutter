@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:fluttermotion_cli/src/args.dart';
 import 'package:fluttermotion_cli/src/host.dart';
+import 'package:fluttermotion_cli/src/inspect_command.dart';
 import 'package:fluttermotion_cli/src/render_command.dart';
 
 const String _usage = '''
@@ -9,6 +10,7 @@ FlutterMotion — render Flutter compositions to video.
 
 Usage:
   fluttermotion render [options]
+  fluttermotion inspect [options]
   fluttermotion list [options]
 
 Common options:
@@ -18,6 +20,9 @@ Common options:
   --no-build            Reuse the existing release build
   --ffmpeg <path>       ffmpeg binary (default: autodetected)
   --flutter <path>      flutter binary (default: flutter)
+
+inspect options:
+  --composition <id>    Which composition (default: all)
 
 render options:
   --composition <id>    Which composition (required if more than one)
@@ -46,6 +51,8 @@ Future<void> main(List<String> arguments) async {
     switch (command) {
       case 'render':
         exit(await renderCommand(args));
+      case 'inspect':
+        exit(await inspectCommand(args));
       case 'list':
         exit(await _listCommand(args));
       default:

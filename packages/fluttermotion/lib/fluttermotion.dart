@@ -5,6 +5,10 @@
 library;
 
 export 'src/composition.dart';
+export 'src/declarations/assets.dart';
+export 'src/declarations/manifest.dart';
+export 'src/declarations/pass.dart';
+export 'src/declarations/scope.dart' show DeclarationCollector, DeclarationScope;
 export 'src/frame.dart';
 export 'src/interpolate.dart';
 export 'src/preview/preview_app.dart' show FlutterMotionPreview, previewMain;
@@ -13,3 +17,5 @@ export 'src/preview/scrubber.dart' show Scrubber;
 export 'src/render_host.dart' show renderMain;
 export 'src/renderer.dart';
 export 'src/sequence.dart';
+export 'src/widgets/audio.dart';
+export 'src/widgets/motion_image.dart';

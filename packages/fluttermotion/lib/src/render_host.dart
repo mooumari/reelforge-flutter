@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'composition.dart';
+import 'declarations/manifest.dart';
+import 'declarations/pass.dart';
 import 'renderer.dart';
 
 /// Entry point for a render host binary.
@@ -45,6 +47,10 @@ Future<void> renderMain(
         }));
         exit(0);
       }
+      if (parsed.has('manifest')) {
+        await _emitManifest(parsed, compositions);
+        exit(0);
+      }
       await _renderShard(parsed, compositions);
       exit(0);
     } catch (error, stack) {
@@ -70,7 +76,17 @@ class _HostSurface extends StatelessWidget {
       const ColoredBox(color: Color(0xFF000000));
 }
 
-Future<void> _renderShard(_Args args, List<Composition> compositions) async {
+Future<void> _emitManifest(_Args args, List<Composition> compositions) async {
+  final Composition composition = _select(args, compositions);
+  final RenderManifest manifest = DeclarationPass.run(composition);
+  stdout.writeln(jsonEncode(<String, Object?>{
+    'event': 'manifest',
+    'composition': composition.id,
+    ...manifest.toJson(),
+  }));
+}
+
+Composition _select(_Args args, List<Composition> compositions) {
   final String id = args.require('composition');
   final Composition base = compositions.firstWhere(
     (Composition c) => c.id == id,
@@ -79,13 +95,16 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
       '${compositions.map((Composition c) => c.id).join(', ')}',
     ),
   );
-
-  final Composition composition = base.copyWith(
+  return base.copyWith(
     width: args.optionalInt('width'),
     height: args.optionalInt('height'),
     fps: args.optionalInt('fps'),
     durationInFrames: args.optionalInt('duration-in-frames'),
   );
+}
+
+Future<void> _renderShard(_Args args, List<Composition> compositions) async {
+  final Composition composition = _select(args, compositions);
 
   final int start = args.optionalInt('start') ?? 0;
   final int end = args.optionalInt('end') ?? composition.durationInFrames;
@@ -113,7 +132,18 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
   ffmpeg.stderr.transform(utf8.decoder).listen(ffmpegErrors.write);
   ffmpeg.stdout.drain<void>();
 
-  final CompositionRenderer renderer = CompositionRenderer(composition);
+  // Sweep the timeline and decode every declared asset before rasterising, so
+  // no frame can ever wait on I/O mid-render.
+  final PreparedComposition prepared =
+      await DeclarationPass.prepare(composition);
+  final CompositionRenderer renderer = prepared.createRenderer();
+
+  stdout.writeln(jsonEncode(<String, Object?>{
+    'event': 'manifest',
+    'composition': composition.id,
+    ...prepared.manifest.toJson(),
+  }));
+
   final Stopwatch stopwatch = Stopwatch()..start();
 
   try {

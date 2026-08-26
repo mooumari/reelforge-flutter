@@ -5,6 +5,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import 'composition.dart';
+import 'declarations/assets.dart';
+import 'declarations/scope.dart';
 import 'frame.dart';
 
 /// Rasterises a [Composition] frame by frame, off screen.
@@ -14,7 +16,12 @@ import 'frame.dart';
 /// [pump] is a synchronous build + layout + paint, so frame `n` depends on
 /// nothing but `n`.
 class CompositionRenderer {
-  CompositionRenderer(this.composition, {this.scale = 1.0}) {
+  CompositionRenderer(
+    this.composition, {
+    this.scale = 1.0,
+    this.collector,
+    Map<ImageProvider<Object>, ui.Image>? images,
+  }) : images = images ?? const <ImageProvider<Object>, ui.Image>{} {
     final Size size = composition.size;
 
     _renderView = RenderView(
@@ -41,15 +48,21 @@ class CompositionRenderer {
           // resolves against the *binding's* BuildOwner, not ours, and is
           // therefore useless in a detached tree.
           child: RepaintBoundary(
-            child: ValueListenableBuilder<int>(
-              valueListenable: _frame,
-              builder: (BuildContext context, int frame, _) => VideoFrame(
-                frame: frame,
-                fps: composition.fps,
-                durationInFrames: composition.durationInFrames,
-                width: composition.width,
-                height: composition.height,
-                child: Builder(builder: composition.builder),
+            child: DeclarationScope(
+              collector: collector,
+              child: ResolvedImages(
+                images: this.images,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _frame,
+                  builder: (BuildContext context, int frame, _) => VideoFrame(
+                    frame: frame,
+                    fps: composition.fps,
+                    durationInFrames: composition.durationInFrames,
+                    width: composition.width,
+                    height: composition.height,
+                    child: Builder(builder: composition.builder),
+                  ),
+                ),
               ),
             ),
           ),
@@ -62,6 +75,13 @@ class CompositionRenderer {
 
   /// Output pixel scale. `1.0` renders at the composition's exact size.
   final double scale;
+
+  /// Set during a declaration pass so declaring widgets can register
+  /// themselves. Null while rasterising.
+  final DeclarationCollector? collector;
+
+  /// Images already decoded by the preloader.
+  final Map<ImageProvider<Object>, ui.Image> images;
 
   final ValueNotifier<int> _frame = ValueNotifier<int>(-1);
 
@@ -85,6 +105,19 @@ class CompositionRenderer {
     _pipelineOwner.flushLayout();
     _pipelineOwner.flushCompositingBits();
     _pipelineOwner.flushPaint();
+  }
+
+  /// Builds and lays out [frame] without painting it.
+  ///
+  /// Used by the declaration pass, which only needs to know which widgets are
+  /// mounted. Layout still runs, because widgets under a [LayoutBuilder] would
+  /// otherwise never build and their declarations would be missed.
+  void pumpWithoutPaint(int frame) {
+    assert(!_disposed, 'CompositionRenderer used after dispose().');
+    _frame.value = frame;
+    _buildOwner.buildScope(_element);
+    _buildOwner.finalizeTree();
+    _pipelineOwner.flushLayout();
   }
 
   /// Rasterises [frame]. The caller owns the returned image and must dispose

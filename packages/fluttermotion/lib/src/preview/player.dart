@@ -1,10 +1,13 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../composition.dart';
+import '../declarations/assets.dart';
+import '../declarations/pass.dart';
 import '../frame.dart';
 import 'controls.dart';
 import 'scrubber.dart';
@@ -39,12 +42,15 @@ class _CompositionPlayerState extends State<CompositionPlayer>
   bool _loop = true;
   bool _wasPlayingBeforeScrub = false;
 
+  Map<ImageProvider<Object>, ui.Image>? _images;
+
   int get _lastFrame => widget.composition.durationInFrames - 1;
 
   @override
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
+    _prepare();
   }
 
   @override
@@ -53,6 +59,26 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     // Hot reload can shorten a composition out from under the playhead.
     if (_frame > _lastFrame) {
       _seek(_lastFrame);
+    }
+    if (!identical(widget.composition, oldWidget.composition)) {
+      setState(() => _images = null);
+      _prepare();
+    }
+  }
+
+  /// Sweep the timeline and decode assets, exactly as the exporter does, so
+  /// the preview cannot show something the render would not.
+  Future<void> _prepare() async {
+    final Composition composition = widget.composition;
+    try {
+      final PreparedComposition prepared =
+          await DeclarationPass.prepare(composition);
+      if (!mounted || !identical(widget.composition, composition)) return;
+      setState(() => _images = prepared.images);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _images = const <ImageProvider<Object>, ui.Image>{});
+      debugPrint('FlutterMotion: preparing assets failed: $error');
     }
   }
 
@@ -156,7 +182,13 @@ class _CompositionPlayerState extends State<CompositionPlayer>
         onTap: _focusNode.requestFocus,
         child: Column(
           children: <Widget>[
-            Expanded(child: _Canvas(composition: c, frame: _frame)),
+            Expanded(
+              child: _Canvas(
+                composition: c,
+                frame: _frame,
+                images: _images,
+              ),
+            ),
             _transport(c),
           ],
         ),
@@ -263,10 +295,19 @@ class _CompositionPlayerState extends State<CompositionPlayer>
 /// fit. Layout inside is therefore identical to the exporter's -- a 1080-wide
 /// composition is laid out at 1080 even in a 600px window.
 class _Canvas extends StatelessWidget {
-  const _Canvas({required this.composition, required this.frame});
+  const _Canvas({
+    required this.composition,
+    required this.frame,
+    required this.images,
+  });
 
   final Composition composition;
   final int frame;
+
+  /// Null until the declaration pass finishes. Deliberately not an empty map:
+  /// an empty map means "preloaded, and this image genuinely is missing",
+  /// which declaring widgets are entitled to treat as an error.
+  final Map<ImageProvider<Object>, ui.Image>? images;
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +355,13 @@ class _Canvas extends StatelessWidget {
                               durationInFrames: composition.durationInFrames,
                               width: composition.width,
                               height: composition.height,
-                              child: Builder(builder: composition.builder),
+                              child: images == null
+                                  ? Builder(builder: composition.builder)
+                                  : ResolvedImages(
+                                      images: images!,
+                                      child: Builder(
+                                          builder: composition.builder),
+                                    ),
                             ),
                           ),
                         ),
@@ -326,9 +373,14 @@ class _Canvas extends StatelessWidget {
               Positioned(
                 right: 12,
                 top: 12,
-                child: InfoChip(
-                  label: '${(scale * 100).round()}%',
-                  dim: true,
+                child: Row(
+                  children: <Widget>[
+                    if (images == null) ...<Widget>[
+                      const InfoChip(label: 'preparing assets', dim: true),
+                      const SizedBox(width: 6),
+                    ],
+                    InfoChip(label: '${(scale * 100).round()}%', dim: true),
+                  ],
                 ),
               ),
             ],

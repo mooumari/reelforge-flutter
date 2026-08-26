@@ -29,7 +29,8 @@ frame number: `data -> widgets -> frames -> MP4`.
 ## Status
 
 Pre-alpha, but it works end to end: preview a composition with hot reload,
-then render it to MP4. Audio and video clips are not built yet.
+then render it to MP4 with assets guaranteed to be decoded first. Audio is
+collected but not yet mixed; video clips are not built.
 
 ## Preview
 
@@ -60,6 +61,63 @@ is on. The composition never sees it.
 | `←` `→` | step one frame (`shift` for ten) |
 | `home` `end` | jump to first / last frame |
 | `L` | toggle loop |
+
+## Assets and audio
+
+A composition must be a pure function of its frame number, which rules out
+resolving anything asynchronously mid-render -- frame 12 showing a placeholder
+on one run and a photo on the next is exactly the bug that makes a renderer
+untrustworthy.
+
+So before a single frame is rasterised, a **declaration pass** builds every
+frame of the timeline and collects what the composition asked for:
+
+```dart
+Stack(children: [
+  const Audio(src: 'assets/music.mp3', volume: 0.4),
+  const Sequence(
+    from: 40,
+    durationInFrames: 25,
+    child: Audio(src: 'assets/chime.mp3'),
+  ),
+  MotionImage(image: badge, width: 160, height: 160),
+])
+```
+
+`Audio` draws nothing; its position and length come from where it is mounted,
+so a [Sequence] schedules it with no extra API. `MotionImage` replaces `Image`
+inside compositions -- it declares itself to the pass and paints from an
+already-decoded bitmap, and throws a named error rather than silently drawing
+nothing if it was somehow missed.
+
+```bash
+dart run bin/fluttermotion.dart inspect --project ../../example
+```
+
+```text
+WeeklyDeals  1080x1920  60fps  300 frames  (5.00s)
+  swept 300 frames in 34ms
+  audio:
+    assets/music.mp3  frames 0-299 (300)  vol 0.4
+    assets/chime.mp3  frames 40-64 (25)  vol 1.0
+    assets/chime.mp3  frames 180-204 (25)  vol 1.0
+  images:
+    assets/badge.png
+```
+
+**Every frame is visited, not sampled.** That is affordable only because of
+the benchmark above: building a frame costs ~0.5 ms against ~17 ms to
+rasterise it, so sweeping a 300-frame timeline takes **34 ms** -- roughly 150x
+cheaper than rendering it. Sampling would be marginally faster and would
+silently miss a sound that plays for two frames inside a `Sequence`, which is
+the whole bug class the pass exists to prevent.
+
+The preview runs the same pass before it draws, so it cannot show something
+the render would not.
+
+> Audio is currently **collected but not mixed**. `render` prints a warning
+> naming how many clips were declared so nobody ships a silent video believing
+> otherwise.
 
 ## Render
 
@@ -140,16 +198,17 @@ flutter build macos --release
 cd packages/fluttermotion && flutter test
 ```
 
-25 tests. The ones that matter assert that a frame is byte-identical when
+47 tests. The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.
 
 ## Roadmap
 
 1. ~~Sharded deterministic renderer + test suite + `fluttermotion render`~~ done
-2. Scrubber preview (`flutter run`, hot reload)
-3. Declaration pass — asset preloading, video decode windows, audio scheduling
-4. Audio
+2. ~~Scrubber preview (`flutter run`, hot reload)~~ done
+3. ~~Declaration pass — asset preloading and audio scheduling~~ done
+   (video decode windows still to come)
+4. Audio mixing
 5. Video clips
 6. On-device export (the moat)
 

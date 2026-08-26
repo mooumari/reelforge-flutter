@@ -84,6 +84,7 @@ Future<int> renderCommand(CliArgs args) async {
     final List<_Shard> plan = _planShards(frames, shards, work);
     int completed = 0;
     final int total = frames;
+    Map<String, Object?>? manifest;
 
     void reportProgress() {
       completed++;
@@ -107,9 +108,11 @@ Future<int> renderCommand(CliArgs args) async {
           codec: args.value('codec', 'h264_videotoolbox'),
           bitrate: args.value('bitrate', '12M'),
           onFrame: reportProgress,
+          onManifest: (Map<String, Object?> m) => manifest ??= m,
         ),
     ]);
     stdout.writeln();
+    _warnAboutUnhonouredDeclarations(manifest);
 
     await _concat(plan, outPath, ffmpeg);
     stopwatch.stop();
@@ -177,6 +180,7 @@ Future<void> _runShard({
   required String codec,
   required String bitrate,
   required void Function() onFrame,
+  required void Function(Map<String, Object?>) onManifest,
 }) async {
   final Process process = await Process.start(binary.path, <String>[
     '--composition', compositionId,
@@ -204,6 +208,8 @@ Future<void> _runShard({
     switch (event['event']) {
       case 'frame':
         onFrame();
+      case 'manifest':
+        onManifest(event);
       case 'error':
         failure = '${event['message']}\n${event['stack']}';
       default:
@@ -257,6 +263,22 @@ Future<void> _concat(
   if (result.exitCode != 0) {
     throw StateError('Concat failed:\n${result.stderr}');
   }
+}
+
+/// Audio is collected by the declaration pass but not yet mixed into the
+/// output. Saying so beats shipping a silent video that the user believed had
+/// a soundtrack.
+void _warnAboutUnhonouredDeclarations(Map<String, Object?>? manifest) {
+  if (manifest == null) return;
+  final List<Object?> audio =
+      (manifest['audio'] as List<Object?>?) ?? const <Object?>[];
+  if (audio.isEmpty) return;
+  stdout.writeln(
+    'Note: ${audio.length} audio '
+    '${audio.length == 1 ? 'clip was' : 'clips were'} declared but NOT mixed '
+    'into the output -- audio is not implemented yet. '
+    'Run `fluttermotion inspect` to see the timeline.',
+  );
 }
 
 int _resolveShards(String? raw, int frames) {

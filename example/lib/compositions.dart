@@ -4,6 +4,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 
+/// Hoisted deliberately. A provider constructed inside build() would be a new
+/// object on every frame and would never match what the preloader decoded.
+const AssetImage badge = AssetImage('assets/badge.png');
+
 final Composition helloFlutter = Composition(
   id: 'HelloFlutter',
   width: 1920,
@@ -64,6 +68,18 @@ class _WeeklyDeals extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
+        // Declares itself to the pass; never played by Flutter.
+        const Audio(src: 'assets/music.mp3', volume: 0.4),
+        const Sequence(
+          from: 40,
+          durationInFrames: 25,
+          child: Audio(src: 'assets/chime.mp3'),
+        ),
+        const Sequence(
+          from: 180,
+          durationInFrames: 25,
+          child: Audio(src: 'assets/chime.mp3'),
+        ),
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -86,6 +102,20 @@ class _WeeklyDeals extends StatelessWidget {
               child: _ProductCard(index: i, frame: frame, t: t),
             ),
           ),
+        Positioned(
+          right: 60,
+          top: 60,
+          child: Transform.rotate(
+            angle: math.sin(frame / 30) * 0.15,
+            child: ClipOval(
+              child: MotionImage(
+                image: badge,
+                width: 160,
+                height: 160,
+              ),
+            ),
+          ),
+        ),
         Sequence(
           from: 0,
           layout: SequenceLayout.fill,
