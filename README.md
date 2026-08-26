@@ -1231,8 +1231,8 @@ cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-332 tests across the six packages and the example (127 framework, 36 kit,
-43 JSON, 36 schema, 24 encoder, 64 CLI, 2 example). The schema and CLI suites
+333 tests across the six packages and the example (127 framework, 36 kit,
+44 JSON, 36 schema, 24 encoder, 64 CLI, 2 example). The schema and CLI suites
 are plain `dart test` and finish in about a second between them, which is why
 document validation is now something you run rather than something you wait
 for. The ones that matter assert that a

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fluttermotion/fluttermotion.dart';
 import 'package:fluttermotion_kit/fluttermotion_kit.dart';
 
 import 'build_test.dart' show pump;
@@ -188,5 +189,43 @@ void main() {
     expect(stagger.mainAxisAlignment, staggerDefaults.mainAxisAlignment);
     expect(stagger.crossAxisAlignment, staggerDefaults.crossAxisAlignment);
     expect(stagger.expandChildren, staggerDefaults.expandChildren);
+  });
+
+  testWidgets('media nodes default to what the framework says they do',
+      (WidgetTester tester) async {
+    // The media nodes restate more defaults than any others -- a source is
+    // the only required property, so every one of these has to be written out
+    // here in order for the optional ones to be passable at all. They are also
+    // the ones a render is least likely to catch: a video decoded at the wrong
+    // size or held instead of looped still looks like a video.
+    await pump(tester, <String, Object?>{'type': 'video', 'src': 'a.mp4'});
+    final VideoClip video = tester.widget<VideoClip>(find.byType(VideoClip));
+    const VideoClip videoDefaults = VideoClip(src: 'a.mp4');
+    expect(video.fit, videoDefaults.fit);
+    expect(video.alignment, videoDefaults.alignment);
+    expect(video.opacity, videoDefaults.opacity);
+    expect(video.loop, videoDefaults.loop);
+    expect(video.trimStartInFrames, videoDefaults.trimStartInFrames);
+    expect(video.width, videoDefaults.width);
+    expect(video.height, videoDefaults.height);
+    expect(video.decodeWidth, videoDefaults.decodeWidth);
+    expect(video.decodeHeight, videoDefaults.decodeHeight);
+
+    await pump(tester, <String, Object?>{'type': 'audio', 'src': 'a.m4a'});
+    final Audio audio = tester.widget<Audio>(find.byType(Audio));
+    const Audio audioDefaults = Audio(src: 'a.m4a');
+    expect(audio.volume, audioDefaults.volume);
+    expect(audio.loop, audioDefaults.loop);
+    expect(audio.trimStartInFrames, audioDefaults.trimStartInFrames);
+
+    await pump(tester, <String, Object?>{'type': 'image', 'src': 'a.png'});
+    final MotionImage image =
+        tester.widget<MotionImage>(find.byType(MotionImage));
+    final MotionImage imageDefaults = MotionImage.asset('a.png');
+    expect(image.fit, imageDefaults.fit);
+    expect(image.alignment, imageDefaults.alignment);
+    expect(image.opacity, imageDefaults.opacity);
+    expect(image.width, imageDefaults.width);
+    expect(image.height, imageDefaults.height);
   });
 }
