@@ -28,6 +28,7 @@ Future<void> main() async {
         videoShowcase,
         videoProbe,
     videoProbeHalf,
+    encoderProbe,
         audioProbe,
         tickerProbe,
       ],

@@ -19,6 +19,9 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
+      android:
+        package: com.fluttermotion.fluttermotion_encoder
+        pluginClass: FluttermotionEncoderPlugin
       ios:
         pluginClass: FluttermotionEncoderPlugin
       macos:

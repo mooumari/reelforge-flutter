@@ -3,11 +3,12 @@
 # Proves that a video clip lands on the same source frame no matter how many
 # processes the render was split across.
 #
-# `example/assets/probe.mp4` encodes each frame's own index as its grey value
-# (frame i is rgb(2i, 2i, 2i)), so reading one pixel out of an exported frame
-# says exactly which source frame ended up there. The VideoProbe composition
-# mounts it from frame 40 for 120 frames, which puts shard boundaries in the
-# middle of the clip -- the case that actually breaks.
+# `example/assets/probe.mp4` states each frame's own index in black-and-white
+# blocks along the top (see tool/make_probe.py), so reading an exported frame
+# says exactly which source frame ended up there -- exactly, with no tolerance
+# that could hide an off-by-one. The VideoProbe composition mounts it from
+# frame 40 for 120 frames, which puts shard boundaries in the middle of the
+# clip -- the case that actually breaks.
 #
 # VideoProbeHalf is the same clip in a 30fps composition. probe.mp4 runs at
 # 60fps, so it asks for every second source frame, and a decoder that takes the
@@ -51,47 +52,33 @@ for probe in "${PROBES[@]}"; do
   done
 done
 
-python3 - "$WORK" "${PROBES[*]}" "${SHARDS[@]}" <<'PY'
+fail=0
+for probe in "${PROBES[@]}"; do
+  IFS=: read -r name start length step <<< "$probe"
+  for n in "${SHARDS[@]}"; do
+    tool/check_probe.py "$WORK/${name}_s$n.raw" "$start" "$length" "$step" \
+      "  $name, $n shard(s)" || fail=1
+  done
+
+  # Determinism across shard counts: every split must land on the same source
+  # frame as a single-process render, not merely on a plausible one.
+  python3 - "$WORK" "$name" "${SHARDS[@]}" <<'SAME' || fail=1
 import sys
-work = sys.argv[1]
-probes = sys.argv[2].split()
-shards = [int(s) for s in sys.argv[3:]]
-W, H, = 320, 240
-n = W * H * 4
-centre = (H // 2 * W + W // 2) * 4
+sys.path.insert(0, 'tool')
+from check_probe import read
 
-def read(name, k):
-    d = open(f'{work}/{name}_s{k}.raw', 'rb').read()
-    return [d[i * n + centre] for i in range(len(d) // n)]
-
+work, name, shards = sys.argv[1], sys.argv[2], [int(s) for s in sys.argv[3:]]
+base = read(f'{work}/{name}_s{shards[0]}.raw')
 ok = True
-for probe in probes:
-    name, start, length, step = probe.split(':')
-    start, length, step = int(start), int(length), int(step)
-    print(name)
-
-    # Grey is twice the source frame index, and the source advances `step`
-    # frames for every frame of the composition.
-    def expected(f, start=start, length=length, step=step):
-        inside = start <= f < start + length
-        return 2 * step * (f - start) if inside else 0
-
-    sets = {k: read(name, k) for k in shards}
-    base = sets[shards[0]]
-
-    for k, frames in sets.items():
-        bad = [(f, frames[f], expected(f))
-               for f in range(len(frames)) if abs(frames[f] - expected(f)) > 1]
-        print(f'  {k:>2} shard(s): {len(frames)} frames, '
-              f'{"OK" if not bad else f"{len(bad)} WRONG {bad[:5]}"}')
-        ok &= not bad
-        if k != shards[0]:
-            diff = [f for f in range(min(len(base), len(frames)))
-                    if abs(base[f] - frames[f]) > 1]
-            if diff:
-                print(f'      differs from {shards[0]}-shard at {diff[:5]}')
-                ok = False
-
-print('PASS' if ok else 'FAIL')
+for k in shards[1:]:
+    other = read(f'{work}/{name}_s{k}.raw')
+    diff = [f for f in range(min(len(base), len(other))) if base[f] != other[f]]
+    if diff:
+        print(f'  {name}, {k} shard(s) differs from {shards[0]} at {diff[:5]}')
+        ok = False
 sys.exit(0 if ok else 1)
-PY
+SAME
+done
+
+if [ "$fail" = 0 ]; then echo PASS; else echo FAIL; fi
+exit "$fail"

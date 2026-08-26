@@ -23,6 +23,7 @@ Future<void> main(List<String> args) async {
     videoShowcase,
     videoProbe,
     videoProbeHalf,
+    encoderProbe,
     audioProbe,
     tickerProbe,
   ]);

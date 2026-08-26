@@ -35,6 +35,10 @@ dependencies:
   fluttermotion_encoder:
     path: ../packages/fluttermotion_encoder
 
+  # Android starts an activity, not a process: there is no argv and no writable
+  # working directory. The headless export finds both through here.
+  path_provider: ^2.1.5
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

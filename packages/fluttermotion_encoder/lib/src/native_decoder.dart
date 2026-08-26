@@ -6,7 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 
-/// Decodes video with AVFoundation (iOS and macOS).
+/// Decodes video with the platform's own decoder: AVFoundation on Apple,
+/// MediaCodec and MediaExtractor on Android.
 ///
 /// Nothing above this class knows it exists: it implements [VideoBackend], so
 /// a composition with a [VideoClip] exports inside an app through exactly the
@@ -39,12 +40,14 @@ class NativeVideoBackend implements VideoBackend {
   final SourceFiles _files;
 
   /// Whether this platform has a native decoder at all.
-  static bool get isSupported => Platform.isIOS || Platform.isMacOS;
+  static bool get isSupported =>
+      Platform.isIOS || Platform.isMacOS || Platform.isAndroid;
 
   @override
   Future<String> resolve(String src, {String? projectPath}) {
     // Inside an app a src is usually an asset key with no file behind it, so
-    // this may spill bundle bytes to disk. AVAssetReader needs a real file.
+    // this may spill bundle bytes to disk. Neither AVAssetReader nor
+    // MediaExtractor can read a Flutter asset bundle.
     return _files.pathFor(src, kind: 'video');
   }
 
@@ -86,7 +89,7 @@ class NativeVideoBackend implements VideoBackend {
   void _requireSupport() {
     if (isSupported) return;
     throw StateError(
-      'NativeVideoBackend supports iOS and macOS; this is '
+      'NativeVideoBackend supports iOS, macOS and Android; this is '
       '${Platform.operatingSystem}. Use FfmpegVideoBackend on a desktop, or '
       'supply your own VideoBackend.',
     );

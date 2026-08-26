@@ -11,3 +11,6 @@ benchmarks/**/*.png
 benchmarks/**/bench_result.json
 example/build/
 example/.dart_tool/
+
+# Python bytecode from the tools in tool/.
+__pycache__/

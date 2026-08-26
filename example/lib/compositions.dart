@@ -44,6 +44,38 @@ final Composition videoShowcase = Composition(
 /// (frame i is rgb(2i, 2i, 2i)), so reading one pixel out of an exported frame
 /// says exactly which source frame landed there. That is how the shard
 /// boundary test proves the mapping is independent of where decoding started.
+/// A grey ramp, painted rather than decoded, to measure the encoder alone.
+///
+/// Frame *f* is a flat `rgb(2f, 2f, 2f)`. Reading the grey back out of the
+/// exported file measures every step from a widget to an H.264 frame with no
+/// video decode anywhere in it, which is the only way to say what the encoder
+/// itself costs.
+///
+/// It exists because that cost is real and worth knowing rather than
+/// assuming: on Android a flat frame two levels off the last one is a residual
+/// small enough that a variable-rate encoder will spend nothing on it and hand
+/// the previous frame's grey back instead. The video probes cannot report this
+/// -- they carry their frame index in black and white precisely so that the
+/// encoder cannot smudge it -- so the number comes from here.
+final Composition encoderProbe = Composition(
+  id: 'EncoderProbe',
+  width: 320,
+  height: 240,
+  fps: 60,
+  durationInFrames: 120,
+  builder: (BuildContext context) => const _GreyRamp(),
+);
+
+class _GreyRamp extends StatelessWidget {
+  const _GreyRamp();
+
+  @override
+  Widget build(BuildContext context) {
+    final int grey = 2 * Video.frame(context);
+    return ColoredBox(color: Color.fromARGB(255, grey, grey, grey));
+  }
+}
+
 final Composition videoProbe = Composition(
   id: 'VideoProbe',
   width: 320,

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 import 'package:fluttermotion_encoder/fluttermotion_encoder.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'compositions.dart';
 import 'longform.dart';
@@ -17,13 +18,64 @@ import 'report_data.dart';
 ///     flutter build macos -t lib/export_main.dart
 ///     .../example.app/Contents/MacOS/example \
 ///         --composition WeeklyDeals --out /tmp/inapp.mp4
+///
+/// On Android there is no argv -- an activity is started, not a process
+/// invoked, and `--dart-entrypoint-args` arrives empty. See [_optionsFor].
+
+/// Says something everywhere it might be read.
+///
+/// `stdout` is a desktop idea: on Android nothing is attached to it, so a
+/// headless export there reports nothing at all, success or failure -- which
+/// is exactly the case where you most want to know. `print` reaches logcat as
+/// well as a terminal. Not `debugPrint`: it throttles and queues, and the
+/// `exit` at the end of an export would drop whatever is still in the queue.
+// ignore: avoid_print
+void _say(String message) => print(message);
+
+/// Where a headless run reads its options and writes its output.
+///
+/// On a desktop that is the command line and the current directory. Android
+/// has neither, so the same options are read from `export_args.txt` in the
+/// app's external files directory -- one token per line, exactly the argv the
+/// desktop build would have been given. `adb push` writes it, `adb pull` takes
+/// the result back, and the app needs no permission for either because it is
+/// the app's own directory.
+class _Options {
+  const _Options(this.values, this.workingDir);
+
+  final Map<String, String> values;
+  final Directory workingDir;
+
+  String? operator [](String key) => values[key];
+}
+
+Future<_Options> _optionsFor(List<String> args) async {
+  Directory dir = Directory.current;
+  List<String> tokens = args;
+
+  if (Platform.isAndroid) {
+    dir = (await getExternalStorageDirectory()) ?? await getTemporaryDirectory();
+    final File argsFile = File('${dir.path}/export_args.txt');
+    if (argsFile.existsSync()) {
+      tokens = argsFile
+          .readAsLinesSync()
+          .map((String line) => line.trim())
+          .where((String line) => line.isNotEmpty)
+          .toList();
+    }
+  }
+
+  final Map<String, String> values = <String, String>{};
+  for (int i = 0; i < tokens.length - 1; i++) {
+    if (tokens[i].startsWith('--')) {
+      values[tokens[i].substring(2)] = tokens[i + 1];
+    }
+  }
+  return _Options(values, dir);
+}
+
 void main(List<String> args) {
   final WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
-
-  final Map<String, String> options = <String, String>{};
-  for (int i = 0; i < args.length - 1; i++) {
-    if (args[i].startsWith('--')) options[args[i].substring(2)] = args[i + 1];
-  }
 
   final List<Composition> compositions = <Composition>[
     longform,
@@ -32,6 +84,7 @@ void main(List<String> args) {
     videoShowcase,
     videoProbe,
     videoProbeHalf,
+    encoderProbe,
     audioProbe,
     tickerProbe,
   ];
@@ -40,6 +93,9 @@ void main(List<String> args) {
   // has produced a frame.
   binding.addPostFrameCallback((_) async {
     try {
+      final _Options options = await _optionsFor(args);
+      _say('export_main options: ${options.values} in ${options.workingDir.path}');
+
       // Same bootstrap the render host runs: data first, then compositions.
       await loadReport();
       final String id = options['composition'] ?? 'WeeklyDeals';
@@ -55,31 +111,31 @@ void main(List<String> args) {
         // The one platform-specific step on the way *in*. Without it a
         // composition with a VideoClip refuses to export rather than writing
         // a rectangle of nothing.
-        videoBackend: NativeVideoBackend(projectPath: Directory.current.path),
-        // systemTemp so this works unchanged inside an iOS app sandbox,
-        // where absolute paths like /tmp are not writable.
+        videoBackend:
+            NativeVideoBackend(projectPath: options.workingDir.path),
         outputPath: options['out'] ??
-            '${Directory.systemTemp.path}/${composition.id}_inapp.mp4',
+            '${options.workingDir.path}/${composition.id}_inapp.mp4',
         scale: double.tryParse(options['scale'] ?? '') ?? 1.0,
-        projectPath: Directory.current.path,
+        bitrate: int.tryParse(options['bitrate'] ?? ''),
+        projectPath: options.workingDir.path,
         onProgress: (ExportProgress p) {
           if (p.frame % 30 == 0 || p.frame == p.totalFrames) {
-            stdout.writeln('frame ${p.frame}/${p.totalFrames}');
+            _say('frame ${p.frame}/${p.totalFrames}');
           }
         },
       );
       stopwatch.stop();
 
       for (final String warning in result.warnings) {
-        stdout.writeln('warning: $warning');
+        _say('warning: $warning');
       }
-      stdout.writeln('exported ${result.outputPath}');
-      stdout.writeln('${result.width}x${result.height}  '
+      _say('exported ${result.outputPath}');
+      _say('${result.width}x${result.height}  '
           '${result.frames} frames  '
           '${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s');
       exit(0);
     } catch (error, stack) {
-      stderr.writeln('export failed: $error\n$stack');
+      _say('export failed: $error\n$stack');
       exit(1);
     }
   });

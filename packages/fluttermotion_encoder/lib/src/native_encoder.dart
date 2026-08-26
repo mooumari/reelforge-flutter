@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 
-/// Encodes frames with AVFoundation (iOS and macOS).
+/// Encodes frames with the platform's own encoder: AVFoundation on Apple,
+/// MediaCodec and MediaMuxer on Android.
 ///
 /// Nothing above this class knows it exists: it implements [VideoEncoder], so
 /// exporting inside an app runs exactly the pipeline the CLI runs, with the
@@ -32,9 +33,10 @@ class NativeVideoEncoder implements VideoEncoder, AudioCapableEncoder {
 
   /// Whether this platform has a native encoder at all.
   ///
-  /// Android is not implemented yet, so callers can fall back rather than
-  /// discovering it as a MissingPluginException mid-export.
-  static bool get isSupported => Platform.isIOS || Platform.isMacOS;
+  /// Asked so callers can fall back rather than discovering the answer as a
+  /// MissingPluginException mid-export.
+  static bool get isSupported =>
+      Platform.isIOS || Platform.isMacOS || Platform.isAndroid;
 
   /// Declares the audio to mix into the file.
   ///
@@ -55,7 +57,7 @@ class NativeVideoEncoder implements VideoEncoder, AudioCapableEncoder {
   Future<void> start(EncoderSettings settings) async {
     if (!isSupported) {
       throw EncoderException(
-        'NativeVideoEncoder supports iOS and macOS; this is '
+        'NativeVideoEncoder supports iOS, macOS and Android; this is '
         '${Platform.operatingSystem}. Use the ffmpeg-backed CLI, or supply '
         'your own VideoEncoder.',
       );

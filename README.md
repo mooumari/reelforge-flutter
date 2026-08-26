@@ -192,19 +192,29 @@ anchored at the seek point, which is itself an exact multiple of `1 / fps` and
 therefore a suffix of the same absolute grid a full decode would use.
 
 `tool/verify_video_mapping.sh` proves it rather than asserting it.
-`example/assets/probe.mp4` encodes each frame's own index as its grey value
-(frame *i* is `rgb(2i, 2i, 2i)`), so reading one pixel out of an exported frame
-says exactly which source frame landed there:
+`example/assets/probe.mp4` (regenerate with `tool/make_probe.py`) states each
+frame's own index in eight black-or-white blocks along the top, so reading an
+exported frame says exactly which source frame landed there:
 
 ```text
-   1 shard(s): 200 frames, OK
-   2 shard(s): 200 frames, OK
-   4 shard(s): 200 frames, OK
-   8 shard(s): 200 frames, OK
+  VideoProbe, 1 shard(s): 200 frames, grey drift 1 levels, every frame exact
+  VideoProbe, 4 shard(s): 200 frames, grey drift 1 levels, every frame exact
 PASS
 ```
 
 All 200 frames, every shard count, identical to the single-process render.
+
+The probe used to carry its index as a grey value instead, and that was a
+mistake worth describing. An exported frame has been through two limited-range
+colour round trips and a quantiser, and the two or three levels that costs is
+the same size as the difference between one source frame and the next. So the
+check needed a tolerance, and a tolerance wide enough to absorb the encoder is
+wide enough to hide an off-by-one decoder -- the entire bug class the probe
+exists to catch. Black against white survives all of it, and the answer is
+exact rather than approximate. The grey is still there, and still reported, but
+only as a fidelity number about the *encoder*: see `EncoderProbe`, which paints
+the same ramp instead of decoding it, and so measures the encoder with no
+decoder anywhere in the measurement.
 
 `VideoProbeHalf` is the same clip in a 30fps composition. That matters because
 `probe.mp4` runs at 60fps: a composition at the source's own rate wants one
