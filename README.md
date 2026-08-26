@@ -28,11 +28,40 @@ frame number: `data -> widgets -> frames -> MP4`.
 
 ## Status
 
-Pre-alpha, but it renders. `fluttermotion render` produces an MP4 from a
-composition today. Audio, video clips, and the preview scrubber are not built
-yet.
+Pre-alpha, but it works end to end: preview a composition with hot reload,
+then render it to MP4. Audio and video clips are not built yet.
 
-## Try it
+## Preview
+
+```dart
+// lib/main.dart
+void main() => previewMain(<Composition>[helloFlutter, weeklyDeals]);
+```
+
+```bash
+cd example && flutter run -d macos
+```
+
+Scrub the timeline, then edit a widget and save -- hot reload applies to
+compositions like any other Flutter code, and the frame you are parked on
+redraws immediately.
+
+The preview builds the **same widget tree the exporter rasterises**, wrapped in
+the same `VideoFrame` and laid out at the composition's true size before being
+scaled to fit. A 1080-wide composition is laid out at 1080 even in a 600px
+window, so what you scrub to is what renders.
+
+Wall-clock time is used in exactly one place: deciding which frame the playhead
+is on. The composition never sees it.
+
+| Key | |
+|---|---|
+| `space` | play / pause |
+| `←` `→` | step one frame (`shift` for ten) |
+| `home` `end` | jump to first / last frame |
+| `L` | toggle loop |
+
+## Render
 
 ```bash
 # lib/render_main.dart in your own Flutter project:
