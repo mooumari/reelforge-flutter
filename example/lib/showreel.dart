@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 
+import 'compositions.dart';
+
 /// A showreel: one scene per capability, cut on a single continuous
 /// background so the joins read as a video rather than as five renders.
 ///
@@ -62,7 +64,7 @@ final Composition showreel = Composition(
       child: child,
     ),
   ),
-  builder: (BuildContext context) => const _Showreel(),
+  builder: (BuildContext context) => typeset(const _Showreel()),
 );
 
 class _Showreel extends StatelessWidget {

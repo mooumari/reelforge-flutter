@@ -84,6 +84,21 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  # A composition that must render the same on every platform has to carry its
+  # own fonts. Without this the example draws in whatever the platform calls
+  # its default -- SF on macOS, Roboto on Android -- and the two exports differ
+  # on every glyph while agreeing on every shape. Roboto is bundled here (see
+  # assets/fonts/LICENSE.txt) so the cross-platform comparison measures the
+  # renderer and the encoder rather than the font.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+
   # fonts:
   #   - family: Schyler
   #     fonts:

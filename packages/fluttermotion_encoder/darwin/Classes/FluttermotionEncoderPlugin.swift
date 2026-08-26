@@ -119,6 +119,18 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
             // spending the whole bitrate on I-frames.
             AVVideoMaxKeyFrameIntervalKey: rate * 2,
           ],
+          // Standard definition means BT.601 and high definition means BT.709.
+          // Left unsaid, the writer picks for itself and tags nothing, so the
+          // file's colours depend on what the player assumes rather than on
+          // what was written. Saying it here decides both the conversion from
+          // the BGRA buffers and the metadata that describes it.
+          AVVideoColorPropertiesKey: [
+            AVVideoColorPrimariesKey: h >= 720
+              ? AVVideoColorPrimaries_ITU_R_709_2 : AVVideoColorPrimaries_SMPTE_C,
+            AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+            AVVideoYCbCrMatrixKey: h >= 720
+              ? AVVideoYCbCrMatrix_ITU_R_709_2 : AVVideoYCbCrMatrix_ITU_R_601_4,
+          ],
         ])
       // Frames arrive as fast as they render, not on a wall clock.
       videoInput.expectsMediaDataInRealTime = false

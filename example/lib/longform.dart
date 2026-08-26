@@ -3,6 +3,8 @@ import 'package:fluttermotion/fluttermotion.dart';
 
 import 'report_data.dart';
 
+import 'compositions.dart';
+
 /// A 60-second, data-driven vertical reel.
 ///
 /// This exists to be *hard*, not to be pretty. Everything else in this example
@@ -55,7 +57,7 @@ final Composition longform = Composition(
     ),
     child: ColoredBox(color: _ink, child: child),
   ),
-  builder: (BuildContext context) => const _Longform(),
+  builder: (BuildContext context) => typeset(const _Longform()),
 );
 
 class _Longform extends StatelessWidget {

@@ -197,6 +197,9 @@ class DecodeSource(
   /// that lands exactly on one.
   private val sourceFrameDurationUs: Long
 
+  /// Whether the source declares (or, failing that, implies) BT.709.
+  private val sourceIsHd: Boolean
+
   /// The frame on screen, and the one after it once it has been read. The
   /// lookahead is what makes "is this still the right frame for this instant?"
   /// answerable, since a decoder cannot be asked to put a frame back.
@@ -230,6 +233,16 @@ class DecodeSource(
     }
     sourceFrameDurationUs =
       if (sourceFps > 0) (1_000_000.0 / sourceFps).toLong() else 1_000_000L / fps
+
+    // What the file says, if it says anything. Most do not, and then the
+    // convention is the same one every encoder uses: high definition means
+    // BT.709.
+    sourceIsHd = if (format.containsKey(MediaFormat.KEY_COLOR_STANDARD)) {
+      format.getInteger(MediaFormat.KEY_COLOR_STANDARD) ==
+        MediaFormat.COLOR_STANDARD_BT709
+    } else {
+      sourceHeight >= 720
+    }
   }
 
   /// Points the decode at an exact source frame.
@@ -328,7 +341,7 @@ class DecodeSource(
             val image = decoder.getOutputImage(outputIndex)
             if (image != null) {
               if (pendingPixels == null) {
-                pendingPixels = toRgba(image, width, height)
+                pendingPixels = toRgba(image, width, height, sourceIsHd)
                 pendingTime = bufferInfo.presentationTimeUs
               }
               image.close()
@@ -380,7 +393,20 @@ class DecodeSource(
     /// not the same filter ffmpeg's `scale` uses, so a downscaled clip will
     /// differ slightly between the two decoders in a way a full-size one does
     /// not.
-    fun toRgba(image: Image, width: Int, height: Int): ByteArray {
+    fun toRgba(
+      image: Image,
+      width: Int,
+      height: Int,
+      hd: Boolean = height >= 720,
+    ): ByteArray {
+      // The inverse of the matrix the source was written with: BT.709 for high
+      // definition, BT.601 below it. Inverting with the wrong one does not
+      // fail, it tints, so a clip decoded here and the same clip decoded by
+      // ffmpeg would quietly disagree on colour.
+      val crR = if (hd) 459 else 409
+      val cbG = if (hd) -55 else -100
+      val crG = if (hd) -136 else -208
+      val cbB = if (hd) 541 else 516
       val out = ByteArray(width * height * 4)
       val yPlane = image.planes[0]
       val uPlane = image.planes[1]
@@ -414,9 +440,10 @@ class DecodeSource(
           val cr = (vBuffer.get(cy * vStride + cx * vPixel).toInt() and 0xFF) - 128
 
           val c = 298 * luma
-          out[at] = (((c + 409 * cr + 128) shr 8).coerceIn(0, 255)).toByte()
-          out[at + 1] = (((c - 100 * cb - 208 * cr + 128) shr 8).coerceIn(0, 255)).toByte()
-          out[at + 2] = (((c + 516 * cb + 128) shr 8).coerceIn(0, 255)).toByte()
+          out[at] = (((c + crR * cr + 128) shr 8).coerceIn(0, 255)).toByte()
+          out[at + 1] =
+            (((c + cbG * cb + crG * cr + 128) shr 8).coerceIn(0, 255)).toByte()
+          out[at + 2] = (((c + cbB * cb + 128) shr 8).coerceIn(0, 255)).toByte()
           out[at + 3] = -1
           at += 4
         }

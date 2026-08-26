@@ -128,7 +128,14 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
           // no colour metadata and a decoder is left to guess, which is how the
           // same pixels come back looking different.
           setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_LIMITED)
-          setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT601_NTSC)
+          setInteger(
+            MediaFormat.KEY_COLOR_STANDARD,
+            if (Matrix.forHeight(h) == Matrix.BT709) {
+              MediaFormat.COLOR_STANDARD_BT709
+            } else {
+              MediaFormat.COLOR_STANDARD_BT601_NTSC
+            }
+          )
           setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_SDR_VIDEO)
         }
 
@@ -188,7 +195,7 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
 
         val image = encoder.getInputImage(inputIndex)
           ?: throw IllegalStateException("the encoder gave no input image for frame $index")
-        fillImage(image, rgba, width, height)
+        fillImage(image, rgba, width, height, Matrix.forHeight(height))
 
         // Presentation time comes from the frame index, never from a clock.
         val pts = index.toLong() * 1_000_000L / fps.toLong()
@@ -309,7 +316,39 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
     /// COLOR_FormatYUV420Flexible and only the plane's own pixel stride says
     /// which one this device has. Assuming one of them works on the machine it
     /// was written on and produces green frames on half the others.
-    fun fillImage(image: Image, rgba: ByteArray, width: Int, height: Int) {
+    /// Which luma/chroma matrix a frame of this height is written with.
+    ///
+    /// Standard definition means BT.601 and high definition means BT.709, and
+    /// getting it wrong does not fail loudly -- it just tints everything,
+    /// because the file says one thing and the pixels were computed by the
+    /// other. Choosing by height is what ffmpeg and x264 do, so a CLI render
+    /// and an in-app export of the same composition agree.
+    enum class Matrix {
+      BT601,
+      BT709;
+
+      companion object {
+        fun forHeight(height: Int): Matrix = if (height >= 720) BT709 else BT601
+      }
+    }
+
+    fun fillImage(
+      image: Image,
+      rgba: ByteArray,
+      width: Int,
+      height: Int,
+      matrix: Matrix = Matrix.forHeight(height),
+    ) {
+      // Integer forms of the two matrices, limited range. Each luma row sums
+      // to 219 and each chroma row to zero, which is what keeps a grey grey.
+      val hd = matrix == Matrix.BT709
+      val yr = if (hd) 47 else 66
+      val yg = if (hd) 157 else 129
+      val yb = if (hd) 16 else 25
+      val ur = if (hd) -26 else -38
+      val ug = if (hd) -86 else -74
+      val vg = if (hd) -102 else -94
+      val vb = if (hd) -10 else -18
       val yPlane = image.planes[0]
       val uPlane = image.planes[1]
       val vPlane = image.planes[2]
@@ -330,7 +369,7 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
           val g = rgba[source + 1].toInt() and 0xFF
           val b = rgba[source + 2].toInt() and 0xFF
           source += 4
-          val luma = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+          val luma = ((yr * r + yg * g + yb * b + 128) shr 8) + 16
           yBuffer.put(row + x, luma.coerceIn(16, 235).toByte())
         }
       }
@@ -357,8 +396,8 @@ class FluttermotionEncoderPlugin : FlutterPlugin, MethodChannel.MethodCallHandle
           val r = rs shr 2
           val g = gs shr 2
           val b = bs shr 2
-          val cb = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
-          val cr = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+          val cb = ((ur * r + ug * g + 112 * b + 128) shr 8) + 128
+          val cr = ((112 * r + vg * g + vb * b + 128) shr 8) + 128
           uBuffer.put(uRow + i * uPixel, cb.coerceIn(16, 240).toByte())
           vBuffer.put(vRow + i * vPixel, cr.coerceIn(16, 240).toByte())
         }

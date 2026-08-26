@@ -4,6 +4,24 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:fluttermotion/fluttermotion.dart';
 
+/// Wraps a composition in the font it carries, rather than the one the machine
+/// happens to have.
+///
+/// A composition is supposed to be a pure function of its frame number, and on
+/// one machine it is. Across two it is not, unless the fonts come with it: the
+/// platform default is SF on macOS and Roboto on Android, so the same
+/// composition exported on each agrees on every shape and disagrees on every
+/// glyph. Measured on WeeklyDeals, that alone was the whole gap between the
+/// macOS and Android exports -- 3.4% of pixels off by more than 32 levels,
+/// all of them inside text.
+///
+/// `Text` merges its own style over the default, so a style that names no
+/// family still picks this one up.
+Widget typeset(Widget child) => DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Roboto'),
+      child: child,
+    );
+
 /// Hoisted deliberately. A provider constructed inside build() would be a new
 /// object on every frame and would never match what the preloader decoded.
 const AssetImage badge = AssetImage('assets/badge.png');
@@ -14,7 +32,7 @@ final Composition helloFlutter = Composition(
   height: 1080,
   fps: 60,
   durationInFrames: 120,
-  builder: (BuildContext context) => const _HelloFlutter(),
+  builder: (BuildContext context) => typeset(const _HelloFlutter()),
 );
 
 final Composition weeklyDeals = Composition(
@@ -23,7 +41,7 @@ final Composition weeklyDeals = Composition(
   height: 1920,
   fps: 60,
   durationInFrames: 300,
-  builder: (BuildContext context) => const _WeeklyDeals(),
+  builder: (BuildContext context) => typeset(const _WeeklyDeals()),
 );
 
 /// A video clip composited like any other widget: rounded, shadowed, tilted,
@@ -35,7 +53,7 @@ final Composition videoShowcase = Composition(
   height: 720,
   fps: 60,
   durationInFrames: 120,
-  builder: (BuildContext context) => const _VideoShowcase(),
+  builder: (BuildContext context) => typeset(const _VideoShowcase()),
 );
 
 /// Exists to verify frame accuracy, not to look good.
@@ -63,7 +81,7 @@ final Composition encoderProbe = Composition(
   height: 240,
   fps: 60,
   durationInFrames: 120,
-  builder: (BuildContext context) => const _GreyRamp(),
+  builder: (BuildContext context) => typeset(const _GreyRamp()),
 );
 
 class _GreyRamp extends StatelessWidget {
@@ -82,7 +100,7 @@ final Composition videoProbe = Composition(
   height: 240,
   fps: 60,
   durationInFrames: 200,
-  builder: (BuildContext context) => const _VideoProbe(),
+  builder: (BuildContext context) => typeset(const _VideoProbe()),
 );
 
 /// The same probe, at half the source's frame rate.
@@ -99,7 +117,7 @@ final Composition videoProbeHalf = Composition(
   height: 240,
   fps: 30,
   durationInFrames: 100,
-  builder: (BuildContext context) => const _VideoProbeHalf(),
+  builder: (BuildContext context) => typeset(const _VideoProbeHalf()),
 );
 
 class _VideoProbeHalf extends StatelessWidget {
@@ -143,7 +161,7 @@ final Composition audioProbe = Composition(
   height: 240,
   fps: 60,
   durationInFrames: 120,
-  builder: (BuildContext context) => const _AudioProbe(),
+  builder: (BuildContext context) => typeset(const _AudioProbe()),
 );
 
 class _AudioProbe extends StatelessWidget {
@@ -501,5 +519,5 @@ final Composition tickerProbe = Composition(
   height: 240,
   fps: 60,
   durationInFrames: 180,
-  builder: (BuildContext context) => const TickerProbe(),
+  builder: (BuildContext context) => typeset(const TickerProbe()),
 );

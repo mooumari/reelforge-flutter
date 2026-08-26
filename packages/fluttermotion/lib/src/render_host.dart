@@ -126,6 +126,15 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
   final String codec = args.optional('codec') ?? 'h264_videotoolbox';
   final String bitrate = args.optional('bitrate') ?? '12M';
 
+  // Standard definition means BT.601 and high definition means BT.709. Left
+  // alone, ffmpeg converts RGB with BT.601 whatever the size and writes no
+  // colour metadata at all, so an HD render says nothing and every player
+  // assumes BT.709 -- the pixels are one matrix and the file implies the
+  // other. Nobody sees an error; the colours are simply a little off, and an
+  // in-app export that gets it right looks like the one that is wrong.
+  final bool hd = composition.height >= 720;
+  final String matrix = hd ? 'bt709' : 'smpte170m';
+
   final Process ffmpeg = await Spawn.start(ffmpegPath, <String>[
     '-y',
     '-hide_banner',
@@ -135,9 +144,16 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
     '-s', '${composition.width}x${composition.height}',
     '-r', '${composition.fps}',
     '-i', '-',
+    '-vf', 'scale=out_color_matrix=$matrix:out_range=tv',
     '-c:v', codec,
     '-b:v', bitrate,
     '-pix_fmt', 'yuv420p',
+    // Say so in the file as well as doing it, so a player does not have to
+    // guess what the guess was.
+    '-colorspace', matrix,
+    '-color_primaries', hd ? 'bt709' : 'smpte170m',
+    '-color_trc', hd ? 'bt709' : 'smpte170m',
+    '-color_range', 'tv',
     out,
   ]);
 
