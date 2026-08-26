@@ -185,7 +185,7 @@ class _WeeklyBars extends StatelessWidget {
     final int peak = report.peakShipped;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(70, 200, 70, 200),
+      padding: const EdgeInsets.fromLTRB(70, 150, 70, 150),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -230,35 +230,54 @@ class _Bar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Column(
         children: <Widget>[
-          Text(
-            '${week.shipped}',
-            style: TextStyle(
-              fontSize: 26,
-              color: _paper.withValues(alpha: grow.clamp(0.0, 1.0)),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
           // Expanded first, then a height read off the constraints. A
           // FractionallySizedBox here would have nothing to be a fraction of:
           // a Column hands its children unbounded height on the main axis.
           Expanded(
             child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) =>
-                  Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  height: constraints.maxHeight * scale.clamp(0.0, 1.0),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: <Color>[Color(0xFF166534), _accent],
+              builder: (BuildContext context, BoxConstraints constraints) {
+                // Headroom for the number, so the tallest bar still has
+                // somewhere to put it.
+                const double headroom = 44;
+                final double height = (constraints.maxHeight - headroom) *
+                    scale.clamp(0.0, 1.0);
+                return Stack(
+                  children: <Widget>[
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        height: height,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: <Color>[Color(0xFF166534), _accent],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
+                    // Rides on top of its own bar rather than sitting in a row
+                    // of numbers at the top, where nothing says which bar a
+                    // number belongs to.
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: height + 8,
+                      child: Text(
+                        '${week.shipped}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 26,
+                          color: _paper
+                              .withValues(alpha: grow.clamp(0.0, 1.0)),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 14),
@@ -564,7 +583,7 @@ class _RevertsLine extends StatelessWidget {
         easing: Curves.easeInOutCubic);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(70, 300, 70, 300),
+      padding: const EdgeInsets.fromLTRB(70, 150, 70, 150),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -575,6 +594,21 @@ class _RevertsLine extends StatelessWidget {
               painter: _LinePainter(weeks: report.weeks, reveal: reveal),
               size: Size.infinite,
             ),
+          ),
+          const SizedBox(height: 14),
+          // One equal-width slot per week, which is exactly how the painter
+          // above places its points.
+          Row(
+            children: <Widget>[
+              for (final Week week in report.weeks)
+                Expanded(
+                  child: Text(
+                    week.label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 22, color: _dim),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -596,14 +630,25 @@ class _LinePainter extends CustomPainter {
         .reduce((int a, int b) => a > b ? a : b)
         .clamp(1, 1 << 30);
 
+    // Points sit at the centre of a slot per week, not at the edges of the
+    // box. Two reasons: a point at x = 0 has half its dot painted outside the
+    // canvas, and slot centres are where a Row of equal-width labels puts its
+    // text, so the axis underneath lines up without being told anything.
+    const double dot = 9;
+    final double slot = size.width / weeks.length;
+    final double top = dot;
+    final double usable = size.height - dot * 2;
+
+    double xFor(int i) => slot * (i + 0.5);
+    double yFor(int i) =>
+        top + usable * (1 - weeks[i].reverted / maxReverted);
+
     final Path path = Path();
     for (int i = 0; i < weeks.length; i++) {
-      final double x = size.width * i / (weeks.length - 1);
-      final double y = size.height * (1 - weeks[i].reverted / maxReverted);
       if (i == 0) {
-        path.moveTo(x, y);
+        path.moveTo(xFor(i), yFor(i));
       } else {
-        path.lineTo(x, y);
+        path.lineTo(xFor(i), yFor(i));
       }
     }
 
@@ -621,9 +666,7 @@ class _LinePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
     for (int i = 0; i < weeks.length; i++) {
-      final double x = size.width * i / (weeks.length - 1);
-      final double y = size.height * (1 - weeks[i].reverted / maxReverted);
-      canvas.drawCircle(Offset(x, y), 9, Paint()..color = _warn);
+      canvas.drawCircle(Offset(xFor(i), yFor(i)), dot, Paint()..color = _warn);
     }
     canvas.restore();
   }
@@ -647,15 +690,6 @@ class _Outro extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Opacity(
-            opacity: badge,
-            child: MotionImage(
-              image: const AssetImage('assets/badge.png'),
-              width: 180,
-              height: 180,
-            ),
-          ),
-          const SizedBox(height: 50),
           Transform.translate(
             offset: Offset(0, (1 - rise) * 40),
             child: Text(

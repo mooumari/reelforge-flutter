@@ -665,15 +665,16 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   render, including the clip's entry and exit, read per frame by pixel value.
 - **The whole 60-second reel exports from inside an app**, no ffmpeg anywhere:
   1800 frames at 1080x1920 with three looping clips and eight sounds, in
-  15.16 s single-process -- **3.96x realtime**. Mean SSIM against the CLI
-  render is 0.99767, worst frame 0.99384, nothing below 0.98; the residue is
-  two independent H.264 encodes of the same pixels.
+  13.64 s single-process -- **4.40x realtime**, inside 450 MB max RSS, which is
+  what says the decoders stream rather than accumulate. Mean SSIM against the
+  CLI render is 0.99775, worst frame 0.99438, nothing below 0.98; the residue
+  is two independent H.264 encodes of the same pixels.
 - **A 60-second, eight-scene reel renders deterministically.** 1800 frames at
-  1080x1920, three video clips, eight audio clips and data loaded from JSON:
-  worst per-frame difference between a 1-shard and a 4-shard render is 0.31
-  grey levels, with no frame over 3. It renders in 13.89 s -- **4.32x
-  realtime** -- inside 309 MB max RSS, which is what says the decoders are
-  streaming rather than accumulating.
+  1080x1920, three video clips, eight audio clips and data loaded from JSON.
+  Encoded near-losslessly so the comparison measures the renderer rather than
+  the encoder, the worst per-frame difference between a 1-shard and a 4-shard
+  render is 0.035 grey levels, with no frame over 3. At the default settings it
+  renders in 10.32 s -- **5.81x realtime**.
 - **Widgets that animate on their own `Ticker` are frame-exact**, and identical
   across 1, 2, 4 and 8 shards -- including one mounted mid-timeline by a
   `Sequence`.
