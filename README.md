@@ -566,25 +566,58 @@ Verified against the ffmpeg CLI render of the same composition
 | | frames | time | SSIM vs CLI |
 |---|---|---|---|
 | macOS, in-app | 300 | 8.41 s | 0.99169 mean, 0.98964 min |
+| iPhone 16 Pro Max, in-app (release) | 300 | 3.69 s | 0.98124 mean, 0.97903 min |
 | iOS simulator, in-app (debug) | 300 | 5.45 s | 0.98122 mean, 0.97902 min |
 | Android emulator, in-app | 300 | 21.69 s | 0.98202 mean, 0.98019 min |
 
+The phone is the fastest of the four. Everything above it was a simulator or
+an emulator running a software codec; the iPhone has a hardware encoder, and
+it renders a 10-second vertical video in under four seconds. That is the
+number the on-device claim rests on, and it was worth checking rather than
+assuming -- hardware encoders are where stride, plane alignment and colour
+format quirks live, and none of them show up on a simulator.
+
 And on the whole 60-second reel -- 1800 frames of 1080x1920 with footage,
-charts and a mixed soundtrack -- the Android export runs in **206.6 s** on the
-emulator and scores **0.99416** mean SSIM against the CLI render, minimum
-0.98291.
+charts and a mixed soundtrack:
 
-Nine iOS frames sit just under 0.98; nothing else does. Both probes are exact
-on all three, at the source's frame rate and at half it, and `AudioProbe`'s
-click lands at 1000.0 ms on every one of them.
+| | frames | time | SSIM vs CLI |
+|---|---|---|---|
+| iPhone 16 Pro Max, in-app | 1800 | 24.61 s | 0.99434 mean, 0.98165 min |
+| Android emulator, in-app | 1800 | 147.7 s | 0.99688 mean, 0.99202 min |
 
-Run them with `tool/macos_export.sh`, `tool/ios_export.sh` and
-`tool/android_export.sh`. The scripts exist for reasons worth knowing. Neither
-phone platform has argv: an app is launched rather than a process invoked, so
-`--dart-entrypoint-args` arrives empty and the working directory is `/`, which
-is not writable. On Android `stdout` reaches nobody either, so an export there
-reported neither success nor failure and simply left no file. Both now read
+No frame of either falls below 0.98. The emulator scores higher than the
+phone because it is running a software encoder rather than a hardware one,
+and takes six times as long to do it.
+
+Eight frames on the iPhone and nine on the simulator sit just under 0.98;
+nothing else does. Both probes are exact on all four, at the source's frame
+rate and at half it, and `AudioProbe`'s click lands at 1000.0 ms on every one
+of them.
+
+Run them with `tool/macos_export.sh`, `tool/ios_export.sh`,
+`tool/iphone_export.sh` and `tool/android_export.sh`. The scripts exist for
+reasons worth knowing. Neither phone platform has argv: an app is launched
+rather than a process invoked, so `--dart-entrypoint-args` arrives empty and
+the working directory is `/`, which is not writable. On Android `stdout`
+reaches nobody either, so an export there reported neither success nor failure
+and simply left no file. Both now read
 their options from `export_args.txt` in a directory the app owns.
+
+A release build on a physical iPhone says even less. `print` goes to os_log
+rather than to a console, and a run launched by `devicectl` produces no
+visible output at all, successful or not -- so the export now writes its own
+account of itself to `export_log.txt` next to the video, which is the one
+channel that works the same on every platform and survives the process
+exiting.
+
+That file is also what says a run *finished*. An export is done when the
+process exits, so the driver scripts poll for that -- and a single `adb shell`
+under a loaded emulator can answer "gone" about a process that is very much
+alive. One blink ended the wait at frame 1020 of 1800, pulled a half-written
+file and reported it as the result. Nothing in that output looked wrong; only
+the missing `moov` atom gave it away. The poll now wants three consecutive
+misses, and the script refuses to call the file a result unless the log says
+the export reported success.
 
 And on macOS the CLI's own render step builds into the same path as the
 in-app app bundle, so a CLI render silently replaces the in-app binary with
@@ -604,6 +637,32 @@ Nothing about that fails loudly. It tints. And it cost something to find:
 matching Android to the CLI *before* fixing the CLI made the correct matrix
 score worse than the wrong one, because the reference was the thing that was
 wrong.
+
+#### An untagged source is ambiguous, not neutral
+
+The same lesson arrived a second time from the other direction. The reel's
+footage, `clip.mp4`, carried no colour tags of its own -- and at 1280x720 it
+sits exactly on the boundary where the guesses diverge. ffmpeg assumes BT.601
+for an untagged file whatever its size; VideoToolbox and MediaCodec assume
+BT.709 above 720p. Same file, same composition, two different pictures.
+
+It showed up as 249 of the reel's 1800 frames below 0.98 SSIM on the iPhone,
+in one contiguous run. The run was frames 436-683, which is exactly scene two
+-- the only scene showing that clip. Tagging the file, with no re-encode:
+
+    ffmpeg -i in.mp4 -c copy -bsf:v h264_metadata=video_full_range_flag=0:\
+    colour_primaries=1:transfer_characteristics=1:matrix_coefficients=1 out.mp4
+
+took the reel from **0.99165 mean with 249 frames under 0.98** to **0.99434
+with none**. Not one pixel of the source changed; the file simply stopped
+being ambiguous about what its pixels meant.
+
+Having lost time to that twice, the framework now says it out loud. A source
+that declares no colour space is reported by name in the export's warnings,
+with the command above, the same way a clip that runs out mid-window already
+was. It warns once per file rather than once per placement, and a backend that
+cannot tell -- as a platform decoder may not -- stays quiet rather than
+accusing every file it opens.
 
 #### Fonts travel with the composition
 

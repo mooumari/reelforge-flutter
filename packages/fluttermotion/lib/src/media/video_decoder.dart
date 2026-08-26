@@ -15,11 +15,25 @@ class VideoSourceInfo {
     required this.width,
     required this.height,
     required this.durationInSeconds,
+    this.declaresColour,
   });
 
   final int width;
   final int height;
   final double durationInSeconds;
+
+  /// Whether the file says which colour matrix its pixels were written with.
+  ///
+  /// Null when the backend cannot tell, which is not the same as `false` and
+  /// must not be reported as one. ffprobe always can; a platform decoder that
+  /// does not expose the container's tags leaves this null and stays quiet.
+  ///
+  /// A file that says nothing is not neutral, it is ambiguous: every decoder
+  /// guesses, mostly from the frame height, and they do not all guess the
+  /// same. An untagged 720p clip decoded by ffmpeg and by VideoToolbox comes
+  /// out visibly different, which is a real defect that only appears when a
+  /// composition is exported on two platforms and compared.
+  final bool? declaresColour;
 
   /// How many composition frames the source can cover at [fps].
   int frameCapacity(int fps) => (durationInSeconds * fps).floor();
@@ -34,7 +48,7 @@ Future<VideoSourceInfo> probeVideo(String ffprobe, String path) async {
   final ProcessResult result = await Spawn.run(ffprobe, <String>[
     '-v', 'error',
     '-select_streams', 'v:0',
-    '-show_entries', 'stream=width,height:format=duration',
+    '-show_entries', 'stream=width,height,color_space:format=duration',
     '-of', 'json',
     path,
   ]);
@@ -55,11 +69,20 @@ Future<VideoSourceInfo> probeVideo(String ffprobe, String path) async {
   final Map<String, Object?> format =
       (json['format'] as Map<String, Object?>?) ?? const <String, Object?>{};
 
+  // In JSON output ffprobe drops unknown fields rather than writing them, so
+  // an absent key is the untagged case rather than the can't-tell one. (The
+  // default text output does print `color_space=unknown`, which is why this
+  // reads both ways.)
+  final String? colourSpace = stream['color_space'] as String?;
+
   return VideoSourceInfo(
     width: stream['width']! as int,
     height: stream['height']! as int,
     durationInSeconds:
         double.tryParse((format['duration'] as String?) ?? '') ?? 0,
+    declaresColour: colourSpace != null &&
+        colourSpace.isNotEmpty &&
+        colourSpace != 'unknown',
   );
 }
 

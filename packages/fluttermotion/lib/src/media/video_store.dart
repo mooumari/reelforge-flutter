@@ -122,6 +122,11 @@ abstract final class VideoPreloader {
         <VideoDeclaration, List<VideoFrameSource>>{};
     final List<String> warnings = <String>[];
 
+    /// Files already reported as untagged. Unlike running out mid-window,
+    /// which is a property of one mounting, colour tagging is a property of
+    /// the file: the same clip in three scenes is one thing to fix.
+    final Set<String> untagged = <String>{};
+
     for (final VideoTimelineEntry entry in entries) {
       final String path =
           await backend.resolve(entry.declaration.src, projectPath: projectPath);
@@ -148,6 +153,21 @@ abstract final class VideoPreloader {
           'frames at ${fps}fps, but the file only has $available '
           '(${info.durationInSeconds.toStringAsFixed(2)}s). The last frame '
           'will be held for the remaining ${needed - available}.',
+        );
+      }
+
+      // An untagged source is ambiguous rather than neutral: every decoder
+      // guesses the colour matrix, mostly from the height, and they do not
+      // all guess alike. It costs nothing until the same composition is
+      // exported on two platforms, and then it is a tint nobody can explain.
+      if (info.declaresColour == false && untagged.add(entry.declaration.src)) {
+        warnings.add(
+          '${entry.declaration.src} declares no colour space, so each '
+          'platform\'s decoder has to guess one and they need not agree. '
+          'Tag it once and the guess goes away:\n'
+          '  ffmpeg -i in.mp4 -c copy -bsf:v h264_metadata='
+          'video_full_range_flag=0:colour_primaries=1:'
+          'transfer_characteristics=1:matrix_coefficients=1 out.mp4',
         );
       }
 

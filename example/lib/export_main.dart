@@ -22,15 +22,29 @@ import 'report_data.dart';
 /// On Android and iOS there is no argv -- an app is launched, not a process
 /// invoked, and `--dart-entrypoint-args` arrives empty. See [_optionsFor].
 
+/// Where a run's own account of itself is written, once one is known.
+File? _log;
+
 /// Says something everywhere it might be read.
 ///
-/// `stdout` is a desktop idea: on Android nothing is attached to it, so a
-/// headless export there reports nothing at all, success or failure -- which
-/// is exactly the case where you most want to know. `print` reaches logcat as
-/// well as a terminal. Not `debugPrint`: it throttles and queues, and the
+/// `stdout` is a desktop idea. On Android nothing is attached to it; on an iOS
+/// device `print` reaches os_log rather than the console, and a release build
+/// launched by `devicectl` says nothing at all. A headless export that reports
+/// neither success nor failure is worst exactly when it has failed, so this
+/// also appends to a file next to the output -- the one channel that works the
+/// same everywhere and survives the process exiting.
+///
+/// `print` rather than `debugPrint`: the latter throttles and queues, and the
 /// `exit` at the end of an export would drop whatever is still in the queue.
-// ignore: avoid_print
-void _say(String message) => print(message);
+void _say(String message) {
+  // ignore: avoid_print
+  print(message);
+  try {
+    _log?.writeAsStringSync('$message\n', mode: FileMode.append);
+  } catch (_) {
+    // A log that cannot be written must not be the thing that fails the run.
+  }
+}
 
 /// Where a headless run reads its options and writes its output.
 ///
@@ -74,6 +88,12 @@ Future<_Options> _optionsFor(List<String> args) async {
     if (tokens[i].startsWith('--')) {
       values[tokens[i].substring(2)] = tokens[i + 1];
     }
+  }
+  _log = File('${dir.path}/export_log.txt');
+  try {
+    _log!.writeAsStringSync('');
+  } catch (_) {
+    _log = null;
   }
   return _Options(values, dir);
 }

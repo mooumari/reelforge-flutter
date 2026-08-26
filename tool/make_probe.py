@@ -66,7 +66,14 @@ def main():
          # matters. Pinning the profile is the point; the crf is just high
          # enough that the pattern is exact and the grey barely moves.
          "-c:v", "libx264", "-preset", "veryslow", "-crf", "12",
-         "-profile:v", "high", "-pix_fmt", "yuv420p", OUT],
+         "-profile:v", "high", "-pix_fmt", "yuv420p",
+         # Say which matrix these pixels were written with. An untagged file is
+         # not neutral, it is ambiguous: ffmpeg, VideoToolbox and MediaCodec
+         # each guess, mostly from the height, and they need not agree. 240p is
+         # BT.601, which is what ffmpeg used on the way in.
+         "-colorspace", "smpte170m", "-color_primaries", "smpte170m",
+         "-color_trc", "smpte170m", "-color_range", "tv",
+         OUT],
         stdin=subprocess.PIPE,
     )
     for i in range(FRAMES):
