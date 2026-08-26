@@ -22,7 +22,15 @@ abstract final class DeclarationPass {
   static RenderManifest run(Composition composition) {
     final DeclarationCollector collector = DeclarationCollector();
     final CompositionRenderer renderer =
-        CompositionRenderer(composition, collector: collector);
+        CompositionRenderer(
+      composition,
+      collector: collector,
+      // The pass only needs to know which widgets mount, never what their
+      // animations look like -- and driving the animation clock means driving
+      // the binding's frame loop, which is illegal from inside a frame. The
+      // pass runs from wherever the caller happens to be.
+      driveAnimationClock: false,
+    );
     final Stopwatch stopwatch = Stopwatch()..start();
 
     try {

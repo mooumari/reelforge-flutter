@@ -4,6 +4,7 @@
 /// function of frame number, not a running animation.
 library;
 
+export 'src/animation/ticker_gate.dart' show MotionTickerShield;
 export 'src/composition.dart';
 export 'src/declarations/assets.dart';
 export 'src/declarations/manifest.dart';

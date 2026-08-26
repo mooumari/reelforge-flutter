@@ -50,15 +50,14 @@ Scrub the timeline, then edit a widget and save -- hot reload applies to
 compositions like any other Flutter code, and the frame you are parked on
 redraws immediately.
 
-The preview builds the **same widget tree the exporter rasterises**, wrapped in
-the same `VideoFrame` and laid out at the composition's true size before being
-scaled to fit. A 1080-wide composition is laid out at 1080 even in a 600px
-window, so what you scrub to is what renders.
+The preview does not build the composition; it **runs the exporter** and shows
+you the frame that comes back. Every frame on screen went through
+`CompositionRenderer` at the composition's true size, so parity with the export
+is structural rather than something two code paths have to agree about. A test
+byte-compares what the canvas holds against a fresh render of the same frame.
 
 Wall-clock time is used in exactly one place: deciding which frame the playhead
-is on. The composition never sees it -- with one exception, which is that a
-widget animating on its own `Ticker` still animates on the wall clock *in the
-preview*. See [What still is not true](#what-still-is-not-true).
+is on. The composition never sees it.
 
 | Key | |
 |---|---|
@@ -302,13 +301,49 @@ PASS
 Rendering `WeeklyDeals` across 4 shards takes 3.70 s with the sweep against
 4.14 s measured before it, so the cost is inside run-to-run variance.
 
+### Rendering inside a running app
+
+Driving the binding's clock is safe in a headless render host, where nothing
+else asks for frames. In a live app -- the preview, or an on-device export --
+it is not, and both directions bite.
+
+The engine keeps delivering real frames between the ones the renderer
+manufactures, and those would tick the composition's tickers at wall-clock
+time. Since a ticker anchors its zero on its *first* tick, one stray real frame
+is enough to strand an animation at a timestamp composition time never reaches.
+So the composition sits behind a `TickerMode` that is shut except for the
+instant a frame is being drawn.
+
+The other direction is worse. While a frame is drawn, the binding is told the
+time is *composition* time -- a few seconds from the composition's own zero --
+and the surrounding app hears that too. `MotionTickerShield` mutes the app's
+tickers for that instant, so they miss the manufactured frames rather than
+being dragged onto a clock that means nothing to them. The preview installs one
+itself; an app that exports on device should wrap its own root:
+
+```dart
+runApp(const MotionTickerShield(child: MyApp()));
+```
+
+The shield walks its subtree on each frame rather than flipping one flag,
+because `TickerMode` nests -- a `ModalRoute` wraps its contents in one, and the
+ticker mixins only ever watch the nearest.
+
+There is one more subtlety, and it is the kind that only shows up on a real
+device. A raw timestamp handed to `SchedulerBinding` is not the timestamp
+tickers see: the binding subtracts the first raw stamp of its current epoch.
+In a render host our own first frame *is* that stamp. In a live app the engine
+got there first, and on macOS its stamps are time since boot -- so announcing a
+bare composition time of 0.75s announces a frame from hours before the app
+started. `FrameClock` measures that shift on every frame and places composition
+zero on the app's own timeline instead.
+
 ### What still is not true
 
-- **The preview shows wall-clock timing for these widgets.** It builds the
-  composition live in the app's own tree rather than through the renderer, so a
-  ticker-driven widget animates on its own while you scrub. Everything that is
-  a function of `Video.frame` is unaffected. Fixing it means routing the
-  preview through the renderer, which is a real change and is not done.
+- **The binding can re-base its epoch under us**, on a warm-up frame or an app
+  resume. That can only be noticed one frame late, so the frame it happens on
+  lands at the wrong instant and is immediately redrawn at the right one. In
+  practice this is a single frame, once, during app start-up.
 - **Jumping is not the same as playing through** for state a widget changes
   from a callback rather than from the clock. Ticker-driven animation is
   immune, because a controller is a pure function of elapsed-since-start. The
@@ -454,7 +489,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-114 tests across the three packages (97 framework, 11 CLI, 6 encoder).
+118 tests across the three packages (101 framework, 11 CLI, 6 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.
@@ -470,7 +505,7 @@ reached by scrubbing backward from later in the timeline.
 6. ~~On-device export (the moat)~~ done for video on iOS/macOS
    (in-app audio mixing, in-app video decode, and Android still to come)
 7. ~~Widgets from an existing app -- ambient state and their own clocks~~ done
-   for the render and export paths (the preview still shows wall-clock timing)
+   for the render, export and preview paths, including inside a live app
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 

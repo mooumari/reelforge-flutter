@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../animation/ticker_gate.dart';
 import '../composition.dart';
 import '../export/encoder.dart';
 import 'player.dart';
@@ -25,12 +26,14 @@ void previewMain(
   VideoEncoder Function()? encoderFactory,
   String Function(Composition composition)? exportPathBuilder,
 }) {
-  runApp(FlutterMotionPreview(
-    compositions: compositions,
-    projectPath: projectPath,
-    encoderFactory: encoderFactory,
-    exportPathBuilder: exportPathBuilder,
-  ));
+  runApp(
+    FlutterMotionPreview(
+      compositions: compositions,
+      projectPath: projectPath,
+      encoderFactory: encoderFactory,
+      exportPathBuilder: exportPathBuilder,
+    ),
+  );
 }
 
 class FlutterMotionPreview extends StatefulWidget {
@@ -62,17 +65,20 @@ class _FlutterMotionPreviewState extends State<FlutterMotionPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: MediaQuery.fromView(
-        view: View.of(context),
-        child: DefaultTextStyle(
-          style: PreviewText.label,
-          child: ColoredBox(
-            color: PreviewColors.background,
-            child: widget.compositions.isEmpty
-                ? const _Empty()
-                : _body(),
+    // The preview draws its frames through the renderer, which means it drives
+    // the animation clock to composition time. Everything in the preview's own
+    // chrome has to be shielded from that.
+    return MotionTickerShield(
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: MediaQuery.fromView(
+          view: View.of(context),
+          child: DefaultTextStyle(
+            style: PreviewText.label,
+            child: ColoredBox(
+              color: PreviewColors.background,
+              child: widget.compositions.isEmpty ? const _Empty() : _body(),
+            ),
           ),
         ),
       ),
@@ -132,13 +138,15 @@ class _Sidebar extends StatelessWidget {
         children: <Widget>[
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 18, 16, 10),
-            child: Text('COMPOSITIONS',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: PreviewColors.textDim,
-                  letterSpacing: 1.4,
-                  fontWeight: FontWeight.w600,
-                )),
+            child: Text(
+              'COMPOSITIONS',
+              style: TextStyle(
+                fontSize: 10,
+                color: PreviewColors.textDim,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Expanded(
             child: ListView.builder(
@@ -192,8 +200,8 @@ class _SidebarItemState extends State<_SidebarItem> {
             color: widget.selected
                 ? PreviewColors.accentDim
                 : _hovered
-                    ? PreviewColors.chromeRaised
-                    : null,
+                ? PreviewColors.chromeRaised
+                : null,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Column(

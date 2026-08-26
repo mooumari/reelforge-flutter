@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import 'animation/frame_clock.dart';
+import 'animation/ticker_gate.dart';
 import 'composition.dart';
 import 'declarations/assets.dart';
 import 'declarations/scope.dart';
@@ -68,8 +69,8 @@ class CompositionRenderer {
                       durationInFrames: composition.durationInFrames,
                       width: composition.width,
                       height: composition.height,
-                      child: Builder(
-                        builder: composition.buildContent,
+                      child: _gate.wrap(
+                        Builder(builder: composition.buildContent),
                       ),
                     ),
                   ),
@@ -80,6 +81,13 @@ class CompositionRenderer {
         ),
       ),
     ).attachToRenderTree(_buildOwner);
+
+    // Building the tree creates its tickers, and a ticker anchors its zero on
+    // whichever frame reaches it first. In a live app the engine is still
+    // delivering real frames, and one of those arriving before the first pump
+    // would anchor the whole composition at wall-clock time. So the gate is
+    // shut the moment there is anything behind it.
+    _gate.close();
   }
 
   final Composition composition;
@@ -103,6 +111,7 @@ class CompositionRenderer {
   final bool driveAnimationClock;
 
   final FrameClock _clock;
+  final TickerGate _gate = TickerGate();
   bool _primed = false;
 
   final ValueNotifier<int> _frame = ValueNotifier<int>(-1);
@@ -141,11 +150,13 @@ class CompositionRenderer {
     // twice would settle a post-frame callback a frame earlier than a
     // play-through does, which is precisely the divergence being closed.
     for (int f = 0; f < frame; f++) {
+      _gate.open();
       _clock.driveTo(f);
       _frame.value = f;
       _buildOwner.buildScope(_element);
       _buildOwner.finalizeTree();
       _pipelineOwner.flushLayout();
+      _gate.close();
     }
   }
 
@@ -154,13 +165,20 @@ class CompositionRenderer {
   void pump(int frame) {
     assert(!_disposed, 'CompositionRenderer used after dispose().');
     _primeTo(frame);
-    if (driveAnimationClock) _clock.driveTo(frame);
+    if (driveAnimationClock) {
+      _gate.open();
+      _clock.driveTo(frame);
+    }
     _frame.value = frame;
     _buildOwner.buildScope(_element);
     _buildOwner.finalizeTree();
     _pipelineOwner.flushLayout();
     _pipelineOwner.flushCompositingBits();
     _pipelineOwner.flushPaint();
+    // Closed *after* painting, not after driving: the tree is only settled
+    // once layout and paint have run, and the engine gets no chance to
+    // interleave a frame of its own in between.
+    _gate.close();
   }
 
   /// Builds and lays out [frame] without painting it.
@@ -171,11 +189,15 @@ class CompositionRenderer {
   void pumpWithoutPaint(int frame) {
     assert(!_disposed, 'CompositionRenderer used after dispose().');
     _primeTo(frame);
-    if (driveAnimationClock) _clock.driveTo(frame);
+    if (driveAnimationClock) {
+      _gate.open();
+      _clock.driveTo(frame);
+    }
     _frame.value = frame;
     _buildOwner.buildScope(_element);
     _buildOwner.finalizeTree();
     _pipelineOwner.flushLayout();
+    _gate.close();
   }
 
   /// Rasterises [frame]. The caller owns the returned image and must dispose
@@ -213,6 +235,16 @@ class CompositionRenderer {
     } finally {
       image.dispose();
     }
+  }
+
+  /// Rebuilds the whole tree after a hot reload.
+  ///
+  /// A detached tree has its own [BuildOwner], which the binding knows nothing
+  /// about and therefore never reassembles. Without this a preview would keep
+  /// drawing the code that was running when it started.
+  void reassemble() {
+    assert(!_disposed, 'CompositionRenderer used after dispose().');
+    _buildOwner.reassemble(_element);
   }
 
   void dispose() {

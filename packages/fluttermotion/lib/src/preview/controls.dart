@@ -214,8 +214,10 @@ class _PreviewButtonState extends State<PreviewButton> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 90),
+        // Deliberately not an AnimatedContainer. The preview drives the
+        // animation clock to composition time while rendering a frame,
+        // which would drag any implicit animation in the chrome along.
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: widget.primary

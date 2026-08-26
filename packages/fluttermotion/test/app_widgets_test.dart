@@ -30,12 +30,12 @@ class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _controller,
-        builder: (BuildContext context, Widget? child) {
-          final int grey = (_controller.value * 255).round().clamp(0, 255);
-          return ColoredBox(color: Color.fromARGB(255, grey, grey, grey));
-        },
-      );
+    animation: _controller,
+    builder: (BuildContext context, Widget? child) {
+      final int grey = (_controller.value * 255).round().clamp(0, 255);
+      return ColoredBox(color: Color.fromARGB(255, grey, grey, grey));
+    },
+  );
 }
 
 /// The other ubiquitous idiom: start an implicit animation from a post-frame
@@ -59,10 +59,10 @@ class _FadeInState extends State<FadeIn> {
 
   @override
   Widget build(BuildContext context) => AnimatedOpacity(
-        opacity: _opacity,
-        duration: const Duration(milliseconds: 1000),
-        child: const ColoredBox(color: Color(0xFFFFFFFF)),
-      );
+    opacity: _opacity,
+    duration: const Duration(milliseconds: 1000),
+    child: const ColoredBox(color: Color(0xFFFFFFFF)),
+  );
 }
 
 /// Reads its app's theme, as app widgets do.
@@ -77,21 +77,21 @@ Composition wrap(
   String id,
   Widget child, {
   Widget Function(BuildContext, Widget)? wrapper,
-}) =>
-    Composition(
-      id: id,
-      width: 64,
-      height: 64,
-      fps: 60,
-      durationInFrames: 180,
-      wrapper: wrapper,
-      builder: (BuildContext context) => child,
-    );
+}) => Composition(
+  id: id,
+  width: 64,
+  height: 64,
+  fps: 60,
+  durationInFrames: 180,
+  wrapper: wrapper,
+  builder: (BuildContext context) => child,
+);
 
 Future<Uint8List> shot(CompositionRenderer r, int frame) async {
   final ByteData d = await r.renderFrameRgba(frame);
   return Uint8List.fromList(
-      d.buffer.asUint8List(d.offsetInBytes, d.lengthInBytes));
+    d.buffer.asUint8List(d.offsetInBytes, d.lengthInBytes),
+  );
 }
 
 int _centre(Uint8List px, int channel) => px[((32 * 64) + 32) * 4 + channel];
@@ -125,13 +125,15 @@ void main() {
       // This is the shard boundary. A Ticker treats its first tick as elapsed
       // zero, so without priming a renderer entering at frame 45 starts the
       // animation over -- and video one animation out still looks like video.
-      final CompositionRenderer seeked =
-          CompositionRenderer(wrap('Spin', const Spinner()));
+      final CompositionRenderer seeked = CompositionRenderer(
+        wrap('Spin', const Spinner()),
+      );
       final Uint8List direct = await shot(seeked, 45);
       seeked.dispose();
 
-      final CompositionRenderer played =
-          CompositionRenderer(wrap('Spin', const Spinner()));
+      final CompositionRenderer played = CompositionRenderer(
+        wrap('Spin', const Spinner()),
+      );
       for (int frame = 0; frame <= 45; frame++) {
         await shot(played, frame);
       }
@@ -152,11 +154,8 @@ void main() {
         height: 64,
         fps: 60,
         durationInFrames: 180,
-        builder: (BuildContext context) => const Sequence(
-          from: 60,
-          durationInFrames: 120,
-          child: Spinner(),
-        ),
+        builder: (BuildContext context) =>
+            const Sequence(from: 60, durationInFrames: 120, child: Spinner()),
       );
 
       final CompositionRenderer seeked = CompositionRenderer(late);
@@ -174,8 +173,9 @@ void main() {
     });
 
     test('scrubbing backwards returns to the same pixels', () async {
-      final CompositionRenderer r =
-          CompositionRenderer(wrap('Spin', const Spinner()));
+      final CompositionRenderer r = CompositionRenderer(
+        wrap('Spin', const Spinner()),
+      );
       addTearDown(r.dispose);
 
       final Uint8List first = await shot(r, 30);
@@ -187,8 +187,9 @@ void main() {
 
   group('an implicit animation started from a post-frame callback', () {
     test('actually runs, rather than exporting blank', () async {
-      final CompositionRenderer r =
-          CompositionRenderer(wrap('Fade', const FadeIn()));
+      final CompositionRenderer r = CompositionRenderer(
+        wrap('Fade', const FadeIn()),
+      );
       addTearDown(r.dispose);
 
       // Played through, the way the exporter and every shard drive it.
@@ -210,13 +211,15 @@ void main() {
     });
 
     test('is the same seeked as played through', () async {
-      final CompositionRenderer seeked =
-          CompositionRenderer(wrap('Fade', const FadeIn()));
+      final CompositionRenderer seeked = CompositionRenderer(
+        wrap('Fade', const FadeIn()),
+      );
       final Uint8List direct = await shot(seeked, 30);
       seeked.dispose();
 
-      final CompositionRenderer played =
-          CompositionRenderer(wrap('Fade', const FadeIn()));
+      final CompositionRenderer played = CompositionRenderer(
+        wrap('Fade', const FadeIn()),
+      );
       for (int frame = 0; frame <= 30; frame++) {
         await shot(played, frame);
       }
@@ -229,8 +232,9 @@ void main() {
 
   group('ambient state a widget was written against', () {
     test('without a wrapper, Theme.of falls back and says nothing', () async {
-      final CompositionRenderer r =
-          CompositionRenderer(wrap('Brand', const BrandCard()));
+      final CompositionRenderer r = CompositionRenderer(
+        wrap('Brand', const BrandCard()),
+      );
       addTearDown(r.dispose);
 
       final Uint8List px = await shot(r, 0);
@@ -240,16 +244,18 @@ void main() {
 
     test('a wrapper supplies it, and the render honours it', () async {
       const Color brand = Color(0xFFCC0044);
-      final CompositionRenderer r = CompositionRenderer(wrap(
-        'Brand',
-        const BrandCard(),
-        wrapper: (BuildContext context, Widget child) => Theme(
-          data: ThemeData(
-            colorScheme: const ColorScheme.light(primary: brand),
+      final CompositionRenderer r = CompositionRenderer(
+        wrap(
+          'Brand',
+          const BrandCard(),
+          wrapper: (BuildContext context, Widget child) => Theme(
+            data: ThemeData(
+              colorScheme: const ColorScheme.light(primary: brand),
+            ),
+            child: child,
           ),
-          child: child,
         ),
-      ));
+      );
       addTearDown(r.dispose);
 
       final Uint8List px = await shot(r, 0);
@@ -269,4 +275,112 @@ void main() {
     expect(red(await shot(r, 0)), 0);
     expect(red(await shot(r, 45)), 0);
   });
+
+  group('rendering inside a live app', () {
+    // The renderer tells SchedulerBinding that the time is the composition's
+    // time. The binding is global, so the surrounding application hears that
+    // too -- and composition time is a few seconds counted from zero, while a
+    // real app has usually been open far longer. Every animation it is running
+    // would be handed a timestamp from before it started.
+    testWidgets('the app keeps its own clock', (WidgetTester tester) async {
+      final _HostApp app = await _pumpHost(tester, shielded: true);
+
+      final CompositionRenderer renderer = CompositionRenderer(_still);
+      await tester.runAsync(() async {
+        (await renderer.renderFrame(5)).dispose();
+      });
+      renderer.dispose();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        app.controller.value,
+        0.0,
+        reason: 'the app animated on the composition\'s frames',
+      );
+      app.controller.stop();
+    });
+
+    testWidgets('without the shield it does not', (WidgetTester tester) async {
+      // Kept as a test rather than a comment so that the day Flutter makes
+      // this safe on its own, this fails and the shield can go.
+      final _HostApp app = await _pumpHost(tester, shielded: false);
+
+      final CompositionRenderer renderer = CompositionRenderer(_still);
+      await tester.runAsync(() async {
+        (await renderer.renderFrame(5)).dispose();
+      });
+      renderer.dispose();
+
+      // Dragged onto the composition clock: five frames at 60fps into a
+      // one-second animation. Harmless in a test, less so in an app, where
+      // the same pull is what strands an animation mid-gesture -- and where a
+      // ticker anchored on a real frame gets a negative elapsed time and
+      // brings the app down.
+      expect(app.controller.value, closeTo(5 / 60, 1e-6));
+      app.controller.stop();
+    });
+  });
+}
+
+final Composition _still = Composition(
+  id: 'Still',
+  width: 32,
+  height: 32,
+  fps: 60,
+  durationInFrames: 10,
+  builder: (BuildContext context) => const SizedBox.expand(),
+);
+
+class _HostApp {
+  _HostApp(this.controller);
+  final AnimationController controller;
+}
+
+/// An app that has been open a while, with an animation already running --
+/// which is the state a real one is in when it exports.
+Future<_HostApp> _pumpHost(
+  WidgetTester tester, {
+  required bool shielded,
+}) async {
+  late AnimationController controller;
+  final Widget app = MaterialApp(
+    home: _Animating(onReady: (AnimationController c) => controller = c),
+  );
+  await tester.pumpWidget(shielded ? MotionTickerShield(child: app) : app);
+  await tester.pump(const Duration(minutes: 5));
+  controller.repeat(period: const Duration(seconds: 1));
+  await tester.pump(const Duration(milliseconds: 16));
+  return _HostApp(controller);
+}
+
+class _Animating extends StatefulWidget {
+  const _Animating({required this.onReady});
+
+  final void Function(AnimationController) onReady;
+
+  @override
+  State<_Animating> createState() => _AnimatingState();
+}
+
+class _AnimatingState extends State<_Animating>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 1),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onReady(controller);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }

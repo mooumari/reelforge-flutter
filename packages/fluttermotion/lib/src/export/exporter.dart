@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:flutter/scheduler.dart';
+
 import '../composition.dart';
 import '../declarations/manifest.dart';
 import '../declarations/pass.dart';
@@ -172,7 +174,13 @@ abstract final class InAppExporter {
         );
       }
 
-      await encoder.start(EncoderSettings(
+      // Rendering drives the binding's frame loop, which is only legal between
+    // frames. An export started from a button tap can begin inside one.
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+      await SchedulerBinding.instance.endOfFrame;
+    }
+
+    await encoder.start(EncoderSettings(
         outputPath: outputPath,
         width: width,
         height: height,

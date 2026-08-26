@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -7,13 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../composition.dart';
-import '../declarations/assets.dart';
 import '../declarations/pass.dart';
 import '../export/encoder.dart';
 import '../export/exporter.dart';
-import '../frame.dart';
 import '../media/ffmpeg_paths.dart';
 import '../media/video_store.dart';
+import '../renderer.dart';
 import 'controls.dart';
 import 'export_panel.dart';
 import 'scrubber.dart';
@@ -21,12 +21,19 @@ import 'theme.dart';
 
 /// Plays a [Composition] with a scrubbable timeline.
 ///
-/// The preview builds the *same* widget tree the exporter rasterises, wrapped
-/// in the same [VideoFrame] and laid out at the composition's true size, then
-/// scaled to fit. What you scrub to is what renders.
+/// The preview draws frames through the *same* [CompositionRenderer] the
+/// exporter uses and displays the result, rather than building the
+/// composition live in the app's tree. That makes "what you scrub to is what
+/// renders" structural rather than a promise: there is one rasteriser, so
+/// there is nothing for the two paths to disagree about. It also matters for
+/// widgets that animate on their own [Ticker], which only land on the right
+/// frame because the renderer drives the animation clock -- built live they
+/// would animate against the wall clock while you scrub.
 ///
 /// Wall-clock time is used in exactly one place: choosing which frame the
-/// playhead is on. The composition itself never sees it.
+/// playhead is on. That clock is a [Stopwatch] rather than a [Ticker],
+/// precisely because the renderer moves the binding's own notion of time
+/// around and the playhead must not follow it.
 class CompositionPlayer extends StatefulWidget {
   const CompositionPlayer({
     super.key,
@@ -34,6 +41,7 @@ class CompositionPlayer extends StatefulWidget {
     this.projectPath,
     this.encoderFactory,
     this.exportPathBuilder,
+    this.stopwatchFactory,
   });
 
   final Composition composition;
@@ -52,24 +60,44 @@ class CompositionPlayer extends StatefulWidget {
   /// Where an export is written. Defaults to the temp directory.
   final String Function(Composition composition)? exportPathBuilder;
 
+  /// Supplies the playback clock.
+  ///
+  /// A plain [Stopwatch] is right in production -- it reads the monotonic
+  /// clock and so is immune to the renderer moving [SchedulerBinding]'s notion
+  /// of time to composition time. It is also immune to the fake clock in a
+  /// widget test, where no real time passes, so tests hand in one backed by
+  /// the test binding's clock instead.
+  @visibleForTesting
+  final Stopwatch Function()? stopwatchFactory;
+
   @override
   State<CompositionPlayer> createState() => _CompositionPlayerState();
 }
 
-class _CompositionPlayerState extends State<CompositionPlayer>
-    with SingleTickerProviderStateMixin {
-  late Ticker _ticker;
+class _CompositionPlayerState extends State<CompositionPlayer> {
   final FocusNode _focusNode = FocusNode();
+
+  /// Playback clock. Deliberately not a [Ticker]: rendering a frame drives
+  /// [SchedulerBinding] to composition time, which would drag a ticker-based
+  /// playhead along with it.
+  late final Stopwatch _clock = widget.stopwatchFactory?.call() ?? Stopwatch();
+  Timer? _playTimer;
+  double _playheadAtPlay = 0;
 
   int _frame = 0;
   double _playhead = 0;
-  Duration? _lastTick;
   bool _playing = false;
   bool _loop = true;
   bool _wasPlayingBeforeScrub = false;
 
   Map<ImageProvider<Object>, ui.Image>? _images;
   VideoFrames? _video;
+
+  /// The one rasteriser, shared with the exporter.
+  CompositionRenderer? _renderer;
+
+  /// The most recently rasterised frame. Owned here, disposed on replacement.
+  ui.Image? _image;
 
   /// Video decodes asynchronously while the playhead moves on. Rather than
   /// queueing every frame the scrubber passes over -- a decoder is one pipe and
@@ -81,17 +109,27 @@ class _CompositionPlayerState extends State<CompositionPlayer>
 
   bool get _exporting => _exportCancellation != null;
 
-  bool _decoding = false;
+  bool _rendering = false;
   int? _queuedFrame;
   String? _videoError;
+  String? _renderError;
 
   int get _lastFrame => widget.composition.durationInFrames - 1;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick);
     _prepare();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    // The renderer's tree has its own BuildOwner, which the binding never
+    // reassembles, so a hot reload would otherwise leave the preview drawing
+    // the code that was running when it started.
+    _renderer?.reassemble();
+    _requestFrame(_frame);
   }
 
   @override
@@ -103,9 +141,11 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     }
     if (!identical(widget.composition, oldWidget.composition)) {
       _disposeVideo();
+      _disposeRenderer();
       setState(() {
         _images = null;
         _videoError = null;
+        _renderError = null;
       });
       _prepare();
     }
@@ -129,9 +169,15 @@ class _CompositionPlayerState extends State<CompositionPlayer>
         await prepared.dispose();
         return;
       }
+      _disposeRenderer();
       setState(() {
         _images = prepared.images;
         _video = prepared.videoFrames;
+        _renderer = CompositionRenderer(
+          composition,
+          images: prepared.images,
+          videoFrames: prepared.videoFrames,
+        );
         // A composition with video and no ffmpeg previews without it. Saying
         // so beats scrubbing past a silently empty rectangle.
         _videoError = prepared.manifest.video.isNotEmpty &&
@@ -139,7 +185,7 @@ class _CompositionPlayerState extends State<CompositionPlayer>
             ? 'ffmpeg not found -- video is not shown'
             : null;
       });
-      _requestVideo(_frame);
+      _requestFrame(_frame);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -150,27 +196,54 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     }
   }
 
-  /// Decodes [frame]'s video, coalescing anything that arrives mid-decode.
-  void _requestVideo(int frame) {
-    final VideoFrames? video = _video;
-    if (video == null || video.isEmpty) return;
-    if (_decoding) {
+  /// Renders [frame], coalescing anything that arrives mid-render.
+  ///
+  /// A drag crosses many frames while one is still rasterising, so only the
+  /// most recent request is kept: a fast scrub costs one render per settled
+  /// position rather than one per frame crossed. Video is advanced first and
+  /// awaited, in the same order the exporter uses.
+  void _requestFrame(int frame) {
+    final CompositionRenderer? renderer = _renderer;
+    if (renderer == null) return;
+    if (_rendering) {
       _queuedFrame = frame;
       return;
     }
-    _decoding = true;
-    video.advanceTo(frame).then((_) {
-      _decoding = false;
-      if (!mounted) return;
-      setState(() {});
+    _rendering = true;
+    unawaited(_renderFrame(renderer, frame));
+  }
+
+  Future<void> _renderFrame(CompositionRenderer renderer, int frame) async {
+    try {
+      await _video?.advanceTo(frame);
+      // Rendering drives the binding's frame loop, which is only legal
+      // between frames. This runs from a timer or from an await that may have
+      // resumed inside one.
+      if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle) {
+        await SchedulerBinding.instance.endOfFrame;
+      }
+      final ui.Image image = await renderer.renderFrame(frame);
+      if (!mounted || !identical(renderer, _renderer)) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _image?.dispose();
+        _image = image;
+        _renderError = null;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _renderError = '$error'.split('\n').first);
+      }
+    } finally {
+      _rendering = false;
       final int? queued = _queuedFrame;
       _queuedFrame = null;
-      if (queued != null && queued != frame) _requestVideo(queued);
-    }).catchError((Object error) {
-      _decoding = false;
-      if (!mounted) return;
-      setState(() => _videoError = '$error'.split('\n').first);
-    });
+      if (queued != null && queued != frame && mounted) {
+        _requestFrame(queued);
+      }
+    }
   }
 
   Future<void> _startExport() async {
@@ -237,28 +310,38 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     video?.dispose();
   }
 
+  void _disposeRenderer() {
+    _renderer?.dispose();
+    _renderer = null;
+    _image?.dispose();
+    _image = null;
+  }
+
   @override
   void dispose() {
+    _playTimer?.cancel();
     _disposeVideo();
-    _ticker.dispose();
+    _disposeRenderer();
     _focusNode.dispose();
     super.dispose();
   }
 
-  void _onTick(Duration elapsed) {
-    final Duration last = _lastTick ?? elapsed;
-    _lastTick = elapsed;
-    final double dt = (elapsed - last).inMicroseconds / 1e6;
-
+  void _onTick() {
     final int duration = widget.composition.durationInFrames;
-    double next = _playhead + dt * widget.composition.fps;
+    final double elapsedFrames =
+        _clock.elapsedMicroseconds / 1e6 * widget.composition.fps;
+    double next = _playheadAtPlay + elapsedFrames;
+
     // Wrap at the duration, not at the last frame: a 120-frame composition
     // runs 0..119, so anything at or past 120 belongs to the next pass.
-    // Comparing against _lastFrame left the playhead parked on the final
-    // frame for an extra tick before wrapping.
     if (next >= duration) {
       if (_loop) {
-        next = next % duration;
+        next %= duration;
+        // Rebase rather than letting the stopwatch grow without bound.
+        _playheadAtPlay = next;
+        _clock
+          ..reset()
+          ..start();
       } else {
         next = _lastFrame.toDouble();
         _pause();
@@ -268,7 +351,7 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     final int rounded = next.floor().clamp(0, _lastFrame);
     if (rounded != _frame) {
       setState(() => _frame = rounded);
-      _requestVideo(rounded);
+      _requestFrame(rounded);
     }
   }
 
@@ -279,15 +362,25 @@ class _CompositionPlayerState extends State<CompositionPlayer>
       _playhead = 0;
       _frame = 0;
     }
-    _lastTick = null;
-    _ticker.start();
+    _playheadAtPlay = _playhead;
+    _clock
+      ..reset()
+      ..start();
+    // Polled far faster than a frame so the playhead lands exactly on each
+    // one rather than up to a poll late. Each tick is a subtraction and only
+    // calls setState when the frame actually changes, and rendering is
+    // coalesced on top of that, so the rate costs nothing worth saving.
+    _playTimer =
+        Timer.periodic(const Duration(milliseconds: 1), (Timer _) => _onTick());
     setState(() => _playing = true);
+    _requestFrame(_frame);
   }
 
   void _pause() {
     if (!_playing) return;
-    _ticker.stop();
-    _lastTick = null;
+    _playTimer?.cancel();
+    _playTimer = null;
+    _clock.stop();
     setState(() => _playing = false);
   }
 
@@ -299,9 +392,9 @@ class _CompositionPlayerState extends State<CompositionPlayer>
     if (clamped != _frame) {
       setState(() => _frame = clamped);
       // Scrubbing backwards restarts the decoder, which is the one expensive
-      // path -- coalescing in _requestVideo keeps a fast drag to one restart
+      // path -- coalescing in _requestFrame keeps a fast drag to one restart
       // per settled position rather than one per frame crossed.
-      _requestVideo(clamped);
+      _requestFrame(clamped);
     }
   }
 
@@ -350,10 +443,9 @@ class _CompositionPlayerState extends State<CompositionPlayer>
             Expanded(
               child: _Canvas(
                 composition: c,
-                frame: _frame,
-                images: _images,
-                video: _video,
-                videoError: _videoError,
+                image: _image,
+                preparing: _images == null,
+                videoError: _renderError ?? _videoError,
                 exportPanel: ExportPanel(
                   progress: _exportProgress,
                   result: _exportResult,
@@ -482,43 +574,27 @@ class _CompositionPlayerState extends State<CompositionPlayer>
 class _Canvas extends StatelessWidget {
   const _Canvas({
     required this.composition,
-    required this.frame,
-    required this.images,
-    required this.video,
+    required this.image,
+    required this.preparing,
     required this.videoError,
     required this.exportPanel,
   });
 
   final Composition composition;
-  final int frame;
 
-  /// Null until the declaration pass finishes. Deliberately not an empty map:
-  /// an empty map means "preloaded, and this image genuinely is missing",
-  /// which declaring widgets are entitled to treat as an error.
-  final Map<ImageProvider<Object>, ui.Image>? images;
+  /// The most recently rasterised frame, or null before the first one lands.
+  final ui.Image? image;
 
-  /// Open decoders, or null when the composition has no video.
-  final VideoFrames? video;
+  /// True until the declaration pass has finished.
+  final bool preparing;
 
-  /// Set when video could not be prepared, so the canvas can say so rather
-  /// than showing an unexplained gap.
+  /// Set when a frame could not be prepared or rasterised, so the canvas can
+  /// say so rather than showing an unexplained gap.
   final String? videoError;
 
   /// Drawn over the composition, so an export cannot be mistaken for the
   /// frame itself.
   final Widget exportPanel;
-
-  /// The composition, wrapped in whatever has been prepared for it.
-  Widget _content() {
-    Widget child = Builder(builder: composition.buildContent);
-    if (video != null) {
-      child = DecodedVideoFrames(frames: video, child: child);
-    }
-    if (images != null) {
-      child = ResolvedImages(images: images!, child: child);
-    }
-    return child;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -544,34 +620,17 @@ class _Canvas extends StatelessWidget {
                   height: composition.height * scale,
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
+                      color: Color(0xFF000000),
                       boxShadow: <BoxShadow>[
                         BoxShadow(color: Color(0x99000000), blurRadius: 32),
                       ],
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: SizedBox(
-                        width: composition.width.toDouble(),
-                        height: composition.height.toDouble(),
-                        child: MediaQuery(
-                          data: MediaQueryData(
-                            size: composition.size,
-                            devicePixelRatio: 1,
-                          ),
-                          child: Directionality(
-                            textDirection: TextDirection.ltr,
-                            child: VideoFrame(
-                              frame: frame,
-                              fps: composition.fps,
-                              durationInFrames: composition.durationInFrames,
-                              width: composition.width,
-                              height: composition.height,
-                              child: _content(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Rasterised by the same renderer the exporter uses, so
+                    // this is the exported frame, not a second rendering of
+                    // the same widgets.
+                    child: image == null
+                        ? const SizedBox.expand()
+                        : RawImage(image: image, fit: BoxFit.contain),
                   ),
                 ),
               ),
@@ -580,7 +639,7 @@ class _Canvas extends StatelessWidget {
                 top: 12,
                 child: Row(
                   children: <Widget>[
-                    if (images == null) ...<Widget>[
+                    if (preparing) ...<Widget>[
                       const InfoChip(label: 'preparing assets', dim: true),
                       const SizedBox(width: 6),
                     ],
