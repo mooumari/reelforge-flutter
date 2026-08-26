@@ -10,5 +10,6 @@ void main(List<String> args) => renderMain(args, <Composition>[
       weeklyDeals,
       videoShowcase,
       videoProbe,
+      audioProbe,
       tickerProbe,
     ]);

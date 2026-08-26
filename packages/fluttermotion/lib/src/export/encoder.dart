@@ -30,6 +30,7 @@ class EncoderSettings {
     required this.height,
     required this.fps,
     this.bitrate,
+    this.totalFrames,
   });
 
   final String outputPath;
@@ -39,6 +40,13 @@ class EncoderSettings {
 
   /// Target bits per second. Null lets the encoder choose from the dimensions.
   final int? bitrate;
+
+  /// How many frames the whole export is, when the caller knows in advance.
+  ///
+  /// An encoder writing an audio track needs this before the first frame: the
+  /// sound is clamped to the video's length, and it cannot wait until the
+  /// length is known to find that out.
+  final int? totalFrames;
 
   /// A reasonable H.264 bitrate for these dimensions.
   ///

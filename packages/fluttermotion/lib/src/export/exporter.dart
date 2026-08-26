@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/scheduler.dart';
@@ -6,6 +7,8 @@ import '../composition.dart';
 import '../declarations/manifest.dart';
 import '../declarations/pass.dart';
 import '../renderer.dart';
+import 'audio_sources.dart';
+import 'audio_track.dart';
 import 'encoder.dart';
 
 /// How far along an export is.
@@ -112,6 +115,7 @@ abstract final class InAppExporter {
     String? ffmpeg,
     String? ffprobe,
     String? projectPath,
+    Directory? audioCacheDir,
   }) async {
     if (scale <= 0) {
       throw ArgumentError.value(scale, 'scale', 'must be greater than zero');
@@ -164,14 +168,28 @@ abstract final class InAppExporter {
         );
       }
 
-      // Audio is additive rather than structural: the frames are still right,
-      // so this is a warning rather than a refusal.
+      // Audio is additive rather than structural: the frames are still right
+      // either way, so nothing here refuses an export. An encoder that cannot
+      // mix says so by not implementing the interface, and a sound that cannot
+      // be found is reported by name rather than going quietly missing.
       if (manifest.audio.isNotEmpty) {
-        warnings.add(
-          '${manifest.audio.length} audio '
-          '${manifest.audio.length == 1 ? 'clip was' : 'clips were'} declared '
-          'but not mixed -- in-app export writes video only.',
-        );
+        if (encoder is AudioCapableEncoder) {
+          final AudioResolution audio = await AudioSourceResolver(
+            cacheDir: audioCacheDir ??
+                Directory('${Directory.systemTemp.path}/fluttermotion_audio'),
+            projectPath: projectPath,
+          ).resolveAll(manifest.audio);
+          warnings.addAll(audio.failures);
+          if (audio.tracks.isNotEmpty) {
+            await (encoder as AudioCapableEncoder).setAudio(audio.tracks);
+          }
+        } else {
+          warnings.add(
+            '${manifest.audio.length} audio '
+            '${manifest.audio.length == 1 ? 'clip was' : 'clips were'} '
+            'declared, but this encoder writes video only.',
+          );
+        }
       }
 
       // Rendering drives the binding's frame loop, which is only legal between
@@ -186,6 +204,7 @@ abstract final class InAppExporter {
         height: height,
         fps: composition.fps,
         bitrate: bitrate,
+        totalFrames: composition.durationInFrames,
       ));
 
       final CompositionRenderer renderer =

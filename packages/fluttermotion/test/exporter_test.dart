@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -6,6 +7,15 @@ import 'package:fluttermotion/fluttermotion.dart';
 
 /// Records what the exporter asked of it, so the pipeline can be tested
 /// without a single line of platform code.
+/// A [FakeEncoder] that also accepts audio, which is what makes the exporter
+/// hand it any -- the capability is the interface, not a flag.
+class MixingEncoder extends FakeEncoder implements AudioCapableEncoder {
+  List<AudioTrackRequest> tracks = const <AudioTrackRequest>[];
+
+  @override
+  Future<void> setAudio(List<AudioTrackRequest> value) async => tracks = value;
+}
+
 class FakeEncoder implements VideoEncoder {
   EncoderSettings? settings;
   final List<int> frameIndices = <int>[];
@@ -204,18 +214,75 @@ void main() {
     );
   });
 
-  test('warns about declared audio but still exports the frames', () async {
-    final FakeEncoder encoder = FakeEncoder();
+  test('an encoder that cannot mix says so, and still exports the frames',
+      () async {
     final ExportResult result = await InAppExporter.export(
       composition: compose(
         builder: (BuildContext context) => const Audio(src: 'a.mp3'),
+      ),
+      encoder: FakeEncoder(),
+      outputPath: '/tmp/x.mp4',
+    );
+
+    expect(result.frames, 5);
+    expect(result.warnings, contains(contains('writes video only')));
+  });
+
+  test('a sound that is nowhere is named, not silently dropped', () async {
+    // Audio is additive, so this is a warning rather than a refusal -- but a
+    // clip going missing without a word is how a video ships without its
+    // music and nobody finds out until it is posted.
+    final MixingEncoder encoder = MixingEncoder();
+    final ExportResult result = await InAppExporter.export(
+      composition: compose(
+        builder: (BuildContext context) => const Audio(src: 'nowhere.mp3'),
       ),
       encoder: encoder,
       outputPath: '/tmp/x.mp4',
     );
 
     expect(result.frames, 5);
-    expect(result.warnings, contains(contains('not mixed')));
+    expect(result.warnings, contains(contains('nowhere.mp3')));
+    expect(encoder.tracks, isEmpty);
+  });
+
+  test('an audio-capable encoder is handed the clip, placed', () async {
+    final Directory dir = Directory.systemTemp.createTempSync('fm_export');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    File('${dir.path}/a.mp3').writeAsBytesSync(<int>[0]);
+
+    final MixingEncoder encoder = MixingEncoder();
+    final ExportResult result = await InAppExporter.export(
+      composition: compose(
+        builder: (BuildContext context) => const Sequence(
+          from: 1,
+          durationInFrames: 3,
+          child: Audio(src: 'a.mp3', volume: 0.4),
+        ),
+      ),
+      encoder: encoder,
+      outputPath: '/tmp/x.mp4',
+      projectPath: dir.path,
+    );
+
+    expect(result.warnings, isEmpty);
+    final AudioTrackRequest track = encoder.tracks.single;
+    expect(track.path, '${dir.path}/a.mp3');
+    expect(track.startFrame, 1);
+    expect(track.endFrame, 3);
+    expect(track.volume, 0.4);
+  });
+
+  test('the encoder is told the length before the first frame', () async {
+    // An encoder writing an audio track has to clamp it to the video, and
+    // cannot wait until the last frame to learn how long that is.
+    final MixingEncoder encoder = MixingEncoder();
+    await InAppExporter.export(
+      composition: compose(),
+      encoder: encoder,
+      outputPath: '/tmp/x.mp4',
+    );
+    expect(encoder.settings!.totalFrames, 5);
   });
 
   test('rejects a scale that cannot produce an encodable frame', () async {

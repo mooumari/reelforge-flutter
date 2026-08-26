@@ -67,6 +67,35 @@ class _VideoProbe extends StatelessWidget {
       );
 }
 
+/// Exists to verify where a sound lands, not to be listened to.
+///
+/// One 20ms click, mounted on a known frame, in a format that carries no
+/// encoder delay of its own -- an MP3 declares a priming offset that some
+/// decoders strip and others keep, which would put the thing being measured
+/// inside the measurement.
+final Composition audioProbe = Composition(
+  id: 'AudioProbe',
+  width: 320,
+  height: 240,
+  fps: 60,
+  durationInFrames: 120,
+  builder: (BuildContext context) => const _AudioProbe(),
+);
+
+class _AudioProbe extends StatelessWidget {
+  const _AudioProbe();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+        color: Color(0xFF000000),
+        child: Sequence(
+          from: 60,
+          durationInFrames: 30,
+          child: Audio(src: 'assets/click.wav'),
+        ),
+      );
+}
+
 class _VideoShowcase extends StatelessWidget {
   const _VideoShowcase();
 

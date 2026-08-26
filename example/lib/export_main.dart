@@ -28,6 +28,7 @@ void main(List<String> args) {
     weeklyDeals,
     videoShowcase,
     videoProbe,
+    audioProbe,
     tickerProbe,
   ];
 

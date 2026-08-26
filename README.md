@@ -469,10 +469,39 @@ this path and it would show up here as a swapped pair, not as a small delta.
 The preview has an **Export** button wired to the same call, so the moat is
 reachable from the tool you are already scrubbing in.
 
-What is not there yet: in-app **audio mixing** (an export with declared audio
-writes video only, and says so) and in-app **video decoding** (a composition
-containing a `VideoClip` refuses rather than exporting a hole -- decoding it
-needs `AVAssetReader`). Android needs a `MediaCodec` encoder.
+### Audio, with no ffmpeg
+
+An in-app export mixes its declared sound too. The clips are laid out on an
+`AVMutableComposition` -- one track each, so overlapping sounds sum rather than
+replacing one another and each can carry its own volume -- read back through
+`AVAssetReaderAudioMixOutput`, and written as an AAC track by the same
+`AVAssetWriter` that is writing the video.
+
+The whole sound goes in *before* the first frame, and its input is finished
+immediately. This is not an optimisation. An `AVAssetWriter` with two live
+inputs expects them to be fed in step: leave one silent and it stops readying
+the other, and the export stalls part way through with no error at all. Audio
+does not depend on any frame, so there is nothing to wait for.
+
+Inside an app, `Audio(src: 'assets/music.mp3')` is an asset key rather than a
+path -- on iOS not even a file. Native code cannot open either, so an asset is
+spilled to a real file once, keeping its extension, because `AVURLAsset`
+decides what a file is by looking at it.
+
+Verified against the ffmpeg mix of the same composition, per 50 ms window:
+levels agree to within 0.2%, and both put the two chimes at 0.65 s and 3.00 s.
+`AudioProbe` measures it exactly -- one 20 ms click mounted on frame 60 lands
+at **1000.0 ms** in both the in-app export and the CLI render.
+
+The probe uses a WAV deliberately. An MP3 declares an encoder delay that ffmpeg
+strips and AVFoundation keeps, which showed up as the in-app mix running 12 ms
+behind the CLI's on `chime.mp3` -- inaudible, under a frame at 60fps, and worth
+knowing about if you are placing sound to the sample. Use a format with no
+priming offset when that matters.
+
+What is not there yet: in-app **video decoding** (a composition containing a
+`VideoClip` refuses rather than exporting a hole -- decoding it needs
+`AVAssetReader`). Android needs a `MediaCodec` encoder.
 
 ## Layout
 
@@ -556,7 +585,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-147 tests across the three packages (105 framework, 36 CLI, 6 encoder).
+161 tests across the three packages (116 framework, 36 CLI, 9 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

@@ -118,4 +118,62 @@ void main() {
     expect(calls.map((MethodCall c) => c.method),
         <String>['start', 'finish']);
   });
+
+  group('audio', () {
+    const AudioTrackRequest music = AudioTrackRequest(
+      path: '/tmp/music.mp3',
+      startFrame: 0,
+      endFrame: 299,
+      volume: 0.4,
+      trimStartInFrames: 12,
+      loop: true,
+    );
+
+    const EncoderSettings settings = EncoderSettings(
+      outputPath: '/tmp/a.mp4',
+      width: 320,
+      height: 240,
+      fps: 60,
+      totalFrames: 300,
+    );
+
+    test('travels with start, because the file opens once', () async {
+      // The writer's audio input has to exist before writing begins, so a
+      // later call could not add one -- which is why setAudio only records.
+      final NativeVideoEncoder e = encoder();
+      await e.setAudio(const <AudioTrackRequest>[music]);
+      expect(calls, isEmpty, reason: 'setAudio should not talk to the platform');
+
+      await e.start(settings);
+      final Map<Object?, Object?> args =
+          calls.single.arguments as Map<Object?, Object?>;
+      expect(args['totalFrames'], 300);
+      final List<Object?> audio = args['audio']! as List<Object?>;
+      expect(audio.single, <String, Object?>{
+        'path': '/tmp/music.mp3',
+        'startFrame': 0,
+        'endFrame': 299,
+        'volume': 0.4,
+        'trimStartInFrames': 12,
+        'loop': true,
+      });
+    });
+
+    test('a silent export still says so, rather than omitting the key',
+        () async {
+      await encoder().start(settings);
+      final Map<Object?, Object?> args =
+          calls.single.arguments as Map<Object?, Object?>;
+      expect(args['audio'], isEmpty);
+    });
+
+    test('declaring audio after the file is open is refused', () async {
+      final NativeVideoEncoder e = encoder();
+      await e.start(settings);
+      await expectLater(
+        e.setAudio(const <AudioTrackRequest>[music]),
+        throwsA(isA<EncoderException>()),
+      );
+    });
+  });
 }

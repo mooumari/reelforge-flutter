@@ -22,6 +22,13 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
   private var height = 0
   private var fps = 30
   private var finished = false
+  private var totalFrames = 0
+
+  /// The declared sounds, assembled into one timeline. Built during `start`
+  /// because the writer's audio input has to exist before writing begins.
+  private var audioInput: AVAssetWriterInput?
+  private var audioComposition: AVMutableComposition?
+  private var audioMix: AVAudioMix?
 
   /// Frames are converted and appended off the platform thread so the UI keeps
   /// running -- an in-app export that freezes the app is not much of a feature.
@@ -68,6 +75,7 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     height = h
     fps = rate
     finished = false
+    totalFrames = args["totalFrames"] as? Int ?? 0
 
     let url = URL(fileURLWithPath: path)
     outputURL = url
@@ -113,11 +121,44 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
       }
       assetWriter.add(videoInput)
 
+      // Audio is optional and must never be able to lose a video export: a
+      // timeline that cannot be built leaves the file silent rather than
+      // unwritten.
+      if let clips = args["audio"] as? [[String: Any]], !clips.isEmpty,
+        let built = buildAudioTimeline(clips: clips, fps: rate)
+      {
+        let track = AVAssetWriterInput(
+          mediaType: .audio,
+          outputSettings: [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 48000,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderBitRateKey: 192000,
+          ])
+        track.expectsMediaDataInRealTime = false
+        if assetWriter.canAdd(track) {
+          assetWriter.add(track)
+          audioInput = track
+          audioComposition = built.composition
+          audioMix = built.mix
+        }
+      }
+
       guard assetWriter.startWriting() else {
         result(FlutterError(code: "start-failed", message: assetWriter.error?.localizedDescription ?? "startWriting() failed", details: nil))
         return
       }
       assetWriter.startSession(atSourceTime: .zero)
+
+      // The whole sound goes in before the first frame, and the audio input is
+      // finished immediately. An AVAssetWriter with two live inputs expects
+      // them to be fed in step: leave one silent and it stops readying the
+      // other, which stalls the export part way through with no error at all.
+      // Audio does not depend on any frame, so there is nothing to wait for.
+      if let audioInput = audioInput {
+        writeAudio(into: audioInput, writer: assetWriter)
+        audioInput.markAsFinished()
+      }
 
       writer = assetWriter
       input = videoInput
@@ -264,5 +305,127 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     input = nil
     adaptor = nil
     outputURL = nil
+    audioInput = nil
+    audioComposition = nil
+    audioMix = nil
+  }
+
+  // MARK: - audio
+
+  private struct AudioTimeline {
+    let composition: AVMutableComposition
+    let mix: AVAudioMix
+  }
+
+  /// Lays the declared clips out on one timeline, at their volumes.
+  ///
+  /// Each clip gets its own composition track so that overlapping sounds sum
+  /// rather than replacing one another, and so that each can carry its own
+  /// volume -- an `AVAudioMix` addresses a whole track, not a range of one.
+  ///
+  /// Returns nil if nothing usable was found, which leaves the export silent
+  /// rather than failed.
+  private func buildAudioTimeline(clips: [[String: Any]], fps: Int) -> AudioTimeline? {
+    let composition = AVMutableComposition()
+    let scale = CMTimeScale(fps)
+    var parameters: [AVMutableAudioMixInputParameters] = []
+
+    for clip in clips {
+      guard let path = clip["path"] as? String,
+        let startFrame = clip["startFrame"] as? Int,
+        let endFrame = clip["endFrame"] as? Int
+      else { continue }
+
+      let volume = (clip["volume"] as? NSNumber)?.floatValue ?? 1
+      let trimStart = clip["trimStartInFrames"] as? Int ?? 0
+      let loop = clip["loop"] as? Bool ?? false
+
+      let asset = AVURLAsset(url: URL(fileURLWithPath: path))
+      guard let source = asset.tracks(withMediaType: .audio).first,
+        asset.duration > .zero,
+        let track = composition.addMutableTrack(
+          withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+      else { continue }
+
+      let start = CMTime(value: CMTimeValue(startFrame), timescale: scale)
+      var remaining = CMTime(value: CMTimeValue(endFrame - startFrame + 1), timescale: scale)
+      var readFrom = CMTime(value: CMTimeValue(trimStart), timescale: scale)
+
+      // The silence before the clip is stated rather than assumed. A track
+      // whose first edit begins at zero would play the sound early, which is
+      // the sort of mistake nobody sees in a diff.
+      if start > .zero {
+        track.insertEmptyTimeRange(CMTimeRange(start: .zero, duration: start))
+      }
+
+      var cursor = start
+      while remaining > .zero {
+        if readFrom >= asset.duration {
+          guard loop else { break }
+          readFrom = .zero
+        }
+        let available = asset.duration - readFrom
+        let take = min(available, remaining)
+        guard take > .zero else { break }
+        do {
+          try track.insertTimeRange(
+            CMTimeRange(start: readFrom, duration: take), of: source, at: cursor)
+        } catch {
+          break
+        }
+        cursor = cursor + take
+        remaining = remaining - take
+        readFrom = readFrom + take
+      }
+
+      if volume != 1 {
+        let parameter = AVMutableAudioMixInputParameters(track: track)
+        parameter.setVolume(volume, at: .zero)
+        parameters.append(parameter)
+      }
+    }
+
+    guard !composition.tracks(withMediaType: .audio).isEmpty else { return nil }
+
+    let mix = AVMutableAudioMix()
+    mix.inputParameters = parameters
+    return AudioTimeline(composition: composition, mix: mix)
+  }
+
+  /// Reads the mixed timeline and hands it to the writer.
+  ///
+  /// Clamped to the composition's own length, so a music bed longer than the
+  /// video does not leave the file playing over a frozen last frame.
+  private func writeAudio(into audioInput: AVAssetWriterInput, writer: AVAssetWriter) {
+    guard let composition = audioComposition, totalFrames > 0 else { return }
+
+    let duration = CMTime(value: CMTimeValue(totalFrames), timescale: CMTimeScale(fps))
+    guard let reader = try? AVAssetReader(asset: composition) else { return }
+    reader.timeRange = CMTimeRange(start: .zero, duration: duration)
+
+    let output = AVAssetReaderAudioMixOutput(
+      audioTracks: composition.tracks(withMediaType: .audio),
+      audioSettings: [
+        AVFormatIDKey: kAudioFormatLinearPCM,
+        AVSampleRateKey: 48000,
+        AVNumberOfChannelsKey: 2,
+        AVLinearPCMBitDepthKey: 16,
+        AVLinearPCMIsFloatKey: false,
+        AVLinearPCMIsBigEndianKey: false,
+        AVLinearPCMIsNonInterleaved: false,
+      ])
+    output.audioMix = audioMix
+    guard reader.canAdd(output) else { return }
+    reader.add(output)
+    guard reader.startReading() else { return }
+
+    while reader.status == .reading {
+      guard let sample = output.copyNextSampleBuffer() else { break }
+      while !audioInput.isReadyForMoreMediaData {
+        if writer.status != .writing { return }
+        Thread.sleep(forTimeInterval: 0.002)
+      }
+      if !audioInput.append(sample) { return }
+    }
   }
 }

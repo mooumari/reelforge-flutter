@@ -18,7 +18,7 @@ import 'package:fluttermotion/fluttermotion.dart';
 ///   onProgress: (p) => setState(() => _progress = p.fraction),
 /// );
 /// ```
-class NativeVideoEncoder implements VideoEncoder {
+class NativeVideoEncoder implements VideoEncoder, AudioCapableEncoder {
   NativeVideoEncoder({@visibleForTesting MethodChannel? channel})
       : _channel = channel ?? const MethodChannel(channelName);
 
@@ -28,12 +28,28 @@ class NativeVideoEncoder implements VideoEncoder {
   final MethodChannel _channel;
 
   bool _started = false;
+  List<AudioTrackRequest> _audio = const <AudioTrackRequest>[];
 
   /// Whether this platform has a native encoder at all.
   ///
   /// Android is not implemented yet, so callers can fall back rather than
   /// discovering it as a MissingPluginException mid-export.
   static bool get isSupported => Platform.isIOS || Platform.isMacOS;
+
+  /// Declares the audio to mix into the file.
+  ///
+  /// Held rather than sent: the writer's audio input has to exist before
+  /// writing begins, so the clips travel with `start`.
+  @override
+  Future<void> setAudio(List<AudioTrackRequest> tracks) async {
+    if (_started) {
+      throw const EncoderException(
+        'setAudio() after start(): the audio track has to be declared before '
+        'the file is opened.',
+      );
+    }
+    _audio = List<AudioTrackRequest>.unmodifiable(tracks);
+  }
 
   @override
   Future<void> start(EncoderSettings settings) async {
@@ -50,6 +66,10 @@ class NativeVideoEncoder implements VideoEncoder {
       'height': settings.height,
       'fps': settings.fps,
       'bitrate': settings.effectiveBitrate,
+      'totalFrames': settings.totalFrames,
+      'audio': <Map<String, Object?>>[
+        for (final AudioTrackRequest track in _audio) track.toJson(),
+      ],
     });
     _started = true;
   }
