@@ -90,8 +90,8 @@ void main() {
     await expectLater(
       resolver().pathFor('assets/missing.mp3'),
       throwsA(
-        isA<AudioSourceException>().having(
-          (AudioSourceException e) => e.toString(),
+        isA<SourceFileException>().having(
+          (SourceFileException e) => e.toString(),
           'message',
           allOf(contains('assets/missing.mp3'), contains('pubspec')),
         ),

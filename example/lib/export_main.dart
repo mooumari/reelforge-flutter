@@ -46,6 +46,10 @@ void main(List<String> args) {
       final ExportResult result = await InAppExporter.export(
         composition: composition,
         encoder: NativeVideoEncoder(),
+        // The one platform-specific step on the way *in*. Without it a
+        // composition with a VideoClip refuses to export rather than writing
+        // a rectangle of nothing.
+        videoBackend: NativeVideoBackend(projectPath: Directory.current.path),
         // systemTemp so this works unchanged inside an iOS app sandbox,
         // where absolute paths like /tmp are not writable.
         outputPath: options['out'] ??

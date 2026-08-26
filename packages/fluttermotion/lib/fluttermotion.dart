@@ -16,6 +16,10 @@ export 'src/export/encoder.dart';
 export 'src/export/exporter.dart';
 export 'src/frame.dart';
 export 'src/interpolate.dart';
+export 'src/media/source_files.dart';
+export 'src/media/video_backend.dart'
+    show FfmpegVideoBackend, VideoBackend, VideoFrameSource;
+export 'src/media/video_decoder.dart' show VideoSourceInfo;
 export 'src/media/video_store.dart'
     show DecodedVideoFrames, VideoFrames, VideoPreloader;
 export 'src/preview/preview_app.dart' show FlutterMotionPreview, previewMain;

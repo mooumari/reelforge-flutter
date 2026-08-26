@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fluttermotion/fluttermotion.dart';
@@ -219,12 +221,33 @@ void main() {
   });
 
   group('path resolution', () {
-    test('resolves a clip against the project, leaving absolute paths', () {
-      // src is a filesystem path, not a Flutter asset key -- ffmpeg reads the
-      // file directly and knows nothing about the asset bundle.
-      expect(VideoPreloader.resolvePath('assets/a.mp4', '/p'),
-          '/p/assets/a.mp4');
-      expect(VideoPreloader.resolvePath('/abs/a.mp4', '/p'), '/abs/a.mp4');
+    test('resolves a clip against the project, leaving absolute paths',
+        () async {
+      // For the ffmpeg backend a src is a filesystem path, not a Flutter asset
+      // key -- ffmpeg reads the file directly and knows nothing about the
+      // asset bundle. Resolution is the backend's job precisely because the
+      // native one answers this differently.
+      const FfmpegVideoBackend backend =
+          FfmpegVideoBackend(ffmpeg: 'ffmpeg', ffprobe: 'ffprobe');
+      final Directory dir =
+          Directory.systemTemp.createTempSync('fluttermotion_resolve');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      File('${dir.path}/a.mp4').writeAsStringSync('x');
+
+      expect(await backend.resolve('a.mp4', projectPath: dir.path),
+          '${dir.path}/a.mp4');
+      expect(await backend.resolve('${dir.path}/a.mp4', projectPath: '/p'),
+          '${dir.path}/a.mp4');
+    });
+
+    test('a missing file says so by name, and says why', () async {
+      const FfmpegVideoBackend backend =
+          FfmpegVideoBackend(ffmpeg: 'ffmpeg', ffprobe: 'ffprobe');
+      await expectLater(
+        backend.resolve('nope.mp4', projectPath: '/p'),
+        throwsA(isA<StateError>().having(
+            (StateError e) => e.message, 'message', contains('/p/nope.mp4'))),
+      );
     });
   });
 }

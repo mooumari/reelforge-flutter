@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../composition.dart';
 import '../renderer.dart';
+import '../media/video_backend.dart';
 import '../media/video_store.dart';
 import 'assets.dart';
 import 'manifest.dart';
@@ -57,28 +58,23 @@ abstract final class DeclarationPass {
   /// before the first frame is rasterised, which is what lets a frame be
   /// painted synchronously.
   ///
-  /// Video needs [ffmpeg], [ffprobe] and [projectPath]; without them a
-  /// composition containing a [VideoClip] still renders, just without its
-  /// video. That is the preview's position before it has a decoder, not a
-  /// silent failure in the exporter -- `renderMain` always supplies them.
+  /// Video needs a [videoBackend]; without one a composition containing a
+  /// [VideoClip] still renders, just without its video. That is the preview's
+  /// position before it has found a decoder, not a silent failure in the
+  /// exporter -- `renderMain` and `InAppExporter` always supply one.
   static Future<PreparedComposition> prepare(
     Composition composition, {
-    String? ffmpeg,
-    String? ffprobe,
+    VideoBackend? videoBackend,
     String? projectPath,
   }) async {
     final RenderManifest manifest = run(composition);
 
     VideoFrames? video;
-    if (manifest.video.isNotEmpty &&
-        ffmpeg != null &&
-        ffprobe != null &&
-        projectPath != null) {
+    if (manifest.video.isNotEmpty && videoBackend != null) {
       video = await VideoPreloader.open(
         manifest.video,
         fps: composition.fps,
-        ffmpeg: ffmpeg,
-        ffprobe: ffprobe,
+        backend: videoBackend,
         projectPath: projectPath,
       );
     }

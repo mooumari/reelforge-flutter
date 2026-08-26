@@ -1,50 +1,26 @@
 import 'dart:io';
 
-import 'package:flutter/services.dart';
-
 import '../declarations/manifest.dart';
+import '../media/source_files.dart';
 import 'audio_track.dart';
-
-/// How a declared audio `src` is turned into a file a native encoder can open.
-typedef AssetLoader = Future<ByteData> Function(String key);
-
-/// Thrown when a declared sound cannot be found anywhere.
-class AudioSourceException implements Exception {
-  const AudioSourceException(this.src, this.reason);
-
-  final String src;
-  final String reason;
-
-  @override
-  String toString() => 'Could not resolve audio "$src": $reason';
-}
 
 /// Finds the file behind an [Audio] declaration.
 ///
-/// The same `src` means two different things depending on where the render is
-/// happening. On a laptop `assets/music.mp3` is a path relative to the project
-/// being rendered, and ffmpeg opens it directly. Inside a running app that same
-/// string is an asset key, and the bytes live inside the application bundle --
-/// compressed, on iOS not even a file. A native encoder cannot open either.
-///
-/// So an asset is spilled to a real file once and reused. The extension is
-/// kept, because `AVURLAsset` decides what a file is by looking at it.
+/// A thin layer over [SourceFiles], which does the actual looking: a path
+/// relative to the project on a laptop, an asset key spilled to a file inside
+/// an app.
 class AudioSourceResolver {
   AudioSourceResolver({
-    required this.cacheDir,
-    this.projectPath,
+    required Directory cacheDir,
+    String? projectPath,
     AssetLoader? loadAsset,
-  }) : _loadAsset = loadAsset ?? rootBundle.load;
+  }) : _files = SourceFiles(
+          cacheDir: cacheDir,
+          projectPath: projectPath,
+          loadAsset: loadAsset,
+        );
 
-  /// Where spilled assets are written. Anything already in here is reused.
-  final Directory cacheDir;
-
-  /// The project a relative `src` is relative to, when there is one. Null in
-  /// an app, where there is no project directory to speak of.
-  final String? projectPath;
-
-  final AssetLoader _loadAsset;
-  final Map<String, String> _resolved = <String, String>{};
+  final SourceFiles _files;
 
   /// The declared clips, as files, in the order they were declared.
   ///
@@ -65,7 +41,7 @@ class AudioSourceResolver {
             loop: entry.declaration.loop,
           ),
         );
-      } on AudioSourceException catch (error) {
+      } on SourceFileException catch (error) {
         failures.add(error.toString());
       }
     }
@@ -73,49 +49,7 @@ class AudioSourceResolver {
   }
 
   /// An absolute path to [src]'s bytes on disk.
-  Future<String> pathFor(String src) async {
-    final String? already = _resolved[src];
-    if (already != null) return already;
-
-    for (final String candidate in <String>[
-      src,
-      if (projectPath != null && !src.startsWith('/')) '$projectPath/$src',
-    ]) {
-      final File file = File(candidate);
-      if (file.existsSync()) {
-        return _resolved[src] = file.absolute.path;
-      }
-    }
-
-    final ByteData bytes;
-    try {
-      bytes = await _loadAsset(src);
-    } catch (error) {
-      throw AudioSourceException(
-        src,
-        'not a file, and not a loadable asset either ($error). Declare it in '
-        'your pubspec under `assets:`, or give an absolute path.',
-      );
-    }
-
-    final File spilled = File('${cacheDir.path}/${_cacheName(src)}');
-    spilled.parent.createSync(recursive: true);
-    spilled.writeAsBytesSync(
-      bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-    );
-    return _resolved[src] = spilled.path;
-  }
-
-  /// A file name that keeps [src]'s extension and cannot collide with another
-  /// key's, since `a/b.mp3` and `a_b.mp3` are different assets.
-  static String _cacheName(String src) {
-    final int dot = src.lastIndexOf('.');
-    final int slash = src.lastIndexOf('/');
-    final String extension = dot > slash ? src.substring(dot) : '';
-    final String stem = dot > slash ? src.substring(0, dot) : src;
-    return '${stem.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_')}'
-        '_${src.hashCode.toUnsigned(32).toRadixString(16)}$extension';
-  }
+  Future<String> pathFor(String src) => _files.pathFor(src, kind: 'audio');
 }
 
 /// What [AudioSourceResolver.resolveAll] found, and what it did not.

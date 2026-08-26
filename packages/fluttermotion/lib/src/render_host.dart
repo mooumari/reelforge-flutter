@@ -8,6 +8,7 @@ import 'composition.dart';
 import 'declarations/manifest.dart';
 import 'declarations/pass.dart';
 import 'media/spawn.dart';
+import 'media/video_backend.dart';
 import 'renderer.dart';
 
 /// Entry point for a render host binary.
@@ -148,8 +149,10 @@ Future<void> _renderShard(_Args args, List<Composition> compositions) async {
   // so no frame can ever wait on I/O mid-render.
   final PreparedComposition prepared = await DeclarationPass.prepare(
     composition,
-    ffmpeg: ffmpegPath,
-    ffprobe: _ffprobeFor(args),
+    videoBackend: FfmpegVideoBackend(
+      ffmpeg: ffmpegPath,
+      ffprobe: _ffprobeFor(args),
+    ),
     projectPath: Directory(args.optional('project') ?? '.').absolute.path,
   );
   final CompositionRenderer renderer = prepared.createRenderer();

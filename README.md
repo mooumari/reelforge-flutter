@@ -449,8 +449,10 @@ with `expectsMediaDataInRealTime = false` and the Dart side awaits
 `isReadyForMoreMediaData`, so a slow encode backpressures the renderer instead
 of queueing frames into memory.
 
-`VideoEncoder` is the seam. `InAppExporter` knows nothing about AVFoundation;
-an Android `MediaCodec` implementation is a new class, not a new exporter.
+`VideoEncoder` is the seam on the way out and `VideoBackend` the seam on the
+way in. `InAppExporter` knows nothing about AVFoundation or about ffmpeg; an
+Android `MediaCodec` implementation of either is a new class, not a new
+exporter.
 
 Verified on both platforms against the ffmpeg CLI render of the same
 composition (1080x1920, 300 frames):
@@ -499,9 +501,44 @@ behind the CLI's on `chime.mp3` -- inaudible, under a frame at 60fps, and worth
 knowing about if you are placing sound to the sample. Use a format with no
 priming offset when that matters.
 
-What is not there yet: in-app **video decoding** (a composition containing a
-`VideoClip` refuses rather than exporting a hole -- decoding it needs
-`AVAssetReader`). Android needs a `MediaCodec` encoder.
+### Video, with no ffmpeg
+
+A composition containing a `VideoClip` decodes in-app too, through
+`AVAssetReader` behind the same `VideoBackend` seam the CLI fills with ffmpeg.
+Pass `videoBackend: NativeVideoBackend()` and the export needs no binary
+anywhere:
+
+```dart
+await InAppExporter.export(
+  composition: myPromo,
+  encoder: NativeVideoEncoder(),
+  videoBackend: NativeVideoBackend(),
+  outputPath: path,
+);
+```
+
+The hard part is not decoding, it is landing on the *same* frames ffmpeg does --
+otherwise the same composition exports differently depending on where you
+exported it from, and a sharded CLI render disagrees with itself at the shard
+boundaries. `AVAssetReader.timeRange` gives that, but only if the start time is
+exact. A seek expressed in floating-point seconds does not survive the trip:
+`CMTime(seconds: 1.483333, preferredTimescale: 600)` truncates to 889/600, a
+hair before frame 89 at 60fps, and the reader starts on frame 88 -- one whole
+frame early, silently, and only for some seeks. The seek is a rational by
+construction instead: `CMTime(value: sourceFrame, timescale: fps)`.
+
+Measured against ffmpeg's `fps=N:start_time=T` grid on a file whose frames
+encode their own index, the two agree frame-for-frame from zero, from
+mid-stream and at the tail, and run dry at the same frame. End to end,
+`VideoProbe` exported in-app matches the CLI render on **all 200 frames**, with
+a largest mean-grey difference of 0.01 -- h264 re-encode noise, not a frame
+mismatch.
+
+As with audio, `VideoClip(src: 'assets/clip.mp4')` is an asset key inside an
+app rather than a path, so it is spilled to a real file once; both go through
+the same `SourceFiles` resolver.
+
+What is not there yet: Android needs a `MediaCodec` encoder and decoder.
 
 ## Layout
 
@@ -509,7 +546,7 @@ What is not there yet: in-app **video decoding** (a composition containing a
 |---|---|
 | `packages/fluttermotion` | The composition framework |
 | `packages/fluttermotion_cli` | `fluttermotion render` |
-| `packages/fluttermotion_encoder` | AVAssetWriter encoder plugin (iOS/macOS) |
+| `packages/fluttermotion_encoder` | AVFoundation encoder + decoder plugin (iOS/macOS) |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification (video clips, tickers) |
@@ -529,6 +566,9 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   and 8 shards, verified per frame by pixel value rather than by eye.
 - **On-device export matches the ffmpeg render.** Run headless on macOS and on
   an iOS simulator with no ffmpeg present, mean SSIM 0.99036 per frame.
+- **In-app video decoding lands on the same frames as ffmpeg.** All 200 frames
+  of `VideoProbe` identical between the in-app export and the CLI render,
+  including the clip's entry and exit, read per frame by pixel value.
 - **Widgets that animate on their own `Ticker` are frame-exact**, and identical
   across 1, 2, 4 and 8 shards -- including one mounted mid-timeline by a
   `Sequence`.
@@ -585,7 +625,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-161 tests across the three packages (116 framework, 36 CLI, 9 encoder).
+174 tests across the three packages (117 framework, 36 CLI, 21 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.

@@ -50,8 +50,7 @@ void main() {
           ),
         ],
         fps: 60,
-        ffmpeg: ffmpeg!,
-        ffprobe: ffprobe!,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
         projectPath: projectPath,
       );
     });
@@ -110,8 +109,7 @@ void main() {
           ),
         ],
         fps: 60,
-        ffmpeg: ffmpeg!,
-        ffprobe: ffprobe!,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
         projectPath: projectPath,
       );
       await direct.advanceTo(target);
@@ -141,8 +139,7 @@ void main() {
           ),
         ],
         fps: 60,
-        ffmpeg: ffmpeg!,
-        ffprobe: ffprobe!,
+        backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
         projectPath: projectPath,
       );
       expect(short.warnings, hasLength(1));
@@ -162,8 +159,7 @@ void main() {
             ),
           ],
           fps: 60,
-          ffmpeg: ffmpeg!,
-          ffprobe: ffprobe!,
+          backend: FfmpegVideoBackend(ffmpeg: ffmpeg!, ffprobe: ffprobe!),
           projectPath: projectPath,
         ),
         throwsA(isA<StateError>().having(

@@ -11,7 +11,7 @@ import '../composition.dart';
 import '../declarations/pass.dart';
 import '../export/encoder.dart';
 import '../export/exporter.dart';
-import '../media/ffmpeg_paths.dart';
+import '../media/video_backend.dart';
 import '../media/video_store.dart';
 import '../renderer.dart';
 import 'controls.dart';
@@ -155,14 +155,10 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
   /// the preview cannot show something the render would not.
   Future<void> _prepare() async {
     final Composition composition = widget.composition;
-    final String? ffmpeg = FfmpegPaths.find('ffmpeg');
-    final String? ffprobe = FfmpegPaths.find('ffprobe');
-
     try {
       final PreparedComposition prepared = await DeclarationPass.prepare(
         composition,
-        ffmpeg: ffmpeg,
-        ffprobe: ffprobe,
+        videoBackend: FfmpegVideoBackend.findOnPath(),
         projectPath: widget.projectPath ?? Directory.current.path,
       );
       if (!mounted || !identical(widget.composition, composition)) {
@@ -272,8 +268,7 @@ class _CompositionPlayerState extends State<CompositionPlayer> {
         encoder: widget.encoderFactory!(),
         outputPath: path,
         cancellation: cancellation,
-        ffmpeg: FfmpegPaths.find('ffmpeg'),
-        ffprobe: FfmpegPaths.find('ffprobe'),
+        videoBackend: FfmpegVideoBackend.findOnPath(),
         projectPath: widget.projectPath ?? Directory.current.path,
         onProgress: (ExportProgress progress) {
           if (!mounted) return;

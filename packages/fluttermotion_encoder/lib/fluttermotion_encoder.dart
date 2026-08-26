@@ -3,4 +3,5 @@
 /// without ffmpeg.
 library;
 
+export 'src/native_decoder.dart';
 export 'src/native_encoder.dart';

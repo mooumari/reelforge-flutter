@@ -43,6 +43,12 @@ public class FluttermotionEncoderPlugin: NSObject, FlutterPlugin {
     let channel = FlutterMethodChannel(
       name: "fluttermotion/encoder", binaryMessenger: messenger)
     registrar.addMethodCallDelegate(FluttermotionEncoderPlugin(), channel: channel)
+
+    // The pubspec names one plugin class, and Flutter's generated registrant
+    // calls only that one. Decoding is a separate channel with separate state,
+    // so it is a separate class -- registered from here rather than asking
+    // every app to know about it.
+    FluttermotionDecoderPlugin.register(with: registrar)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

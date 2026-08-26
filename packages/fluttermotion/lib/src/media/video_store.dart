@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 
 import '../declarations/manifest.dart';
+import 'video_backend.dart';
 import 'video_decoder.dart';
 
 /// Owns one decoder per declared clip and keeps them all on the same frame.
@@ -17,7 +17,7 @@ import 'video_decoder.dart';
 class VideoFrames {
   VideoFrames(this._decoders);
 
-  final Map<VideoDeclaration, VideoDecoder> _decoders;
+  final Map<VideoDeclaration, VideoFrameSource> _decoders;
 
   final Map<VideoDeclaration, ui.Image?> _current =
       <VideoDeclaration, ui.Image?>{};
@@ -47,9 +47,9 @@ class VideoFrames {
       // lands mid-decode should show the previous frame, not an empty one.
       final Map<VideoDeclaration, ui.Image?> next =
           <VideoDeclaration, ui.Image?>{};
-      for (final MapEntry<VideoDeclaration, VideoDecoder> entry
+      for (final MapEntry<VideoDeclaration, VideoFrameSource> entry
           in _decoders.entries) {
-        final VideoDecoder decoder = entry.value;
+        final VideoFrameSource decoder = entry.value;
         if (frame < decoder.startFrame || frame > decoder.endFrame) continue;
         next[entry.key] = await decoder.frameAt(frame);
       }
@@ -65,7 +65,7 @@ class VideoFrames {
   ui.Image? operator [](VideoDeclaration declaration) => _current[declaration];
 
   Future<void> dispose() async {
-    for (final VideoDecoder decoder in _decoders.values) {
+    for (final VideoFrameSource decoder in _decoders.values) {
       await decoder.dispose();
     }
     _decoders.clear();
@@ -100,33 +100,23 @@ abstract final class VideoPreloader {
   static Future<VideoFrames> open(
     List<VideoTimelineEntry> entries, {
     required int fps,
-    required String ffmpeg,
-    required String ffprobe,
-    required String projectPath,
+    required VideoBackend backend,
+    String? projectPath,
   }) async {
-    final Map<VideoDeclaration, VideoDecoder> decoders =
-        <VideoDeclaration, VideoDecoder>{};
+    final Map<VideoDeclaration, VideoFrameSource> decoders =
+        <VideoDeclaration, VideoFrameSource>{};
     final List<String> warnings = <String>[];
 
     for (final VideoTimelineEntry entry in entries) {
-      final String path = resolvePath(entry.declaration.src, projectPath);
-      if (!File(path).existsSync()) {
-        throw StateError(
-          'Video clip not found: $path\n'
-          'A clip\'s src is a filesystem path relative to the project being '
-          'rendered, not a Flutter asset key -- ffmpeg reads the file '
-          'directly and knows nothing about the asset bundle.',
-        );
-      }
-
-      final VideoSourceInfo info = await probeVideo(ffprobe, path);
-      final VideoDecoder decoder = VideoDecoder(
+      final String path =
+          await backend.resolve(entry.declaration.src, projectPath: projectPath);
+      final VideoSourceInfo info = await backend.probe(path);
+      final VideoFrameSource decoder = backend.open(
         declaration: entry.declaration,
         startFrame: entry.startFrame,
         endFrame: entry.endFrame,
         fps: fps,
         path: path,
-        ffmpeg: ffmpeg,
         info: info,
       );
 
@@ -150,7 +140,4 @@ abstract final class VideoPreloader {
     return VideoFrames(decoders)..warnings.addAll(warnings);
   }
 
-  /// A clip's `src` is a filesystem path relative to the project.
-  static String resolvePath(String src, String projectPath) =>
-      src.startsWith('/') ? src : '$projectPath/$src';
 }

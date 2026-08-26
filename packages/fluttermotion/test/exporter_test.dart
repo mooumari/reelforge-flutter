@@ -195,8 +195,8 @@ void main() {
 
   test('refuses a composition with video rather than exporting a hole',
       () async {
-    // In-app video decoding does not exist yet; a rectangle of nothing where
-    // the footage should be is worse than a clear refusal.
+    // Video is structural: a rectangle of nothing where the footage should be
+    // is worse than a clear refusal naming what is missing.
     await expectLater(
       InAppExporter.export(
         composition: compose(
@@ -209,7 +209,7 @@ void main() {
       throwsA(isA<EncoderException>().having(
         (EncoderException e) => e.message,
         'message',
-        allOf(contains('video'), contains('ffmpeg')),
+        allOf(contains('video'), contains('videoBackend')),
       )),
     );
   });

@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../composition.dart';
 import '../declarations/manifest.dart';
 import '../declarations/pass.dart';
+import '../media/video_backend.dart';
 import '../renderer.dart';
 import 'audio_sources.dart';
 import 'audio_track.dart';
@@ -112,8 +113,7 @@ abstract final class InAppExporter {
     int? bitrate,
     void Function(ExportProgress)? onProgress,
     ExportCancellation? cancellation,
-    String? ffmpeg,
-    String? ffprobe,
+    VideoBackend? videoBackend,
     String? projectPath,
     Directory? audioCacheDir,
   }) async {
@@ -148,23 +148,23 @@ abstract final class InAppExporter {
 
     final PreparedComposition prepared = await DeclarationPass.prepare(
       composition,
-      ffmpeg: ffmpeg,
-      ffprobe: ffprobe,
+      videoBackend: videoBackend,
       projectPath: projectPath,
     );
 
     try {
       final RenderManifest manifest = prepared.manifest;
 
-      // Video needs a decoder, and the only one that exists today shells out
-      // to ffmpeg. Refusing loudly beats exporting a composition with a
-      // rectangle of nothing where the footage should be.
+      // Video is structural: a clip that cannot be decoded leaves a rectangle
+      // of nothing where the footage should be. Refusing loudly beats
+      // shipping that, so unlike audio this one throws.
       if (manifest.video.isNotEmpty && prepared.videoFrames == null) {
         throw EncoderException(
           'This composition uses ${manifest.video.length} video '
-          '${manifest.video.length == 1 ? 'clip' : 'clips'}, which needs '
-          'ffmpeg to decode. Pass ffmpeg, ffprobe and projectPath to export '
-          'on a desktop; in-app video decoding is not implemented yet.',
+          '${manifest.video.length == 1 ? 'clip' : 'clips'}, but no video '
+          'backend was given to decode them with. Pass videoBackend: '
+          'FfmpegVideoBackend(...) on a desktop, or NativeVideoBackend() to '
+          'decode inside the app.',
         );
       }
 

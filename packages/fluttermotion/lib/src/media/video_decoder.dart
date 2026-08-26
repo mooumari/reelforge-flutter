@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import '../declarations/manifest.dart';
 import 'frame_reader.dart';
+import 'video_backend.dart';
 import 'spawn.dart';
 
 /// What ffprobe knows about a video file.
@@ -89,7 +90,7 @@ Future<VideoSourceInfo> probeVideo(String ffprobe, String path) async {
 /// Anchoring at absolute zero instead (`start_time=0`) is subtly wrong: the
 /// `fps` filter *pads* from its anchor, so seeking an hour in would emit an
 /// hour of duplicated first frames before the real content.
-class VideoDecoder {
+class VideoDecoder implements VideoFrameSource {
   VideoDecoder({
     required this.declaration,
     required this.startFrame,
@@ -104,9 +105,11 @@ class VideoDecoder {
   final VideoDeclaration declaration;
 
   /// Composition frame the clip first appears on.
+  @override
   final int startFrame;
 
   /// Composition frame the clip last appears on, inclusive.
+  @override
   final int endFrame;
 
   final int fps;
@@ -131,6 +134,7 @@ class VideoDecoder {
   int? _currentFrame;
 
   /// True once the source ran out before the clip's window did.
+  @override
   bool get exhausted => _exhausted;
   bool _exhausted = false;
 
@@ -138,10 +142,12 @@ class VideoDecoder {
   ///
   /// Absolute, in source time -- which is exactly what makes it independent of
   /// where decoding started.
+  @override
   int sourceFrameFor(int compositionFrame) =>
       declaration.trimStartInFrames + (compositionFrame - startFrame);
 
   /// Decodes [compositionFrame], reusing the open pipe when it is the next one.
+  @override
   Future<ui.Image?> frameAt(int compositionFrame) async {
     if (_currentFrame == compositionFrame) return _current;
 
@@ -223,6 +229,7 @@ class VideoDecoder {
     }
   }
 
+  @override
   Future<void> dispose() async {
     await _stop();
     _current?.dispose();
