@@ -9,3 +9,5 @@ pubspec.lock
 benchmarks/**/out.mp4
 benchmarks/**/*.png
 benchmarks/**/bench_result.json
+example/build/
+example/.dart_tool/
