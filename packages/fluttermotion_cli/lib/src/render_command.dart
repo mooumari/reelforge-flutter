@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'args.dart';
+import 'audio_mixer.dart';
 import 'host.dart';
 
 /// Renders a composition to MP4 by sharding frame ranges across host
@@ -112,9 +113,36 @@ Future<int> renderCommand(CliArgs args) async {
         ),
     ]);
     stdout.writeln();
-    _warnAboutUnhonouredDeclarations(manifest);
 
-    await _concat(plan, outPath, ffmpeg);
+    final List<AudioClip> clips = args.flag('no-audio')
+        ? const <AudioClip>[]
+        : _resolveAudio(manifest, projectDir);
+
+    if (clips.isEmpty) {
+      await _concat(plan, outPath, ffmpeg);
+    } else {
+      // Audio is mixed once against the *concatenated* video, never per
+      // shard: a clip can straddle a shard boundary, and a shard knows
+      // nothing about the frames outside its own range.
+      final String silent = '${work.path}/silent.mp4';
+      await _concat(plan, silent, ffmpeg);
+      stdout.writeln(
+        '  mixing ${clips.length} audio '
+        '${clips.length == 1 ? 'clip' : 'clips'}',
+      );
+      await mixAudio(
+        ffmpeg: ffmpeg,
+        plan: buildAudioMixPlan(
+          clips: clips,
+          videoPath: silent,
+          outPath: outPath,
+          fps: fps,
+          totalFrames: frames,
+          audioCodec: args.value('audio-codec', 'aac'),
+          audioBitrate: args.value('audio-bitrate', '192k'),
+        ),
+      );
+    }
     stopwatch.stop();
 
     final File out = File(outPath);
@@ -265,20 +293,44 @@ Future<void> _concat(
   }
 }
 
-/// Audio is collected by the declaration pass but not yet mixed into the
-/// output. Saying so beats shipping a silent video that the user believed had
-/// a soundtrack.
-void _warnAboutUnhonouredDeclarations(Map<String, Object?>? manifest) {
-  if (manifest == null) return;
-  final List<Object?> audio =
+/// Turns the manifest's audio timeline into clips with on-disk paths.
+///
+/// `src` is a filesystem path relative to the project directory, NOT a Flutter
+/// asset key -- ffmpeg reads these files directly and knows nothing about the
+/// asset bundle. For a file under `assets/` the two strings happen to match,
+/// which is convenient but coincidental; a clip that resolves to nothing is
+/// reported rather than silently dropped.
+List<AudioClip> _resolveAudio(
+  Map<String, Object?>? manifest,
+  Directory projectDir,
+) {
+  if (manifest == null) return const <AudioClip>[];
+  final List<Object?> raw =
       (manifest['audio'] as List<Object?>?) ?? const <Object?>[];
-  if (audio.isEmpty) return;
-  stdout.writeln(
-    'Note: ${audio.length} audio '
-    '${audio.length == 1 ? 'clip was' : 'clips were'} declared but NOT mixed '
-    'into the output -- audio is not implemented yet. '
-    'Run `fluttermotion inspect` to see the timeline.',
-  );
+
+  final List<AudioClip> clips = <AudioClip>[];
+  final List<String> missing = <String>[];
+  for (final Object? entry in raw) {
+    final AudioClip clip =
+        AudioClip.fromJson(entry! as Map<String, Object?>).resolvedAgainst(
+      projectDir.absolute.path,
+    );
+    if (File(clip.src).existsSync()) {
+      clips.add(clip);
+    } else {
+      missing.add(clip.src);
+    }
+  }
+
+  if (missing.isNotEmpty) {
+    stdout.writeln(
+      'Warning: ${missing.length} audio '
+      '${missing.length == 1 ? 'clip' : 'clips'} could not be found on disk '
+      'and will be missing from the output:\n'
+      '${missing.map((String m) => '  $m').join('\n')}',
+    );
+  }
+  return clips;
 }
 
 int _resolveShards(String? raw, int frames) {

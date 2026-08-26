@@ -29,8 +29,8 @@ frame number: `data -> widgets -> frames -> MP4`.
 ## Status
 
 Pre-alpha, but it works end to end: preview a composition with hot reload,
-then render it to MP4 with assets guaranteed to be decoded first. Audio is
-collected but not yet mixed; video clips are not built.
+then render it to MP4 with assets decoded first and the declared audio mixed
+in. Video clips are not built yet.
 
 ## Preview
 
@@ -115,9 +115,31 @@ the whole bug class the pass exists to prevent.
 The preview runs the same pass before it draws, so it cannot show something
 the render would not.
 
-> Audio is currently **collected but not mixed**. `render` prints a warning
-> naming how many clips were declared so nobody ships a silent video believing
-> otherwise.
+The manifest is what `render` mixes from, so `inspect` is the ground truth for
+what you will hear.
+
+### How audio is mixed
+
+Each declared clip becomes one ffmpeg input, trimmed to its window, rebased,
+resampled to 48 kHz, scaled by its volume, and delayed to its start frame; the
+results are combined with `amix=normalize=0` and muxed against the video with
+`-c:v copy`, so mixing never re-encodes a single frame.
+
+Three details are deliberate:
+
+- **Mixed once, against the concatenated video** -- never per shard. A clip can
+  straddle a shard boundary, and a shard knows nothing about frames outside its
+  own range.
+- **`normalize=0`** -- ffmpeg's default divides by the input count, so adding a
+  one-second sound effect would duck the music bed under it for that second.
+- **`src` is a filesystem path relative to the project, not a Flutter asset
+  key.** ffmpeg reads these files directly and knows nothing about the asset
+  bundle. For anything under `assets/` the two strings coincide, which is
+  convenient but not a guarantee; a clip that resolves to nothing is reported
+  by name rather than silently dropped.
+
+Pass `--no-audio` to skip mixing, `--audio-codec` / `--audio-bitrate` to change
+the encode (default `aac` at `192k`).
 
 ## Render
 
@@ -208,7 +230,7 @@ reached by scrubbing backward from later in the timeline.
 2. ~~Scrubber preview (`flutter run`, hot reload)~~ done
 3. ~~Declaration pass — asset preloading and audio scheduling~~ done
    (video decode windows still to come)
-4. Audio mixing
+4. ~~Audio mixing~~ done
 5. Video clips
 6. On-device export (the moat)
 
