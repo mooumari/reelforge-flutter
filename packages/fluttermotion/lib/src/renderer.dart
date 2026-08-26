@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'animation/frame_clock.dart';
 import 'composition.dart';
 import 'declarations/assets.dart';
 import 'declarations/scope.dart';
@@ -22,8 +23,10 @@ class CompositionRenderer {
     this.scale = 1.0,
     this.collector,
     this.videoFrames,
+    this.driveAnimationClock = true,
     Map<ImageProvider<Object>, ui.Image>? images,
-  }) : images = images ?? const <ImageProvider<Object>, ui.Image>{} {
+  })  : images = images ?? const <ImageProvider<Object>, ui.Image>{},
+        _clock = FrameClock(fps: composition.fps) {
     final Size size = composition.size;
 
     _renderView = RenderView(
@@ -65,7 +68,9 @@ class CompositionRenderer {
                       durationInFrames: composition.durationInFrames,
                       width: composition.width,
                       height: composition.height,
-                      child: Builder(builder: composition.builder),
+                      child: Builder(
+                        builder: composition.buildContent,
+                      ),
                     ),
                   ),
                 ),
@@ -93,6 +98,13 @@ class CompositionRenderer {
   /// have awaited [VideoFrames.advanceTo] for that frame before pumping.
   final VideoFrames? videoFrames;
 
+  /// Whether to slave Flutter's animation clock to the frame being rendered,
+  /// so that widgets animating on their own [Ticker] are deterministic.
+  final bool driveAnimationClock;
+
+  final FrameClock _clock;
+  bool _primed = false;
+
   final ValueNotifier<int> _frame = ValueNotifier<int>(-1);
 
   late final RenderView _renderView;
@@ -105,10 +117,44 @@ class CompositionRenderer {
   RenderRepaintBoundary get _boundary =>
       _renderView.child! as RenderRepaintBoundary;
 
+  /// Plays the timeline up to [frame] without painting, once, before the
+  /// first real render.
+  ///
+  /// A [Ticker] treats its *first* tick as elapsed zero. A renderer that
+  /// enters the timeline half way through would therefore start every
+  /// animation over, which is exactly the shard boundary bug and is close to
+  /// invisible -- video that is one animation out still looks like video. It
+  /// is not enough to mount at frame 0 either: a widget inside a [Sequence]
+  /// mounts when the sequence says so, and its ticker has to anchor *there*.
+  ///
+  /// So the tree is walked forward the way a play-through would walk it, which
+  /// anchors every ticker at the frame it really mounts on. This is the same
+  /// sweep the declaration pass already performs over the whole timeline, and
+  /// it stops at [frame] rather than the end, so it is strictly cheaper than a
+  /// pass that has already been paid for. Determinism is untouched: the sweep
+  /// always starts at zero, so frame `n` is still the same everywhere.
+  void _primeTo(int frame) {
+    if (_primed) return;
+    _primed = true;
+    if (!driveAnimationClock) return;
+    // Up to, not including: the caller drives [frame] itself. Driving it
+    // twice would settle a post-frame callback a frame earlier than a
+    // play-through does, which is precisely the divergence being closed.
+    for (int f = 0; f < frame; f++) {
+      _clock.driveTo(f);
+      _frame.value = f;
+      _buildOwner.buildScope(_element);
+      _buildOwner.finalizeTree();
+      _pipelineOwner.flushLayout();
+    }
+  }
+
   /// Build, lay out, and paint [frame]. Synchronous and cheap (~0.5 ms even
   /// for a busy composition); rasterisation is the expensive half.
   void pump(int frame) {
     assert(!_disposed, 'CompositionRenderer used after dispose().');
+    _primeTo(frame);
+    if (driveAnimationClock) _clock.driveTo(frame);
     _frame.value = frame;
     _buildOwner.buildScope(_element);
     _buildOwner.finalizeTree();
@@ -124,6 +170,8 @@ class CompositionRenderer {
   /// otherwise never build and their declarations would be missed.
   void pumpWithoutPaint(int frame) {
     assert(!_disposed, 'CompositionRenderer used after dispose().');
+    _primeTo(frame);
+    if (driveAnimationClock) _clock.driveTo(frame);
     _frame.value = frame;
     _buildOwner.buildScope(_element);
     _buildOwner.finalizeTree();

@@ -510,7 +510,7 @@ class _Canvas extends StatelessWidget {
 
   /// The composition, wrapped in whatever has been prepared for it.
   Widget _content() {
-    Widget child = Builder(builder: composition.builder);
+    Widget child = Builder(builder: composition.buildContent);
     if (video != null) {
       child = DecodedVideoFrames(frames: video, child: child);
     }

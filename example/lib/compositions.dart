@@ -366,3 +366,47 @@ class _BarPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BarPainter oldDelegate) => oldDelegate.phase != phase;
 }
+
+/// A widget written the way an app widget is written: it owns an
+/// [AnimationController] on its own ticker and knows nothing about frames.
+/// Its grey value is the controller's value, so reading one pixel out of an
+/// exported frame says exactly where the animation was.
+class TickerProbe extends StatefulWidget {
+  const TickerProbe({super.key});
+
+  @override
+  State<TickerProbe> createState() => _TickerProbeState();
+}
+
+class _TickerProbeState extends State<TickerProbe>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _controller,
+        builder: (BuildContext context, Widget? child) {
+          final int grey = (_controller.value * 255).round().clamp(0, 255);
+          return ColoredBox(color: Color.fromARGB(255, grey, grey, grey));
+        },
+      );
+}
+
+/// 1000ms repeat at 60fps: frame f should read grey = round((f % 60) / 60 * 255).
+final Composition tickerProbe = Composition(
+  id: 'TickerProbe',
+  width: 320,
+  height: 240,
+  fps: 60,
+  durationInFrames: 180,
+  builder: (BuildContext context) => const TickerProbe(),
+);

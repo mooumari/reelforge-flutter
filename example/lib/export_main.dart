@@ -28,6 +28,7 @@ void main(List<String> args) {
     weeklyDeals,
     videoShowcase,
     videoProbe,
+    tickerProbe,
   ];
 
   // A RenderView needs the implicit view, which only exists once the engine

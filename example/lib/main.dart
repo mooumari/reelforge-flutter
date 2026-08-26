@@ -17,6 +17,7 @@ void main() => previewMain(
         weeklyDeals,
         videoShowcase,
         videoProbe,
+        tickerProbe,
       ],
       encoderFactory: NativeVideoEncoder.new,
       exportPathBuilder: (Composition composition) =>

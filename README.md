@@ -31,7 +31,9 @@ frame number: `data -> widgets -> frames -> MP4`.
 Pre-alpha, but it works end to end: preview a composition with hot reload,
 then render it to MP4 with assets decoded first, video clips composited into
 the widget tree, and the declared audio mixed in. The same composition also
-exports from inside a running app, on device, with no ffmpeg and no server.
+exports from inside a running app, on device, with no ffmpeg and no server --
+and widgets lifted straight out of an existing app render correctly, including
+the ones that animate on their own clock.
 
 ## Preview
 
@@ -54,7 +56,9 @@ scaled to fit. A 1080-wide composition is laid out at 1080 even in a 600px
 window, so what you scrub to is what renders.
 
 Wall-clock time is used in exactly one place: deciding which frame the playhead
-is on. The composition never sees it.
+is on. The composition never sees it -- with one exception, which is that a
+widget animating on its own `Ticker` still animates on the wall clock *in the
+preview*. See [What still is not true](#what-still-is-not-true).
 
 | Key | |
 |---|---|
@@ -228,6 +232,91 @@ frames at 60fps, but the file only has 120 (2.00s). The last frame will be
 held for the remaining 60.
 ```
 
+## Widgets from your app
+
+The point of building this on Flutter is that you already have the widgets. A
+`ProductCard` that renders a row in your app should render a frame of a promo
+video. Two things quietly stop that from being true, and both fail without
+raising anything.
+
+**Ambient state.** A composition renders in a detached tree, so `Theme.of` finds
+no `Theme` and returns a fallback. Your card renders in stock Material purple
+and nothing says a word. `wrapper` is the seam:
+
+```dart
+Composition(
+  // ...
+  wrapper: (BuildContext context, Widget child) =>
+      Theme(data: myAppTheme, child: child),
+  builder: (BuildContext context) => const ProductCard(),
+)
+```
+
+It takes anything inherited -- a `Provider`, `Localizations`, a
+`DefaultTextStyle`. The renderer and the preview both build through
+`Composition.buildContent`, so there is no way for one to apply it and the
+other to forget.
+
+**Time.** This is the harder one. App widgets animate against the wall clock:
+an `AnimationController` is driven by a `Ticker`, and *every* `Ticker` --
+including the ones `SingleTickerProviderStateMixin` creates, which is what
+`AnimatedContainer`, `AnimatedOpacity` and `CircularProgressIndicator` all use
+underneath -- schedules itself against `SchedulerBinding`. There is no seam in
+the widget tree to intercept them: `createTicker` constructs a `Ticker`
+directly and never consults an inherited `TickerProvider`.
+
+So the only way to make such a widget deterministic is to control what the
+binding thinks the time is. Before each frame is built, the animation clock is
+driven to that frame's instant. That does two things a detached tree otherwise
+never gets: it ticks every active `Ticker` to composition time, and it drains
+post-frame callbacks -- which is how a great many widgets start their animation
+in the first place. Without it, the single most common fade-in idiom in Flutter
+exports as **nothing at all**, on every frame, silently.
+
+### Entering the timeline in the middle
+
+A `Ticker` treats its *first* tick as elapsed zero. A shard that starts at
+frame 45 would therefore restart every animation, and that bug is nearly
+invisible -- video that is one animation out still looks like video.
+
+Mounting at frame 0 is not enough either, because a widget inside a `Sequence`
+mounts when the sequence says so and its ticker has to anchor *there*. So the
+renderer walks the timeline forward to the frame it was asked for, without
+painting, exactly the way a play-through would walk it. Determinism is
+untouched: the walk always starts at zero, so frame `n` is still the same
+everywhere. It is also close to free -- this is the same sweep the declaration
+pass already performs over the *whole* timeline, and it stops early.
+
+`tool/verify_ticker_mapping.sh` proves it. `TickerProbe` owns a controller
+repeating every 1000ms and paints its value as a grey, so one pixel says
+exactly where the animation was:
+
+```text
+   1 shard(s): 180 frames, OK
+   2 shard(s): 180 frames, OK
+   4 shard(s): 180 frames, OK
+   8 shard(s): 180 frames, OK
+PASS
+```
+
+Rendering `WeeklyDeals` across 4 shards takes 3.70 s with the sweep against
+4.14 s measured before it, so the cost is inside run-to-run variance.
+
+### What still is not true
+
+- **The preview shows wall-clock timing for these widgets.** It builds the
+  composition live in the app's own tree rather than through the renderer, so a
+  ticker-driven widget animates on its own while you scrub. Everything that is
+  a function of `Video.frame` is unaffected. Fixing it means routing the
+  preview through the renderer, which is a real change and is not done.
+- **Jumping is not the same as playing through** for state a widget changes
+  from a callback rather than from the clock. Ticker-driven animation is
+  immune, because a controller is a pure function of elapsed-since-start. The
+  exporter and every shard render consecutive frames, so this only shows up
+  when something seeks a live renderer around.
+- `driveAnimationClock: false` on `CompositionRenderer` turns the whole
+  mechanism off, which is also what makes it testable.
+
 ## Render
 
 ```bash
@@ -300,7 +389,7 @@ needs `AVAssetReader`). Android needs a `MediaCodec` encoder.
 | `packages/fluttermotion_encoder` | AVAssetWriter encoder plugin (iOS/macOS) |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
-| `tool` | Frame-accuracy verification |
+| `tool` | Frame-accuracy verification (video clips, tickers) |
 
 ## Validated so far
 
@@ -317,6 +406,9 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
   and 8 shards, verified per frame by pixel value rather than by eye.
 - **On-device export matches the ffmpeg render.** Run headless on macOS and on
   an iOS simulator with no ffmpeg present, mean SSIM 0.99036 per frame.
+- **Widgets that animate on their own `Ticker` are frame-exact**, and identical
+  across 1, 2, 4 and 8 shards -- including one mounted mid-timeline by a
+  `Sequence`.
 - **Overlapping frames does not reliably help.** Across runs, serial ranged
   53-61 fps and pipelined 53-63 fps -- the difference is inside run-to-run
   variance, and depth 4 and 8 were measurably *worse*. The raster path is a
@@ -362,7 +454,7 @@ cd packages/fluttermotion_cli     && dart test
 cd packages/fluttermotion_encoder && flutter test
 ```
 
-105 tests across the three packages (88 framework, 11 CLI, 6 encoder).
+114 tests across the three packages (97 framework, 11 CLI, 6 encoder).
 The ones that matter assert that a frame is byte-identical when
 rendered from a fresh renderer, when reached by playing forward, and when
 reached by scrubbing backward from later in the timeline.
@@ -377,6 +469,8 @@ reached by scrubbing backward from later in the timeline.
 5. ~~Video clips~~ done
 6. ~~On-device export (the moat)~~ done for video on iOS/macOS
    (in-app audio mixing, in-app video decode, and Android still to come)
+7. ~~Widgets from an existing app -- ambient state and their own clocks~~ done
+   for the render and export paths (the preview still shows wall-clock timing)
 
 Explicitly deferred: Studio app, timeline UI, cloud rendering, effects library.
 
