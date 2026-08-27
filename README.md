@@ -487,6 +487,35 @@ The CLI builds your project with that entry point, asks the resulting binary
 what compositions it defines, then spawns it once per shard to render
 contiguous frame ranges in parallel and stream-copies the segments together.
 
+### The host renders off screen
+
+The render host is a real macOS app, so a stock `Runner` gives it a visible
+window, a Dock icon, and the focus. `--shards 4` gives it four of them. That is
+the wrong first impression of a tool whose whole claim is that it is not screen
+recording -- and it is entirely gratuitous, because nothing the host draws ever
+reaches that window. `CompositionRenderer` owns its own `BuildOwner` and
+`PipelineOwner`, flushes them by hand and rasterises through `toImage`; the
+engine's view is used once, as the handle `RenderView` is built against, and
+never as a target.
+
+So the host sets its own activation policy to
+`NSApplicationActivationPolicyProhibited` before it starts, over three
+Objective-C messages sent through `dart:ffi`. A prohibited application "may not
+create windows or be activated", so the nib's window is never shown, and
+`lsappinfo` reports the process as `type="BackgroundOnly"` rather than
+`type="Foreground"`. It needs no plugin and no change to your project, so it
+also reaches a host that `--no-build` is reusing.
+
+Hiding the window explicitly as well -- `orderOut:` over `NSApp.windows` --
+does not work, and fails in a way worth recording: closing out the last window
+terminates a Flutter macOS app, so the host printed its startup line, rendered
+nothing, and exited 0. `--list` still worked, because it exits before the app
+has time to notice.
+
+`--show-window` turns all of this off when you want to watch. The frames do not
+change either way: the same 1800-frame reel rendered through a quiet host and a
+visible one is byte-identical, and takes the same 21 seconds.
+
 ### The host inherits your app's entitlements
 
 The render host is a macOS build of *your app*, which is what makes any of this
@@ -1231,8 +1260,8 @@ cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-333 tests across the six packages and the example (127 framework, 36 kit,
-44 JSON, 36 schema, 24 encoder, 64 CLI, 2 example). The schema and CLI suites
+338 tests across the six packages and the example (129 framework, 36 kit,
+44 JSON, 36 schema, 24 encoder, 67 CLI, 2 example). The schema and CLI suites
 are plain `dart test` and finish in about a second between them, which is why
 document validation is now something you run rather than something you wait
 for. The ones that matter assert that a

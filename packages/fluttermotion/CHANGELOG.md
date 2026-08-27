@@ -12,6 +12,9 @@ First release.
   and drawn under Flutter content -- and lands on the same source frame no
   matter how many processes the render was split across.
 * `Audio` clips, mixed into the exported file.
+* Render hosts stay off screen on macOS -- no window, no Dock icon, no
+  stolen focus -- because nothing a host draws is ever presented to its
+  window. `--show-window` opts out.
 * Scrubber preview with hot reload.
 * `VideoEncoder` and `VideoBackend` seams, so the platform-specific steps can
   be swapped for in-app implementations.

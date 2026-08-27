@@ -55,6 +55,42 @@ void main() {
       );
     });
 
+    test('--show-window reaches a host with no document to carry it', () {
+      // The flag rides on the same channel a document does, and a project
+      // with a hand-written entry point has no document -- so the branch that
+      // carries nothing else still has to carry this.
+      expect(
+        hostTargetFor(argsWith(<String>['--show-window']), project).hostArgs,
+        <String>['--show-window'],
+      );
+    });
+
+    test('--show-window is appended after the document a host renders', () {
+      expect(
+        hostTargetFor(
+          argsWith(<String>[
+            inProject('reel.json'),
+            '--data', inProject('data.json'),
+            '--show-window',
+          ]),
+          project,
+        ).hostArgs,
+        <String>[
+          '--document', inProject('reel.json'),
+          '--data', inProject('data.json'),
+          '--show-window',
+        ],
+      );
+    });
+
+    test('a host is quiet unless asked otherwise', () {
+      expect(
+        hostTargetFor(argsWith(<String>[inProject('reel.json')]), project)
+            .hostArgs,
+        isNot(contains('--show-window')),
+      );
+    });
+
     test('--entry is honoured when there is no document', () {
       expect(
         hostTargetFor(

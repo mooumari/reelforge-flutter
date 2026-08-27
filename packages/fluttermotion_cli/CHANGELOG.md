@@ -8,6 +8,8 @@ First release.
 * `fluttermotion init` -- writes a composition, a preview entry point and a
   render entry point into an existing Flutter app; `--json` writes a starter
   document and its data instead.
+* `--show-window` lets the render hosts appear on screen; by default they
+  render off it.
 * `fluttermotion validate reel.json` -- reports every problem in a document,
   each with its JSON path, without rendering a frame.
 * `render` and `preview` accept a document directly

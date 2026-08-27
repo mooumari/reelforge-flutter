@@ -118,10 +118,19 @@ class HostTarget {
 /// every time also means one built host serves every document in a project,
 /// which is the difference between a two-minute edit loop and an instant one.
 HostTarget hostTargetFor(CliArgs args, Directory projectDir) {
+  // The host hides itself while it renders, because nothing it draws goes to
+  // the screen. Watching it is occasionally what you want, and the flag has to
+  // survive to every host invocation to be worth having.
+  final List<String> showWindow =
+      args.flag('show-window') ? <String>['--show-window'] : <String>[];
+
   final String? document =
       documentPathFrom(args.rest, args.optional('document'));
   if (document == null) {
-    return HostTarget(entryPoint: args.value('entry', 'lib/render_main.dart'));
+    return HostTarget(
+      entryPoint: args.value('entry', 'lib/render_main.dart'),
+      hostArgs: showWindow,
+    );
   }
   if (!File(document).existsSync()) {
     throw CliError('No document at $document');
@@ -136,6 +145,7 @@ HostTarget hostTargetFor(CliArgs args, Directory projectDir) {
     hostArgs: <String>[
       '--document', absolutePath(document),
       if (data != null) ...<String>['--data', absolutePath(data)],
+      ...showWindow,
     ],
   );
 }

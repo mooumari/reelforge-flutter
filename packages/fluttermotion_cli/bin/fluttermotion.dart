@@ -70,6 +70,7 @@ render options:
   --audio-bitrate <r>   Audio bitrate (default: 192k)
   --no-audio            Skip mixing, even if clips are declared
   --keep-temp           Leave the per-shard segments on disk
+  --show-window         Let the render hosts appear on screen
 ''';
 
 Future<void> main(List<String> arguments) async {

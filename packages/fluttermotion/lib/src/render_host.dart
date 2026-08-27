@@ -9,6 +9,7 @@ import 'declarations/manifest.dart';
 import 'declarations/pass.dart';
 import 'media/spawn.dart';
 import 'media/video_backend.dart';
+import 'quiet_host.dart';
 import 'renderer.dart';
 
 /// Entry point for a render host binary.
@@ -29,6 +30,10 @@ Future<void> renderMain(
 ) async {
   final WidgetsBinding binding = WidgetsFlutterBinding.ensureInitialized();
   final _Args parsed = _Args(args);
+
+  // Nothing here is ever drawn to the screen, so nothing here should appear on
+  // it. Pass `--show-window` to watch the host instead. See [quietHost].
+  if (!parsed.has('show-window')) quietHost();
 
   // The implicit view must exist before a RenderView can be built against it.
   binding.addPostFrameCallback((_) async {
