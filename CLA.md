@@ -2,6 +2,10 @@
 
 By submitting a contribution to FlutterMotion, you agree to the following.
 
+The "Licensor" is Mohammad Oumari, who offers FlutterMotion under the
+Functional Source License and holds the copyright in it. A contribution is
+any work you submit for inclusion, by pull request or otherwise.
+
 1. **Copyright licence.** You grant the Licensor a perpetual, worldwide,
    non-exclusive, royalty-free, irrevocable copyright licence to reproduce,
    prepare derivative works of, publicly display, publicly perform, sublicense,

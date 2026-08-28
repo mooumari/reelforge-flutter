@@ -6,12 +6,14 @@ Six packages ship together: `fluttermotion`, `fluttermotion_schema`,
 
 ## What is still gating a first release
 
-Both are decisions, not work.
+One decision, not work.
 
-1. **The licensor.** `LICENSE.md` and the package copies of it say
-   `REPLACE WITH LEGAL ENTITY BEFORE FIRST PUBLIC RELEASE`. The FSL grant is
-   made by a named licensor; a placeholder makes the licence unenforceable and
-   the release unretractable, which is the wrong order to do those in.
+1. ~~**The licensor.**~~ Settled: Mohammad Oumari, named in `LICENSE.md`, in
+   each package's copy of it, and as the Licensor the CLA assigns to. FlutterMotion
+   is the name of the software, not a party that can grant a licence -- the FSL
+   grant is made by a legal person, and copyright in the code vests in its
+   author. An entity can be formed later and the copyright assigned to it
+   without redoing anything already published.
 
 2. **The repository URL.** There is no git remote. `pub publish --dry-run`
    warns about the missing `repository:` field, and without a public URL a

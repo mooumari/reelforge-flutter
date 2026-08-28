@@ -6,7 +6,7 @@ FSL-1.1-ALv2
 
 ## Notice
 
-Copyright 2026 FlutterMotion (REPLACE WITH LEGAL ENTITY BEFORE FIRST PUBLIC RELEASE)
+Copyright 2026 Mohammad Oumari
 
 ## Terms and Conditions
 
