@@ -169,4 +169,28 @@ void _sandboxEditing() {
       );
     });
   });
+
+  test('the complaint names the command that fixes it', () {
+    // A cold install found this: the message spent a paragraph explaining the
+    // problem and never mentioned --fix-entitlements, which is the documented
+    // one-command fix. Neither did the render that refused for the same
+    // reason. The reader had to already know.
+    expect(
+      SandboxCheck.message('x/Release.entitlements'),
+      contains('fluttermotion init --fix-entitlements'),
+    );
+  });
+
+  test('the path in the complaint has no redundant segments', () {
+    // It is printed on its own line for the reader to open, so
+    // `<project>/./macos/...` is a needless stumble in the one line that
+    // matters. `--project .` and an absolute directory both arrive here.
+    final Directory dotted = Directory('${Directory.systemTemp.path}/.');
+    expect(SandboxCheck.entitlementsFile(dotted).path, isNot(contains('/./')));
+    expect(
+      SandboxCheck.entitlementsFile(Directory('.')).path,
+      isNot(contains('/./')),
+    );
+  });
+
 }

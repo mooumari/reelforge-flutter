@@ -10,6 +10,8 @@ First release.
   document and its data instead.
 * `--show-window` lets the render hosts appear on screen; by default they
   render off it.
+* The App Sandbox complaint names `init --fix-entitlements`, the command
+  that fixes it, in both places it is printed.
 * `fluttermotion validate reel.json --data report.json` -- reports every
   problem in a document, each with its JSON path, without rendering a frame,
   and with `--data` also whether that data fills the document's bindings.

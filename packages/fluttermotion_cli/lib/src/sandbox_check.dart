@@ -13,8 +13,14 @@ import 'dart:io';
 /// rather than a stack trace after it.
 abstract final class SandboxCheck {
   /// The entitlements a release build is signed with.
-  static File entitlementsFile(Directory projectDir) =>
-      File('${projectDir.path}/macos/Runner/Release.entitlements');
+  static File entitlementsFile(Directory projectDir) => File(
+    // Normalised, because this path is printed. `--project .` and an absolute
+    // project directory both reach here, and joining either naively produces
+    // a `/./` in the middle of the one line the reader is meant to act on.
+    Uri.file(
+      '${projectDir.path}/macos/Runner/Release.entitlements',
+    ).normalizePath().toFilePath(),
+  );
 
   /// A complaint to show the user, or null if nothing is wrong.
   ///
@@ -78,9 +84,14 @@ abstract final class SandboxCheck {
       '"Operation not permitted".\n'
       '\n'
       'The host is a developer tool and is never distributed, so it is safe to\n'
-      'build it without the sandbox. Either set app-sandbox to <false/> in that\n'
-      'file while you render, or give the host its own build configuration with\n'
-      'its own entitlements.\n'
+      'build it without the sandbox:\n'
+      '\n'
+      '  fluttermotion init --fix-entitlements\n'
+      '\n'
+      'which sets that one key to <false/> and touches nothing else. Put it\n'
+      'back before you ship: an app distributed through the Mac App Store has\n'
+      'to be sandboxed. Giving the host its own build configuration with its\n'
+      'own entitlements avoids the round trip entirely.\n'
       '\n'
       'Pass --allow-sandbox to build anyway -- correct if the host reaches\n'
       'ffmpeg some other way, such as a copy inside the bundle.';

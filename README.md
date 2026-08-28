@@ -446,10 +446,22 @@ edits the entitlements your *release* build is signed with, and an app that
 ships through the Mac App Store has to be sandboxed. Put it back before you
 ship.
 
-From a bare `flutter create` to an MP4 is about 17 seconds, most of it the
-macOS build. That path is checked from outside the repo -- `flutter create`,
-`pub add`, `fluttermotion init`, `fluttermotion render` -- rather than assumed
-from the fact that the tests pass.
+From a bare `flutter create` to an MP4 is about 20 seconds, most of it the
+macOS build.
+
+That path is checked rather than assumed. `tool/cold_start.sh` runs it from
+outside the repo -- two `flutter create`s into a temp directory, `init` in
+both the Dart and JSON flavours, then a render of each -- and takes about 45
+seconds. Everything else here is checked against `example/`, which was built
+alongside the framework and already has the right entitlements, assets, fonts
+and dependencies; it is the one project where adoption cannot fail, which is
+what makes it the one project that proves nothing about adoption.
+
+It asserts the sandbox gate too, by rendering *before* fixing the
+entitlements and requiring that to be refused -- the whole value of checking
+before the build is that the build is the expensive part. And it checks that
+the MP4 has frames with something drawn on them, because an install can break
+in a way that still writes a file.
 
 ## Preview from the CLI
 
@@ -1302,8 +1314,8 @@ cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-364 tests across the six packages and the example (129 framework, 36 kit,
-44 JSON, 53 schema, 24 encoder, 76 CLI, 2 example). The schema and CLI suites
+366 tests across the six packages and the example (129 framework, 36 kit,
+44 JSON, 53 schema, 24 encoder, 78 CLI, 2 example). The schema and CLI suites
 are plain `dart test` and finish in about a second between them, which is why
 document validation is now something you run rather than something you wait
 for. The ones that matter assert that a
