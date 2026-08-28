@@ -1,6 +1,13 @@
 name: fluttermotion_encoder
 description: On-device video encoding and decoding for FlutterMotion, so a Flutter app can export video with no ffmpeg.
 version: 0.1.0
+repository: https://github.com/mooumari/fluttermotion
+
+# Held back from the first release. On-device export is the one thing this
+# project does that nothing else does, and its terms are the open question;
+# publishing it under the same licence as the rest would answer that
+# question permanently and by accident. Remove this line to release it.
+publish_to: none
 
 environment:
   sdk: ^3.9.0

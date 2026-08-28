@@ -1,7 +1,7 @@
 name: fluttermotion
 description: Build videos with Flutter. Use any Flutter widget as motion graphics, preview them instantly, and render them anywhere.
 version: 0.1.0
-publish_to: none # until the licensor entity and pub.dev strategy are settled
+repository: https://github.com/mooumari/fluttermotion
 
 environment:
   sdk: ^3.9.0

@@ -9,9 +9,10 @@ In plain terms:
   purpose **except** building a product that competes with it.
 - Two years after each version is published, that version becomes Apache 2.0.
 
-**Before the first public release**, replace the licensor placeholder in
-`LICENSE.md` with the legal entity that will own the copyright. Assigning
-copyright to a placeholder is not assigning it to anyone.
+The licensor is Mohammad Oumari. FlutterMotion is the name of the software,
+not a party that can grant a licence; the FSL grant is made by a legal person,
+and copyright in the code vests in its author. An entity can be formed later
+and the copyright assigned to it.
 
 ## Why not a permissive licence?
 

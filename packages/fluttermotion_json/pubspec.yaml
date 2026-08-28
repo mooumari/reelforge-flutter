@@ -1,7 +1,7 @@
 name: fluttermotion_json
 description: Describe a FlutterMotion composition in JSON and build it at runtime.
 version: 0.1.0
-publish_to: none # until the licensor entity and pub.dev strategy are settled
+repository: https://github.com/mooumari/fluttermotion
 
 environment:
   sdk: ^3.9.0
