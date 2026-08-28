@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fluttermotion/fluttermotion.dart';
+import 'package:reelforge/reelforge.dart';
 
 import 'package:example/longform.dart';
 import 'package:example/longform_json.dart';
 import 'package:example/report_data.dart';
 
-/// The claim `fluttermotion_json` has to earn.
+/// The claim `reelforge_json` has to earn.
 ///
 /// A document is meant to be the same video by a different route, not an
 /// approximation of it. The strongest available check is the declaration

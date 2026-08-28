@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:fluttermotion/fluttermotion.dart';
+import 'package:reelforge/reelforge.dart';
 
 import 'compositions.dart';
 
@@ -376,7 +376,7 @@ class _TitleScene extends StatelessWidget {
             child: Transform.scale(
               scale: 0.88 + 0.12 * pop,
               child: const Text(
-                'FlutterMotion',
+                'ReelForge',
                 style: TextStyle(
                   color: _text,
                   fontSize: 142,
@@ -1154,7 +1154,7 @@ class _OutroScene extends StatelessWidget {
             child: Transform.scale(
               scale: 0.94 + 0.06 * spring(f - 50, stiffness: 130, damping: 14),
               child: const _CodePill(
-                'fluttermotion render --composition Showreel --out showreel.mp4',
+                'reelforge render --composition Showreel --out showreel.mp4',
                 accent: _blue,
               ),
             ),

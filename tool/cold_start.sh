@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Installs FlutterMotion the way the README says to, into a Flutter app that
+# Installs ReelForge the way the README says to, into a Flutter app that
 # did not exist a minute ago, and renders an MP4 from it.
 #
 # Everything else in this repo is checked against `example/`, which was built
@@ -23,7 +23,7 @@
 set -euo pipefail
 
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cli="$repo/packages/fluttermotion_cli/bin/fluttermotion.dart"
+cli="$repo/packages/reelforge_cli/bin/reelforge.dart"
 
 # `dart run` rather than the `dart pub global activate` the README documents:
 # activation is global state belonging to whoever runs this, and a test script

@@ -1,15 +1,15 @@
 # Licensing notice
 
-FlutterMotion is source-available under the **Functional Source License 1.1
+ReelForge is source-available under the **Functional Source License 1.1
 with an Apache 2.0 future licence** (`FSL-1.1-ALv2`). See `LICENSE.md`.
 
 In plain terms:
 
-- You may use, modify, self-host, and redistribute FlutterMotion for any
+- You may use, modify, self-host, and redistribute ReelForge for any
   purpose **except** building a product that competes with it.
 - Two years after each version is published, that version becomes Apache 2.0.
 
-The licensor is Mohammad Oumari. FlutterMotion is the name of the software,
+The licensor is Mohammad Oumari. ReelForge is the name of the software,
 not a party that can grant a licence; the FSL grant is made by a legal person,
 and copyright in the code vests in its author. An entity can be formed later
 and the copyright assigned to it.

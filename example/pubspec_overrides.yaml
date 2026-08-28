@@ -10,13 +10,13 @@
 #
 # Not published: see .pubignore.
 dependency_overrides:
-  fluttermotion:
-    path: ../packages/fluttermotion
-  fluttermotion_encoder:
-    path: ../packages/fluttermotion_encoder
-  fluttermotion_json:
-    path: ../packages/fluttermotion_json
-  fluttermotion_kit:
-    path: ../packages/fluttermotion_kit
-  fluttermotion_schema:
-    path: ../packages/fluttermotion_schema
+  reelforge:
+    path: ../packages/reelforge
+  reelforge_encoder:
+    path: ../packages/reelforge_encoder
+  reelforge_json:
+    path: ../packages/reelforge_json
+  reelforge_kit:
+    path: ../packages/reelforge_kit
+  reelforge_schema:
+    path: ../packages/reelforge_schema

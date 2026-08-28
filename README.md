@@ -1,4 +1,4 @@
-# FlutterMotion
+# ReelForge
 
 **Build videos with Flutter.** Use any Flutter widget as motion graphics,
 preview them instantly, and render them anywhere.
@@ -20,7 +20,7 @@ class ProductPromo extends StatelessWidget {
 ```
 
 ```bash
-fluttermotion render lib/video.dart --out promo.mp4 --fps 60 --size 1080x1920
+reelforge render lib/video.dart --out promo.mp4 --fps 60 --size 1080x1920
 ```
 
 This is **not** a screen recorder. A composition is a deterministic function of
@@ -43,7 +43,7 @@ void main() => previewMain(<Composition>[helloFlutter, weeklyDeals]);
 ```
 
 ```bash
-cd example && flutter run -d macos    # or: fluttermotion preview
+cd example && flutter run -d macos    # or: reelforge preview
 ```
 
 Scrub the timeline, then edit a widget and save -- hot reload applies to
@@ -95,7 +95,7 @@ already-decoded bitmap, and throws a named error rather than silently drawing
 nothing if it was somehow missed.
 
 ```bash
-dart run bin/fluttermotion.dart inspect --project ../../example
+dart run bin/reelforge.dart inspect --project ../../example
 ```
 
 ```text
@@ -412,26 +412,26 @@ Until then, depend on the checkout:
 
 ```yaml
 dependencies:
-  fluttermotion:
-    path: ../fluttermotion/packages/fluttermotion
+  reelforge:
+    path: ../reelforge/packages/reelforge
   # Only if you want in-app export, on iOS or macOS:
-  fluttermotion_encoder:
-    path: ../fluttermotion/packages/fluttermotion_encoder
+  reelforge_encoder:
+    path: ../reelforge/packages/reelforge_encoder
 ```
 
 and put the CLI on your `PATH`:
 
 ```bash
-dart pub global activate --source path <checkout>/packages/fluttermotion_cli
+dart pub global activate --source path <checkout>/packages/reelforge_cli
 ```
 
-Once published, both become the usual `flutter pub add fluttermotion` and
-`dart pub global activate fluttermotion_cli`.
+Once published, both become the usual `flutter pub add reelforge` and
+`dart pub global activate reelforge_cli`.
 
 ### Starting a project
 
 ```bash
-fluttermotion init
+reelforge init
 ```
 
 `init` adds the dependency, writes a starter composition in `lib/video/`, the
@@ -466,7 +466,7 @@ in a way that still writes a file.
 ## Preview from the CLI
 
 ```bash
-dart run bin/fluttermotion.dart preview --project ../../my_app
+dart run bin/reelforge.dart preview --project ../../my_app
 ```
 
 `flutter run` on the preview entry point `init` wrote, on this desktop, with
@@ -489,9 +489,9 @@ previewMain(
 ## Render
 
 ```bash
-cd packages/fluttermotion_cli
-dart run bin/fluttermotion.dart list   --project ../../example
-dart run bin/fluttermotion.dart render --project ../../example \
+cd packages/reelforge_cli
+dart run bin/reelforge.dart list   --project ../../example
+dart run bin/reelforge.dart render --project ../../example \
   --composition WeeklyDeals --out deals.mp4
 ```
 
@@ -581,7 +581,7 @@ final ExportResult result = await InAppExporter.export(
 );
 ```
 
-`fluttermotion_encoder` is a plugin wrapping **AVAssetWriter** on iOS and
+`reelforge_encoder` is a plugin wrapping **AVAssetWriter** on iOS and
 macOS and **MediaCodec** plus **MediaMuxer** on Android. Frames go across the method channel as raw RGBA and are permuted to
 BGRA with `vImagePermuteChannels_ARGB8888` straight into the adaptor's pixel
 buffer -- no intermediate `ui.Image`, no PNG round trip. The writer input runs
@@ -833,12 +833,12 @@ wrong, and every one of them plausible.
 
 ## The kit
 
-`fluttermotion` gives you a frame number and Flutter. That is the right
+`reelforge` gives you a frame number and Flutter. That is the right
 foundation and the wrong starting point: `init` handed you a blank
 composition, and the distance from there to something worth watching was the
 whole problem.
 
-`fluttermotion_kit` is the other end. Every component in it was a bespoke
+`reelforge_kit` is the other end. Every component in it was a bespoke
 widget in the example reel first, and what is in the package is what survived
 being made general -- a storyboard, four ways for something to arrive, a
 stagger, two charts, a card, and the two shapes footage takes in practice.
@@ -927,7 +927,7 @@ passes trivially against a component that draws nothing.
 
 ## JSON documents
 
-The kit is a vocabulary of scenes. `fluttermotion_json` makes that vocabulary
+The kit is a vocabulary of scenes. `reelforge_json` makes that vocabulary
 serialisable: a composition described as data, parsed and built at runtime,
 rendering through exactly the same widgets and the same deterministic frame
 function as one written in Dart.
@@ -1048,10 +1048,10 @@ a macOS release host and ran it with `--validate`. It also meant that answering
 "is this JSON valid" cost a release build the first time, which is minutes, and
 that nothing outside a Flutter process could answer it at all.
 
-So the format moved out into `packages/fluttermotion_schema`, a package with no
+So the format moved out into `packages/reelforge_schema`, a package with no
 Flutter dependency:
 
-| `fluttermotion_schema` | `fluttermotion_json` |
+| `reelforge_schema` | `reelforge_json` |
 |---|---|
 | `curveNames` -- `outCubic` is a curve | `namedCurves` -- which `Curve` it is |
 | `NodeType` -- a `titleCard` accepts a `headline` | the builder that draws one |
@@ -1071,7 +1071,7 @@ look like the document is wrong when the build is. So:
 
 - `registerBuilder` **throws** for a name the schema has never heard of. That
   direction is impossible rather than tested.
-- `fluttermotion_json/test/vocabulary_test.dart` asserts every name set has
+- `reelforge_json/test/vocabulary_test.dart` asserts every name set has
   exactly the values behind it: eleven tables, plus palette roles and text roles
   checked by asking whether any two of them resolve to the same thing (which is
   what a role falling through a `switch` looks like).
@@ -1083,7 +1083,7 @@ look like the document is wrong when the build is. So:
 What it bought:
 
 ```
-$ time fluttermotion validate reel.json
+$ time reelforge validate reel.json
 reel.json is a valid composition document.
 0.42s total
 ```
@@ -1110,10 +1110,10 @@ whole thing while already knowing what it should look like.
 So the pairing is checked too:
 
 ```
-$ fluttermotion validate reel.json --data report.json
+$ reelforge validate reel.json --data report.json
 reel.json is valid, and report.json fills every binding in it.
 
-$ fluttermotion validate reel.json --data stale.json
+$ reelforge validate reel.json --data stale.json
 3 problems in reel.json against stale.json:
   scenes[1].child.child.bars
     repeats over "weeks", which is not in the data
@@ -1141,10 +1141,10 @@ too: a week with no releases is a real week.
 A document is not a second renderer, and the CLI does not treat it as one:
 
 ```
-fluttermotion init --json                  # a starter document, not three Dart files
-fluttermotion validate reel.json           # every problem, no frames rendered
-fluttermotion preview  reel.json --data report.json
-fluttermotion render   reel.json --data report.json --out reel.mp4
+reelforge init --json                  # a starter document, not three Dart files
+reelforge validate reel.json           # every problem, no frames rendered
+reelforge preview  reel.json --data report.json
+reelforge render   reel.json --data report.json --out reel.mp4
 ```
 
 `render reel.json` writes a two-line entry point under `.dart_tool/` that loads
@@ -1154,7 +1154,7 @@ generated file is a build artefact: regenerated every run, never in a diff.
 
 The host has to be *your* project, because that is what carries the fonts,
 assets and plugins the document names -- which is also why `init --json` adds
-`fluttermotion_json` and `fluttermotion_kit` to the pubspec, and why pointing
+`reelforge_json` and `reelforge_kit` to the pubspec, and why pointing
 the CLI at a project that lacks them says so rather than failing inside a
 generated file nobody has read.
 
@@ -1166,18 +1166,18 @@ instant, and it validates the document you asked for rather than the one the
 binary was born with.
 
 ```
-fluttermotion validate other.json --no-build     # ~1s, no build
+reelforge validate other.json --no-build     # ~1s, no build
 ```
 
 `validate` is the exception to all of that: it needs no project, no build and
 no Flutter at all.
 
 ```
-fluttermotion validate reel.json                 # ~0.4s, from anywhere
+reelforge validate reel.json                 # ~0.4s, from anywhere
 ```
 
 That is because the document format lives in its own pure-Dart package,
-`fluttermotion_schema`, which the CLI depends on directly. See
+`reelforge_schema`, which the CLI depends on directly. See
 [Checking a document without Flutter](#checking-a-document-without-flutter).
 
 ### What the JSON layer proved
@@ -1213,12 +1213,12 @@ sixty-second render.
 
 | Path | What |
 |---|---|
-| `packages/fluttermotion` | The composition framework |
-| `packages/fluttermotion_schema` | The document format: parsing and validation, no Flutter |
-| `packages/fluttermotion_cli` | `fluttermotion init` / `preview` / `render` / `validate` |
-| `packages/fluttermotion_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
-| `packages/fluttermotion_kit` | Ready-made scenes, charts and motion primitives |
-| `packages/fluttermotion_json` | JSON document format and its runtime interpreter |
+| `packages/reelforge` | The composition framework |
+| `packages/reelforge_schema` | The document format: parsing and validation, no Flutter |
+| `packages/reelforge_cli` | `reelforge init` / `preview` / `render` / `validate` |
+| `packages/reelforge_encoder` | Platform encoder + decoder plugin (iOS/macOS/Android) |
+| `packages/reelforge_kit` | Ready-made scenes, charts and motion primitives |
+| `packages/reelforge_json` | JSON document format and its runtime interpreter |
 | `example` | A working project with two compositions |
 | `benchmarks/spike` | Throughput + determinism harness |
 | `tool` | Frame-accuracy verification (video clips, tickers) |
@@ -1305,12 +1305,12 @@ flutter build macos --release
 ## Tests
 
 ```bash
-cd packages/fluttermotion         && flutter test
-cd packages/fluttermotion_kit     && flutter test
-cd packages/fluttermotion_json    && flutter test
-cd packages/fluttermotion_encoder && flutter test
-cd packages/fluttermotion_schema  && dart test
-cd packages/fluttermotion_cli     && dart test
+cd packages/reelforge         && flutter test
+cd packages/reelforge_kit     && flutter test
+cd packages/reelforge_json    && flutter test
+cd packages/reelforge_encoder && flutter test
+cd packages/reelforge_schema  && dart test
+cd packages/reelforge_cli     && dart test
 cd example                        && flutter test
 ```
 
@@ -1325,7 +1325,7 @@ timeline.
 
 ## Roadmap
 
-1. ~~Sharded deterministic renderer + test suite + `fluttermotion render`~~ done
+1. ~~Sharded deterministic renderer + test suite + `reelforge render`~~ done
 2. ~~Scrubber preview (`flutter run`, hot reload)~~ done
 3. ~~Declaration pass — asset preloading and audio scheduling~~ done
    (video decode windows still to come)

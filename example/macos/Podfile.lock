@@ -1,6 +1,6 @@
 PODS:
   - FlutterMacOS (1.0.0)
-  - fluttermotion_encoder (0.0.1):
+  - reelforge_encoder (0.0.1):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -8,20 +8,20 @@ PODS:
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - fluttermotion_encoder (from `Flutter/ephemeral/.symlinks/plugins/fluttermotion_encoder/macos`)
+  - reelforge_encoder (from `Flutter/ephemeral/.symlinks/plugins/reelforge_encoder/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
 
 EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
-  fluttermotion_encoder:
-    :path: Flutter/ephemeral/.symlinks/plugins/fluttermotion_encoder/macos
+  reelforge_encoder:
+    :path: Flutter/ephemeral/.symlinks/plugins/reelforge_encoder/macos
   path_provider_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
 
 SPEC CHECKSUMS:
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  fluttermotion_encoder: 1bb79a70adabfa44e18c37f47dda7e356ec0e99b
+  reelforge_encoder: 1bb79a70adabfa44e18c37f47dda7e356ec0e99b
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009

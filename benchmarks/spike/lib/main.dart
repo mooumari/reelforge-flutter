@@ -17,7 +17,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 const String kReportPath =
-    '/Users/oumari/Desktop/Code/fluttermotion/benchmarks/spike/bench_result.json';
+    '/Users/oumari/Desktop/Code/reelforge/benchmarks/spike/bench_result.json';
 
 double interpolate(int frame, List<double> input, List<double> output) {
   if (frame <= input.first) return output.first;
@@ -488,7 +488,7 @@ Future<void> endToEndEncode() async {
       OffscreenComposition(size: size, builder: complexComposition);
 
   final String outPath =
-      '/Users/oumari/Desktop/Code/fluttermotion/benchmarks/spike/out.mp4';
+      '/Users/oumari/Desktop/Code/reelforge/benchmarks/spike/out.mp4';
   final Process ff = await Process.start('/opt/homebrew/bin/ffmpeg', <String>[
     '-y',
     '-f', 'rawvideo',

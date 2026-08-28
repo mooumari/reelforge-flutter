@@ -1,0 +1,17 @@
+name: reelforge_cli
+description: Command-line renderer for ReelForge compositions.
+version: 0.1.0
+repository: https://github.com/mooumari/reelforge
+
+environment:
+  sdk: ^3.9.0
+
+executables:
+  reelforge: reelforge
+
+dependencies:
+  reelforge_schema: ^0.1.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

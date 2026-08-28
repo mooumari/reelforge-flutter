@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:fluttermotion/fluttermotion.dart';
-import 'package:fluttermotion_kit/fluttermotion_kit.dart';
+import 'package:reelforge/reelforge.dart';
+import 'package:reelforge_kit/reelforge_kit.dart';
 
 import 'report_data.dart';
 
@@ -14,7 +14,7 @@ import 'report_data.dart';
 /// would actually ship it, which is the only way to find the things a
 /// 200-frame probe cannot.
 ///
-/// It is also the example that `fluttermotion_kit` was extracted from. Every
+/// It is also the example that `reelforge_kit` was extracted from. Every
 /// scene here was a bespoke widget first; what survived being made general is
 /// what the kit contains. The file is now roughly a fifth of its former length
 /// and says what each scene *is* rather than how it is drawn -- which is the

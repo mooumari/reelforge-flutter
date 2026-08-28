@@ -1,8 +1,8 @@
 # Contributor License Agreement
 
-By submitting a contribution to FlutterMotion, you agree to the following.
+By submitting a contribution to ReelForge, you agree to the following.
 
-The "Licensor" is Mohammad Oumari, who offers FlutterMotion under the
+The "Licensor" is Mohammad Oumari, who offers ReelForge under the
 Functional Source License and holds the copyright in it. A contribution is
 any work you submit for inclusion, by pull request or otherwise.
 

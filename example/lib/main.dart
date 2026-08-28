@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:fluttermotion/fluttermotion.dart';
-import 'package:fluttermotion_encoder/fluttermotion_encoder.dart';
+import 'package:reelforge/reelforge.dart';
+import 'package:reelforge_encoder/reelforge_encoder.dart';
 
 import 'compositions.dart';
 import 'longform.dart';
@@ -35,6 +35,6 @@ Future<void> main() async {
       encoderFactory: NativeVideoEncoder.new,
       videoBackendFactory: NativeVideoBackend.new,
       exportPathBuilder: (Composition composition) =>
-          '${Directory.systemTemp.path}/fluttermotion/${composition.id}.mp4',
+          '${Directory.systemTemp.path}/reelforge/${composition.id}.mp4',
     );
 }

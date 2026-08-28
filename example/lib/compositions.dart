@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
-import 'package:fluttermotion/fluttermotion.dart';
+import 'package:reelforge/reelforge.dart';
 
 /// Wraps a composition in the font it carries, rather than the one the machine
 /// happens to have.

@@ -23,7 +23,7 @@ if command -v flutter > /dev/null; then
 fi
 
 BUILT="$ROOT/example/build/macos/Build/Products/Release/example.app"
-COPY="${TMPDIR:-/tmp}/fluttermotion-inapp.app"
+COPY="${TMPDIR:-/tmp}/reelforge-inapp.app"
 
 (cd example && flutter build macos --release -t lib/export_main.dart > /dev/null)
 rm -rf "$COPY"

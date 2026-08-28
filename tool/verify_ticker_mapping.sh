@@ -31,7 +31,7 @@ read -r -a SHARDS <<< "${SHARDS[*]}"
 
 for n in "${SHARDS[@]}"; do
   echo "rendering with $n shard(s)..."
-  (cd packages/fluttermotion_cli && dart run bin/fluttermotion.dart render \
+  (cd packages/reelforge_cli && dart run bin/reelforge.dart render \
       --project ../../example --composition TickerProbe \
       --shards "$n" --out "$WORK/ticker_s$n.mp4" \
       --codec libx264 --bitrate 20M) > /dev/null

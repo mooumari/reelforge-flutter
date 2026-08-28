@@ -15,7 +15,7 @@ LOCAL_OUT="${2:?usage: android_export.sh <Composition> <local-output> [scale] [b
 SCALE="${3:-1.0}"
 BITRATE="${4:-}"
 
-PKG=com.fluttermotion.example
+PKG=com.reelforge.example
 ACTIVITY="$PKG/.MainActivity"
 REMOTE_DIR="/sdcard/Android/data/$PKG/files"
 REMOTE_OUT="$REMOTE_DIR/${COMPOSITION}_inapp.mp4"

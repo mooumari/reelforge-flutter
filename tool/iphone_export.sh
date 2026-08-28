@@ -19,7 +19,7 @@ OUT="${2:?usage: iphone_export.sh <Composition> <output> [scale] [bitrate]}"
 SCALE="${3:-1.0}"
 BITRATE="${4:-}"
 
-BUNDLE=com.fluttermotion.example
+BUNDLE=com.reelforge.example
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 

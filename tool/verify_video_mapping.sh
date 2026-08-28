@@ -43,7 +43,7 @@ for probe in "${PROBES[@]}"; do
   echo "$name"
   for n in "${SHARDS[@]}"; do
     echo "  rendering with $n shard(s)..."
-    (cd packages/fluttermotion_cli && dart run bin/fluttermotion.dart render \
+    (cd packages/reelforge_cli && dart run bin/reelforge.dart render \
         --project ../../example --composition "$name" \
         --shards "$n" --out "$WORK/${name}_s$n.mp4" \
         --codec libx264 --bitrate 20M) > /dev/null

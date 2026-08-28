@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:fluttermotion/fluttermotion.dart';
-import 'package:fluttermotion_encoder/fluttermotion_encoder.dart';
+import 'package:reelforge/reelforge.dart';
+import 'package:reelforge_encoder/reelforge_encoder.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'compositions.dart';

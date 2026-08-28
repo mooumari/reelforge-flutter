@@ -1,8 +1,0 @@
-# Local development only. The published package depends on a version of
-# fluttermotion; inside this repo it must resolve to the sibling checkout, or
-# every change to the framework would need a release before it could be used.
-#
-# Not published: see .pubignore.
-dependency_overrides:
-  fluttermotion:
-    path: ../fluttermotion

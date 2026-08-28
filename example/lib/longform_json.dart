@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:fluttermotion/fluttermotion.dart';
-import 'package:fluttermotion_json/fluttermotion_json.dart';
+import 'package:reelforge/reelforge.dart';
+import 'package:reelforge_json/reelforge_json.dart';
 
 /// The same reel as `longform.dart`, described in JSON instead of Dart.
 ///
@@ -12,7 +12,7 @@ import 'package:fluttermotion_json/fluttermotion_json.dart';
 /// and asserts their declaration manifests are identical -- same duration,
 /// same audio at the same frames, same video windows and trims.
 ///
-/// That equality is the whole claim of `fluttermotion_json`: a document is not
+/// That equality is the whole claim of `reelforge_json`: a document is not
 /// a lesser way to describe a video, it is the same widgets reached by a
 /// different route. Anything the JSON path could not express would show up
 /// here as a difference.

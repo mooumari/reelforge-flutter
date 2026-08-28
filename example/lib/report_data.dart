@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 /// The data the reel is made of, loaded once before the first frame.
 ///
-/// This is the shape of the thing FlutterMotion exists for: a video that is a
+/// This is the shape of the thing ReelForge exists for: a video that is a
 /// function of data, not a timeline someone dragged clips onto. Change the JSON
 /// and every scene, bar height, label and stagger below changes with it.
 ///

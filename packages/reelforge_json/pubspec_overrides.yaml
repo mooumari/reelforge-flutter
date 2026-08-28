@@ -1,0 +1,18 @@
+# Local development only. The published package depends on a *version* of
+# each of these, which is what makes it publishable -- but inside this repo
+# that would send pub to pub.dev instead of to the sibling checkout, and
+# every framework change would need a release before it could be used.
+#
+# Every package in the resolution has to be overridden, not just the direct
+# dependencies: pub treats a path source and a hosted source as unrelated, so
+# one left un-overridden fails to satisfy the hosted constraint some other
+# package puts on it.
+#
+# Not published: see .pubignore.
+dependency_overrides:
+  reelforge:
+    path: ../reelforge
+  reelforge_kit:
+    path: ../reelforge_kit
+  reelforge_schema:
+    path: ../reelforge_schema
