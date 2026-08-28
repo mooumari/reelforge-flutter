@@ -11,12 +11,8 @@
 # Not published: see .pubignore.
 dependency_overrides:
   fluttermotion:
-    path: ../packages/fluttermotion
-  fluttermotion_encoder:
-    path: ../packages/fluttermotion_encoder
-  fluttermotion_json:
-    path: ../packages/fluttermotion_json
+    path: ../fluttermotion
   fluttermotion_kit:
-    path: ../packages/fluttermotion_kit
+    path: ../fluttermotion_kit
   fluttermotion_schema:
-    path: ../packages/fluttermotion_schema
+    path: ../fluttermotion_schema

@@ -30,14 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  fluttermotion:
-    path: ../packages/fluttermotion
-  fluttermotion_kit:
-    path: ../packages/fluttermotion_kit
-  fluttermotion_json:
-    path: ../packages/fluttermotion_json
-  fluttermotion_encoder:
-    path: ../packages/fluttermotion_encoder
+  fluttermotion: ^0.1.0
+  fluttermotion_kit: ^0.1.0
+  fluttermotion_json: ^0.1.0
+  fluttermotion_encoder: ^0.1.0
 
   # Android starts an activity, not a process: there is no argv and no writable
   # working directory. The headless export finds both through here.

@@ -10,12 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  fluttermotion:
-    path: ../fluttermotion
-  fluttermotion_kit:
-    path: ../fluttermotion_kit
-  fluttermotion_schema:
-    path: ../fluttermotion_schema
+  fluttermotion: ^0.1.0
+  fluttermotion_kit: ^0.1.0
+  fluttermotion_schema: ^0.1.0
 
 dev_dependencies:
   flutter_test:

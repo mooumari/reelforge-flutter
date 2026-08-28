@@ -10,8 +10,7 @@ executables:
   fluttermotion: fluttermotion
 
 dependencies:
-  fluttermotion_schema:
-    path: ../fluttermotion_schema
+  fluttermotion_schema: ^0.1.0
 
 dev_dependencies:
   lints: ^5.0.0

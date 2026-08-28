@@ -19,11 +19,9 @@ One decision, not work.
    warns about the missing `repository:` field, and without a public URL a
    source-available licence is a promise nobody can check.
 
-Neither blocks development. One piece of work does remain: the packages depend
-on each other by `path:` inside this repo, and pub will not accept that. Each
-inter-package dependency has to become a version constraint with a
-`pubspec_overrides.yaml` pointing back at the local checkout, which is the
-arrangement `fluttermotion_encoder` already uses and the others do not yet.
+It does not block development, and no work is outstanding: every
+inter-package dependency is now a version constraint with a
+`pubspec_overrides.yaml` pointing back at the local checkout.
 
 ## Before publishing
 
@@ -70,17 +68,23 @@ the package name is claimed permanently.
 
 ## Why pubspec_overrides.yaml exists
 
-`fluttermotion_encoder` depends on a *version* of `fluttermotion`, which is
-what makes it publishable. Inside this repo that would send pub looking on
-pub.dev instead of at the checkout two directories away, so
-`packages/fluttermotion_encoder/pubspec_overrides.yaml` and
-`example/pubspec_overrides.yaml` point both back at the local source.
+Every package here depends on its siblings by *version*, which is what makes
+them publishable -- pub rejects a `path:` dependency outright. Inside this repo
+that would send pub looking on pub.dev instead of at the checkout one directory
+away, so each package that has such a dependency carries a
+`pubspec_overrides.yaml` pinning it to the local source: `fluttermotion_kit`,
+`fluttermotion_json`, `fluttermotion_encoder`, `fluttermotion_cli` and the
+example.
 
-The example needs its own override rather than inheriting one: a path-sourced
-`fluttermotion` does not satisfy the encoder's hosted constraint, because pub
-treats the two sources as unrelated. That is worth knowing because it is
-exactly what a user hits if they depend on one by path and the other by
-version.
+Each of those lists *every* package in its resolution, not only its direct
+dependencies. A path-sourced `fluttermotion` does not satisfy a hosted
+constraint on `fluttermotion`, because pub treats the two sources as unrelated
+-- so one package left un-overridden fails to satisfy the constraint some other
+package puts on it. That is worth knowing because it is exactly what a user
+hits if they depend on one of these by path and another by version.
+
+The overrides are development-only and are kept out of the published archives
+by each package's `.pubignore`.
 
 `pub publish` reports the override as a hint. That is expected: it is saying
 the resolution you tested locally is not the one your users will get, which is
