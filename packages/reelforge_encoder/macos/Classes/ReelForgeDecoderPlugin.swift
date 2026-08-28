@@ -1,1 +1,1 @@
-../../darwin/Classes/FluttermotionDecoderPlugin.swift
+../../darwin/Classes/ReelForgeDecoderPlugin.swift
