@@ -152,6 +152,31 @@ void main() {
     String read(String path) =>
         File('${project.path}/$path').readAsStringSync();
 
+    test('overrides every sibling back to the checkout', () async {
+      // Without this the install does not resolve at all: reelforge_kit
+      // depends on a *version* of reelforge, the project depends on a path,
+      // and pub treats the two sources as unrelated rather than as the same
+      // package. Found by tool/cold_start.sh, which is the only thing here
+      // that installs into a project it did not build.
+      await init(<String>['--json']);
+      final String overrides = read('pubspec_overrides.yaml');
+      expect(overrides, contains('dependency_overrides:'));
+      for (final String name in <String>[
+        'reelforge',
+        'reelforge_kit',
+        'reelforge_json',
+        'reelforge_schema',
+      ]) {
+        expect(overrides, contains('  $name:\n    path: '));
+      }
+    });
+
+    test('an existing pubspec_overrides.yaml is left alone', () async {
+      File('${project.path}/pubspec_overrides.yaml').writeAsStringSync('mine\n');
+      await init(<String>['--json']);
+      expect(read('pubspec_overrides.yaml'), 'mine\n');
+    });
+
     test('writes a document and its data, not three Dart files', () async {
       await init(<String>['--json']);
       expect(File('${project.path}/video/reel.json').existsSync(), isTrue);

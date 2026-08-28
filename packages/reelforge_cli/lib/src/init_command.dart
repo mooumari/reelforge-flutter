@@ -75,6 +75,37 @@ Future<int> initCommand(CliArgs args) async {
     }
   }
 
+  // The sibling packages depend on reelforge by *version*, which is what makes
+  // them publishable. A project that depends on them by path therefore has two
+  // sources for the same package, and pub treats a path source and a hosted
+  // source as unrelated -- so the app's path dependency does not satisfy
+  // reelforge_kit's hosted constraint and version solving fails before a single
+  // frame is built. Overriding the whole set back to the checkout is the fix,
+  // and is the same arrangement this repo uses on itself.
+  if (json) {
+    final File overrides = File('${projectDir.path}/pubspec_overrides.yaml');
+    if (overrides.existsSync()) {
+      skipped.add('pubspec_overrides.yaml already exists');
+    } else {
+      final String packages = _packagesDir(packagePath);
+      overrides.writeAsStringSync(
+        overridesTemplate(<String, String>{
+          for (final String name in <String>[
+            'reelforge',
+            'reelforge_kit',
+            'reelforge_json',
+            'reelforge_schema',
+          ])
+            name: relativePath(
+              from: projectDir.path,
+              to: name == 'reelforge' ? packagePath : '$packages/$name',
+            ),
+        }),
+      );
+      did.add('wrote pubspec_overrides.yaml');
+    }
+  }
+
   // 2. Somewhere for compositions to live, then 3. the two entry points that
   // serve them -- the preview you work in and the host the CLI renders with.
   // Written in that order so an entry point never points at nothing.

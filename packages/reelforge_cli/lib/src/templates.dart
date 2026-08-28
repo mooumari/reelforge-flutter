@@ -237,3 +237,28 @@ String documentDataTemplate() => r'''
   ]
 }
 ''';
+
+/// A `pubspec_overrides.yaml` pinning [paths] back to a local checkout.
+///
+/// Development-only, and says so: an override is pub telling you the
+/// resolution you are testing is not the one your users get. Here it is what
+/// makes a path install resolve at all, because the packages constrain each
+/// other by version.
+String overridesTemplate(Map<String, String> paths) {
+  final StringBuffer out = StringBuffer()
+    ..writeln('# Written by `reelforge init`. Local development only.')
+    ..writeln('#')
+    ..writeln('# The ReelForge packages depend on each other by version, so a')
+    ..writeln('# project that depends on them by path has the same package')
+    ..writeln('# coming from two sources. pub treats those as unrelated and')
+    ..writeln('# refuses to solve. These pin the whole set to the checkout.')
+    ..writeln('#')
+    ..writeln('# Delete this once you depend on published versions instead.')
+    ..writeln('dependency_overrides:');
+  paths.forEach((String name, String path) {
+    out
+      ..writeln('  $name:')
+      ..writeln('    path: $path');
+  });
+  return out.toString();
+}
