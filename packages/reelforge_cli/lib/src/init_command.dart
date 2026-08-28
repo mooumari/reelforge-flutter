@@ -37,52 +37,58 @@ Future<int> initCommand(CliArgs args) async {
   final List<String> did = <String>[];
   final List<String> skipped = <String>[];
 
-  // 1. The dependency.
-  final String packagePath =
+  // 1. The dependencies.
+  //
+  // Published versions by default; a path only when there is a checkout to
+  // point at. The path form is the development arrangement -- it is how this
+  // repo works on itself -- but it is not how anyone installs the tool, and
+  // defaulting to it meant `init` failed outright for every user who followed
+  // the README, because the checkout it went looking for was never there.
+  final String? packagePath =
       args.optional('reelforge') ?? _locateFrameworkPackage();
-  final String relative = relativePath(from: projectDir.path, to: packagePath);
-  final String? updated = withDependency(original, path: relative);
-  if (updated == null) {
-    skipped.add('pubspec.yaml already depends on reelforge');
-  } else {
-    pubspec.writeAsStringSync(updated);
-    did.add('added reelforge (path: $relative) to pubspec.yaml');
-  }
 
+  final bool json = args.flag('json');
   // A document needs the interpreter and the components it names; a Dart
   // composition needs neither, so neither is added unless asked for.
-  final bool json = args.flag('json');
-  if (json) {
-    for (final String extra in <String>[
-      'reelforge_kit',
-      'reelforge_json',
-    ]) {
-      final String current = pubspec.readAsStringSync();
-      final String? withExtra = withDependency(
-        current,
-        name: extra,
-        path: relativePath(
-          from: projectDir.path,
-          to: '${_packagesDir(packagePath)}/$extra',
-        ),
+  final List<String> wanted = <String>[
+    'reelforge',
+    if (json) ...<String>['reelforge_kit', 'reelforge_json'],
+  ];
+
+  for (final String name in wanted) {
+    final String current = pubspec.readAsStringSync();
+    final String? relative = packagePath == null
+        ? null
+        : relativePath(
+            from: projectDir.path,
+            to: name == 'reelforge'
+                ? packagePath
+                : '${_packagesDir(packagePath)}/$name',
+          );
+    final String? updated = withDependency(
+      current,
+      name: name,
+      path: relative,
+    );
+    if (updated == null) {
+      skipped.add('pubspec.yaml already depends on $name');
+    } else {
+      pubspec.writeAsStringSync(updated);
+      did.add(
+        relative == null
+            ? 'added $name: $frameworkConstraint to pubspec.yaml'
+            : 'added $name (path: $relative) to pubspec.yaml',
       );
-      if (withExtra == null) {
-        skipped.add('pubspec.yaml already depends on $extra');
-      } else {
-        pubspec.writeAsStringSync(withExtra);
-        did.add('added $extra to pubspec.yaml');
-      }
     }
   }
 
-  // The sibling packages depend on reelforge by *version*, which is what makes
-  // them publishable. A project that depends on them by path therefore has two
-  // sources for the same package, and pub treats a path source and a hosted
-  // source as unrelated -- so the app's path dependency does not satisfy
-  // reelforge_kit's hosted constraint and version solving fails before a single
-  // frame is built. Overriding the whole set back to the checkout is the fix,
-  // and is the same arrangement this repo uses on itself.
-  if (json) {
+  // Only the path install needs these. The sibling packages depend on
+  // reelforge by *version*, which is what makes them publishable, so a project
+  // that depends on them by path has one package coming from two sources --
+  // and pub treats a path source and a hosted source as unrelated rather than
+  // as the same package, so version solving fails before a frame is built.
+  // A published install has one source throughout and needs no override.
+  if (json && packagePath != null) {
     final File overrides = File('${projectDir.path}/pubspec_overrides.yaml');
     if (overrides.existsSync()) {
       skipped.add('pubspec_overrides.yaml already exists');
@@ -220,28 +226,42 @@ List<String> warnings(Directory projectDir) {
   return found;
 }
 
-/// The `reelforge` package, found from wherever this CLI is running.
-String _locateFrameworkPackage() {
+/// The `reelforge` checkout this CLI is running out of, or null if it is not
+/// running out of one.
+///
+/// Null is the ordinary case, not a failure: a CLI installed with
+/// `dart pub global activate` lives in the pub cache, where there is no
+/// sibling checkout and none is wanted.
+String? _locateFrameworkPackage() {
   // .../packages/reelforge_cli/bin/reelforge.dart
   final List<String> parts = Platform.script.toFilePath().split('/');
   final int packages = parts.lastIndexOf('packages');
-  if (packages < 0) {
-    throw const CliError(
-      'Could not work out where the reelforge package is.\n'
-      'Pass --reelforge <path> to say.',
-    );
-  }
-  return <String>[...parts.take(packages + 1), 'reelforge'].join('/');
+  if (packages < 0) return null;
+  final String path =
+      <String>[...parts.take(packages + 1), 'reelforge'].join('/');
+  return Directory(path).existsSync() ? path : null;
 }
 
-/// [original] with a path dependency on reelforge, or null if it has one.
+/// The version constraint `init` writes for a published install.
+///
+/// Bumped with the packages it names. `init_command_test.dart` reads the
+/// framework's own pubspec and fails if this drifts from it, because the
+/// mistake is silent otherwise: a stale constraint still resolves, just to
+/// a version older than the CLI writing it.
+const String frameworkConstraint = '^0.1.0';
+
+/// [original] with a dependency on [name], or null if it already has one.
+///
+/// A [path] gives a path dependency, which is the development arrangement;
+/// without one the dependency is on [frameworkConstraint], which is what
+/// anyone installing from pub.dev wants.
 ///
 /// Inserted at the top of `dependencies:` rather than appended, because the end
 /// of that block is wherever the next top-level key happens to start and a
 /// pubspec's comments make that hard to find honestly.
 String? withDependency(
   String original, {
-  required String path,
+  String? path,
   String name = 'reelforge',
 }) {
   if (RegExp('^\\s+$name:', multiLine: true).hasMatch(original)) {
@@ -255,9 +275,11 @@ String? withDependency(
       'reelforge yourself as a path dependency.',
     );
   }
+  final String entry = path == null
+      ? '  $name: $frameworkConstraint\n'
+      : '  $name:\n    path: $path\n';
   return original.substring(0, anchor.end) +
-      '  $name:\n'
-      '    path: $path\n' +
+      entry +
       original.substring(anchor.end);
 }
 

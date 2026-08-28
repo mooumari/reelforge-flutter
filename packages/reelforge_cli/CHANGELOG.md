@@ -1,3 +1,14 @@
+## 0.1.1
+
+* `init` adds published version dependencies rather than path dependencies,
+  unless `--reelforge <path>` points at a checkout. A CLI installed with
+  `dart pub global activate` has no checkout beside it, so `init` failed
+  outright for anyone who installed it the documented way -- the one path
+  that could not be tested until the packages existed on pub.dev.
+* A path install also gets a `pubspec_overrides.yaml`, without which it does
+  not resolve at all: the packages constrain each other by version, and pub
+  treats a path source and a hosted source as unrelated.
+
 ## 0.1.0
 
 First release.

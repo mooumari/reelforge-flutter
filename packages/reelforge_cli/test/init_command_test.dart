@@ -26,6 +26,28 @@ dev_dependencies:
 
 void main() {
   group('adding the dependency', () {
+    test('without a path, the dependency is on a published version', () {
+      // The default, and for a long time the only untested case: a CLI
+      // installed with `dart pub global activate` has no checkout beside it,
+      // and writing a path dependency there pointed the project at a
+      // directory in the pub cache that does not contain the framework.
+      final String updated = withDependency(_pubspec)!;
+      expect(updated, contains('  reelforge: $frameworkConstraint\n'));
+      expect(updated, isNot(contains('path:')));
+    });
+
+    test('the published constraint tracks the framework it names', () {
+      // Silent when it drifts: a stale constraint still resolves, just to a
+      // version older than the CLI writing it.
+      final File pubspec = File(
+        '${Directory.current.parent.path}/reelforge/pubspec.yaml',
+      );
+      final String version = RegExp(r'^version:\s*(\S+)', multiLine: true)
+          .firstMatch(pubspec.readAsStringSync())!
+          .group(1)!;
+      expect(frameworkConstraint, '^$version');
+    });
+
     test('lands inside dependencies, not somewhere that looks like it', () {
       final String updated = withDependency(_pubspec, path: '../fm')!;
       final int dep = updated.indexOf('  reelforge:');
