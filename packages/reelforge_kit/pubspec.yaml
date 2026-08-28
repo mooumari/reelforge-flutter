@@ -1,7 +1,7 @@
 name: reelforge_kit
 description: Ready-made scenes, charts and motion primitives for ReelForge compositions.
 version: 0.1.0
-repository: https://github.com/mooumari/reelforge
+repository: https://github.com/mooumari/reelforge-flutter
 
 environment:
   sdk: ^3.9.0
