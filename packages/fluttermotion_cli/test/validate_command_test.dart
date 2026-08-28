@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:fluttermotion_cli/src/args.dart';
+import 'package:fluttermotion_cli/src/binding_check.dart';
 import 'package:fluttermotion_cli/src/cli_error.dart';
 import 'package:fluttermotion_cli/src/validate_command.dart';
 import 'package:fluttermotion_schema/fluttermotion_schema.dart';
@@ -118,4 +119,106 @@ void main() {
     expect(paths, hasLength(4));
     expect(paths, everyElement(startsWith('scenes[0].child.children[')));
   });
+
+  group('against data', () {
+    Future<int> validateWith(String path, String data) =>
+        validateCommand(CliArgs(<String>[path, '--data', data]));
+
+    test('data that fills every binding exits zero', () async {
+      expect(
+        await validateWith(
+          write('ok.json', valid),
+          write('data.json', '{"title": "Q3"}'),
+        ),
+        0,
+      );
+    });
+
+    test('data missing a binding exits one', () async {
+      // The failure this whole path exists for: both files are valid, and the
+      // pair renders a title card with no title on it.
+      expect(
+        await validateWith(
+          write('ok.json', valid),
+          write('data.json', '{"subtitle": "Q3"}'),
+        ),
+        1,
+      );
+    });
+
+    test('a document is still valid on its own with no data at all', () async {
+      // Without --data there is nothing to check against, and a template
+      // waiting on data is not a broken document.
+      expect(await validate(write('ok.json', valid)), 0);
+    });
+
+    test('a data file that is not there is refused by name', () async {
+      expect(
+        () => validateWith(write('ok.json', valid), '${dir.path}/gone.json'),
+        throwsA(
+          isA<CliError>().having(
+            (CliError e) => e.message,
+            'message',
+            contains('gone.json'),
+          ),
+        ),
+      );
+    });
+
+    test('a data file that is not JSON says so, rather than throwing', () async {
+      expect(
+        () => validateWith(
+          write('ok.json', valid),
+          write('data.json', 'not json at all'),
+        ),
+        throwsA(isA<CliError>()),
+      );
+    });
+
+    test('a data file that is not an object is refused', () async {
+      // A document reads its data by name, so a list has nothing to offer it.
+      expect(
+        () => validateWith(
+          write('ok.json', valid),
+          write('data.json', '[1, 2, 3]'),
+        ),
+        throwsA(
+          isA<CliError>().having(
+            (CliError e) => e.message,
+            'message',
+            contains('JSON object'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('the check the render runs', () {
+    test('an unparseable document yields no binding check', () {
+      // validate reports that far better, with every schema error at once;
+      // bindings cannot be checked against a tree that was never built.
+      expect(bindingCheck(write('bad.json', '{ not json'), null), isNull);
+    });
+
+    test('a document with no data reports what it cannot fill', () {
+      final BindingCheck? check = bindingCheck(write('ok.json', valid), null);
+      expect(check, isNotNull);
+      expect(check!.hasData, isFalse);
+      expect(
+        check.problems.single.toString(),
+        'scenes[0].child.headline: "{{ title }}" has nothing to bind to',
+      );
+    });
+
+    test('a document whose data fills it reports nothing', () {
+      expect(
+        bindingCheck(
+          write('ok.json', valid),
+          write('data.json', '{"title": "Q3"}'),
+        )!.isEmpty,
+        isTrue,
+      );
+    });
+  });
+
 }

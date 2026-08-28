@@ -36,9 +36,11 @@ export 'src/reader.dart'
         checkFilters,
         checkInsets,
         parseHex;
+export 'src/data_check.dart' show dataProblems;
 export 'src/scope.dart'
     show
         DataScope,
+        bindingPathsIn,
         fillString,
         fillValue,
         filtersIn,

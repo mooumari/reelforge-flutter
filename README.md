@@ -1082,6 +1082,48 @@ also means a server can check a document it is about to send to an app, and an
 editor can check one as it is typed, with a package that has never heard of
 `dart:ui`.
 
+### A document and its data are two questions
+
+`validate` used to answer one of them. `longform.json` is a valid document,
+`report.json` is valid data, and rendering the document *without* the data
+produced sixty seconds of video in which every bound value was empty and every
+`repeat` drew zero children -- with no warning and a zero exit code. The file
+played. The bar chart's label was there and its twelve bars were not.
+
+That is the worst failure a video tool can have, because a missing binding
+renders as *absence*, which in a finished video is indistinguishable from a
+scene that was meant to be sparse. The only way to catch it is to watch the
+whole thing while already knowing what it should look like.
+
+So the pairing is checked too:
+
+```
+$ fluttermotion validate reel.json --data report.json
+reel.json is valid, and report.json fills every binding in it.
+
+$ fluttermotion validate reel.json --data stale.json
+3 problems in reel.json against stale.json:
+  scenes[1].child.child.bars
+    repeats over "weeks", which is not in the data
+  scenes[3].child.child.children
+    repeats over "teams", which is a string, not a list
+  scenes[6].child.child.points
+    repeats over "weeks", which is not in the data
+```
+
+Without `--data` it says how many bindings it could not check rather than
+implying they are fine. `render` runs the same check before the build starts
+-- the only moment it is cheap -- and warns without refusing, because a
+template waiting on data this run does not have is a real thing to want.
+
+It decides by resolving, not by guessing: every binding is looked up through
+the same `DataScope` the renderer uses, item first and then root, so the rules
+cannot drift from the ones that actually apply. Inside a `repeat` the template
+is checked against every item and reported only when it resolves for none of
+them -- a field some rows have and others do not is ordinary data, and twelve
+weeks missing a field is one mistake rather than twelve. An empty list is data
+too: a week with no releases is a real week.
+
 ### Documents from the CLI
 
 A document is not a second renderer, and the CLI does not treat it as one:
@@ -1260,8 +1302,8 @@ cd packages/fluttermotion_cli     && dart test
 cd example                        && flutter test
 ```
 
-338 tests across the six packages and the example (129 framework, 36 kit,
-44 JSON, 36 schema, 24 encoder, 67 CLI, 2 example). The schema and CLI suites
+364 tests across the six packages and the example (129 framework, 36 kit,
+44 JSON, 53 schema, 24 encoder, 76 CLI, 2 example). The schema and CLI suites
 are plain `dart test` and finish in about a second between them, which is why
 document validation is now something you run rather than something you wait
 for. The ones that matter assert that a

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'args.dart';
 import 'audio_mixer.dart';
+import 'binding_check.dart';
 import 'document_entry.dart';
 import 'host.dart';
 
@@ -23,6 +24,17 @@ Future<int> renderCommand(CliArgs args) async {
 
   final String ffmpeg = await _resolveFfmpeg(args.optional('ffmpeg'));
   final HostTarget target = hostTargetFor(args, projectDir);
+
+  // Before the build, not after the render. A binding with nothing behind it
+  // renders as absence, which in a finished video is indistinguishable from a
+  // scene that was meant to be sparse -- so the only moment this is cheap to
+  // notice is before the minutes start.
+  final String? document =
+      documentPathFrom(args.rest, args.optional('document'));
+  if (document != null) {
+    final BindingCheck? check = bindingCheck(document, args.optional('data'));
+    if (check != null) warnAboutBindings(check, log: stderr.writeln);
+  }
   final RenderHost host = RenderHost(
     projectDir: projectDir,
     entryPoint: target.entryPoint,

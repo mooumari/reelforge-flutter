@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fluttermotion_schema/fluttermotion_schema.dart';
 
 import 'args.dart';
+import 'binding_check.dart';
 import 'cli_error.dart';
 import 'document_entry.dart';
 
@@ -34,18 +35,53 @@ Future<int> validateCommand(CliArgs args) async {
     document.readAsStringSync(),
   );
 
-  if (problems.isEmpty) {
-    stdout.writeln('$path is a valid composition document.');
-    return 0;
+  if (problems.isNotEmpty) {
+    _report(problems, 'in $path');
+    return 1;
   }
 
+  // Valid on its own, which is a smaller claim than it sounds. A document is
+  // a template: whether it draws anything depends on data it does not
+  // contain, and the two are checked separately because they are separate
+  // files. Answering only the first question is how a reel renders sixty
+  // seconds of empty scenes and exits 0.
+  final String? data = args.optional('data');
+  if (data != null && !File(data).existsSync()) {
+    throw CliError('No data file at $data');
+  }
+
+  final DocumentSpec parsed = DocumentSpec.parse(document.readAsStringSync());
+  final List<SchemaProblem> unbound = dataProblems(parsed, readData(data));
+
+  if (data != null) {
+    if (unbound.isEmpty) {
+      stdout.writeln('$path is valid, and $data fills every binding in it.');
+      return 0;
+    }
+    _report(unbound, 'in $path against $data');
+    return 1;
+  }
+
+  stdout.writeln('$path is a valid composition document.');
+  if (unbound.isNotEmpty) {
+    // Not a problem -- a document with no data is exactly what a template is.
+    // But it is the one thing this command cannot answer without being told
+    // where the data lives, so it says so rather than implying otherwise.
+    stdout.writeln(
+      '${unbound.length} of its bindings need data. '
+      'Pass --data <file> to check them.',
+    );
+  }
+  return 0;
+}
+
+void _report(List<SchemaProblem> problems, String where) {
   stdout.writeln(
     '${problems.length} ${problems.length == 1 ? 'problem' : 'problems'} '
-    'in $path:',
+    '$where:',
   );
   for (final SchemaProblem problem in problems) {
     stdout.writeln('  ${problem.path.isEmpty ? '<document>' : problem.path}');
     stdout.writeln('    ${problem.message}');
   }
-  return 1;
 }

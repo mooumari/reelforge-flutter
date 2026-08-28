@@ -166,6 +166,8 @@ class SpecList {
   final Map<String, Object?>? template;
   final List<Object?> items;
 
+  bool get repeats => over != null;
+
   /// The objects to build from, each with the scope its bindings resolve in.
   List<ScopedSpec> resolve(DataScope scope) {
     if (over == null) {

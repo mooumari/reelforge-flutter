@@ -153,6 +153,17 @@ List<String> filtersIn(String expression) => <String>[
         .map((String f) => f.trim().replaceAll(RegExp(r'\(.*\)'), '')),
 ];
 
+/// The data paths every `{{ }}` in [expression] reads, filters stripped.
+///
+/// `"{{ shipped | round }} of {{ totals.releases }}"` gives
+/// `['shipped', 'totals.releases']`. `@index` and `@item` come back as
+/// written; they resolve from the scope itself rather than from the data, and
+/// a caller checking bindings against data has to know not to look for them.
+List<String> bindingPathsIn(String expression) => <String>[
+  for (final Match match in _binding.allMatches(expression))
+    match.group(1)!.split('|').first.trim(),
+];
+
 String _stringify(Object? value) {
   if (value == null) return '';
   if (value is double && value == value.roundToDouble()) {

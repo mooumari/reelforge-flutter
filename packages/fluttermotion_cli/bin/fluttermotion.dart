@@ -26,7 +26,10 @@ A composition is either Dart in your project (the default, found through
 generated two-line host, so both take exactly the same path from there on.
 
 `validate` is the exception: it needs no project and no build, because a
-document is data and checking it is a question about JSON.
+document is data and checking it is a question about JSON. Give it --data as
+well and it answers the second question too -- whether that data fills the
+document's bindings. A document and its data are valid separately and can
+still render nothing together, so `render` checks the same thing and warns.
 
 Common options:
   --project <dir>       Flutter project to render from (default: .)

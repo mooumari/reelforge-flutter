@@ -10,8 +10,10 @@ First release.
   document and its data instead.
 * `--show-window` lets the render hosts appear on screen; by default they
   render off it.
-* `fluttermotion validate reel.json` -- reports every problem in a document,
-  each with its JSON path, without rendering a frame.
+* `fluttermotion validate reel.json --data report.json` -- reports every
+  problem in a document, each with its JSON path, without rendering a frame,
+  and with `--data` also whether that data fills the document's bindings.
+  `render` runs the same check before the build and warns.
 * `render` and `preview` accept a document directly
   (`fluttermotion render reel.json --data report.json`), generating the host
   entry point that loads it. The document is passed to the host on argv as
