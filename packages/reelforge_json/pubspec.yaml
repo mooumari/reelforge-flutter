@@ -1,6 +1,6 @@
 name: reelforge_json
 description: Describe a ReelForge composition in JSON and build it at runtime.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/mooumari/reelforge-flutter
 
 environment:

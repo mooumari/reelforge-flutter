@@ -31,4 +31,4 @@ or export from inside a running app with
 [`reelforge_encoder`](https://pub.dev/packages/reelforge_encoder).
 
 Full documentation, including video clips, audio, sharding and the on-device
-export path, is in the repository README.
+export path, is in the [guide](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md).

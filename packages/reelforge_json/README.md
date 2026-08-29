@@ -25,6 +25,6 @@ reelforge validate reel.json
 reelforge render   reel.json --data report.json --out reel.mp4
 ```
 
-See the JSON section of the [repository README](../../README.md) for the
+See the JSON section of the [guide](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md) for the
 document shape, the node vocabulary, the binding language and what the layer
 was verified against.

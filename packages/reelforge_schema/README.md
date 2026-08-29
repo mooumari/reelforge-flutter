@@ -36,5 +36,5 @@ builder cannot be registered for a name this package has never heard of, and
 no value behind it there. A curve the validator accepts with nothing to build
 from it would render as `linear` and look like the document was wrong.
 
-See the JSON section of the [repository README](../../README.md) for the
+See the JSON section of the [guide](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md) for the
 document shape and the binding language.

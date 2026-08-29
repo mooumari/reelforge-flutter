@@ -1,7 +1,7 @@
 # reelforge_kit
 
 Ready-made scenes, charts and motion primitives for
-[ReelForge](../../README.md) compositions.
+[ReelForge](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md) compositions.
 
 `reelforge` gives you a frame number and Flutter. This gives you somewhere
 to start.

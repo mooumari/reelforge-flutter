@@ -1,5 +1,6 @@
 ## 0.1.1
 
+* Adds `example/`, so the package page has an Example tab.
 * `init` adds published version dependencies rather than path dependencies,
   unless `--reelforge <path>` points at a checkout. A CLI installed with
   `dart pub global activate` has no checkout beside it, so `init` failed

@@ -20,4 +20,4 @@ the ffmpeg decoder does.
 
 **iOS and macOS.** Android is not implemented yet.
 
-Full documentation is in the repository README.
+Full documentation is in the [guide](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md).
