@@ -1,3 +1,17 @@
+## 0.2.0
+
+Requires Flutter 3.41 or newer.
+
+* Fixes the ticker gate, which had quietly stopped working on Flutter 3.41.
+  `TickerMode` gained a second notifier carrying `TickerModeData`, and the
+  ticker mixins moved over to it; the gate was still writing the old boolean
+  one, so nothing was muted and a composition's own animations were ticked at
+  wall-clock time between the frames the renderer drew. It now writes
+  `TickerMode.getValuesNotifier`, which is what raises the minimum SDK.
+* Disposing a renderer now takes the composition's element tree apart instead
+  of only deactivating its root, so `State.dispose` actually runs and an
+  `AnimationController` inside a composition is released with it.
+
 ## 0.1.1
 
 * Adds `example/`, so the package page has an Example tab.

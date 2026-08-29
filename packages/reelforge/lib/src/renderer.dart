@@ -250,11 +250,23 @@ class CompositionRenderer {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    // Order matters: clearing rootNode detaches the RenderView, which
-    // RenderObjectElement.deactivate asserts on.
-    _pipelineOwner.rootNode = null;
-    _element.deactivate();
+    // Take the tree apart the way the framework does: hand the root adapter a
+    // null child and let an ordinary rebuild do the removal. That routes every
+    // element through deactivateChild and finalizeTree, which is the only path
+    // that runs State.dispose -- an AnimationController inside a composition is
+    // released here or not at all.
+    //
+    // Calling _element.deactivate() directly, which is what this used to do,
+    // deactivates the root and nothing below it: the subtree is never added to
+    // the inactive list, so finalizeTree finds nothing to unmount.
+    RenderObjectToWidgetAdapter<RenderBox>(
+      container: _renderView,
+    ).attachToRenderTree(_buildOwner, _element);
+    _buildOwner.buildScope(_element);
     _buildOwner.finalizeTree();
+    // Only now: unmounting a RenderObjectElement detaches its render object,
+    // so the render tree has to outlive the widgets that point into it.
+    _pipelineOwner.rootNode = null;
     _pipelineOwner.dispose();
     _frame.dispose();
   }

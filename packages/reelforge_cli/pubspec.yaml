@@ -1,6 +1,6 @@
 name: reelforge_cli
 description: Command-line renderer for ReelForge compositions.
-version: 0.1.1
+version: 0.2.0
 repository: https://github.com/mooumari/reelforge-flutter
 
 environment:
@@ -10,7 +10,7 @@ executables:
   reelforge: reelforge
 
 dependencies:
-  reelforge_schema: ^0.1.0
+  reelforge_schema: ^0.2.0
 
 dev_dependencies:
   lints: ^5.0.0

@@ -27,7 +27,7 @@ import 'package:flutter/widgets.dart';
 /// `getInheritedWidgetOfExactType`, which creates no dependency, so nothing
 /// rebuilds either way.
 class TickerGate {
-  ValueNotifier<bool>? _notifier;
+  ValueNotifier<TickerModeData>? _notifier;
 
   /// Wraps [child] so the gate can reach the tickers below it.
   Widget wrap(Widget child) {
@@ -44,26 +44,48 @@ class TickerGate {
 
   /// Lets the composition's tickers run, for exactly as long as the renderer
   /// is the one deciding what time it is.
-  void open() => _notifier?.value = true;
+  void open() => setTickersEnabled(_notifier, true);
 
   /// Mutes them again, so the engine's next real frame passes them by.
-  void close() => _notifier?.value = false;
+  void close() => setTickersEnabled(_notifier, false);
 }
 
 /// Reaches the [ValueNotifier] behind the nearest [TickerMode].
+///
+/// It has to be the [TickerModeData] notifier specifically, not the older
+/// boolean one beside it. [TickerMode] still keeps both, but Flutter 3.41 moved
+/// the ticker mixins onto the [TickerModeData] one, so writing the boolean
+/// mutes nothing -- and mutes nothing *silently*, because it still reports back
+/// whatever was written to it. That is why this package requires 3.41: below it
+/// the new notifier does not exist, above it the old one does not work.
 ///
 /// Flutter hands out a read-only view of a notifier it owns. If that ever
 /// stops being true, the caller gets null and does nothing at all rather than
 /// doing something wrong. Reading it creates no dependency, so this is safe to
 /// call on contexts the caller does not own.
-ValueNotifier<bool>? writableNotifierOf(BuildContext context) {
-  final ValueListenable<bool> notifier = TickerMode.getNotifier(context);
+ValueNotifier<TickerModeData>? writableNotifierOf(BuildContext context) {
+  final ValueListenable<TickerModeData> notifier = TickerMode.getValuesNotifier(
+    context,
+  );
   assert(
-    notifier is ValueNotifier<bool>,
+    notifier is ValueNotifier<TickerModeData>,
     'TickerMode no longer exposes a writable notifier; muting tickers needs '
     'another route.',
   );
-  return notifier is ValueNotifier<bool> ? notifier : null;
+  return notifier is ValueNotifier<TickerModeData> ? notifier : null;
+}
+
+/// Flips a [TickerMode]'s `enabled` flag and leaves the rest of it alone.
+///
+/// `forceFrames` is the host's business, not the gate's: an app that asked for
+/// frames while its tickers are muted still wants them when they are let go
+/// again.
+void setTickersEnabled(ValueNotifier<TickerModeData>? notifier, bool enabled) {
+  if (notifier == null) return;
+  notifier.value = TickerModeData(
+    enabled: enabled,
+    forceFrames: notifier.value.forceFrames,
+  );
 }
 
 /// Shields a live application from the composition clock.
@@ -97,8 +119,8 @@ class MotionTickerShield extends StatefulWidget {
   static final Set<_MotionTickerShieldState> _installed =
       <_MotionTickerShieldState>{};
 
-  static final Map<ValueNotifier<bool>, bool> _restore =
-      <ValueNotifier<bool>, bool>{};
+  static final Map<ValueNotifier<TickerModeData>, bool> _restore =
+      <ValueNotifier<TickerModeData>, bool>{};
 
   @visibleForTesting
   static int get debugInstalledCount => _installed.length;
@@ -106,19 +128,20 @@ class MotionTickerShield extends StatefulWidget {
   /// Mutes every shielded application tree. Balanced by [unmuteHosts].
   static void muteHosts() {
     for (final _MotionTickerShieldState state in _installed) {
-      for (final ValueNotifier<bool> notifier in state._notifiers()) {
+      for (final ValueNotifier<TickerModeData> notifier
+          in state._notifiers()) {
         // Whatever the app had asked for is restored afterwards, so a tree it
         // had already disabled -- an offstage route, say -- stays disabled.
-        _restore[notifier] = notifier.value;
-        notifier.value = false;
+        _restore[notifier] = notifier.value.enabled;
+        setTickersEnabled(notifier, false);
       }
     }
   }
 
   /// Lets them run again, exactly as they were.
   static void unmuteHosts() {
-    _restore.forEach((ValueNotifier<bool> notifier, bool was) {
-      notifier.value = was;
+    _restore.forEach((ValueNotifier<TickerModeData> notifier, bool was) {
+      setTickersEnabled(notifier, was);
     });
     _restore.clear();
   }
@@ -152,15 +175,16 @@ class _MotionTickerShieldState extends State<MotionTickerShield> {
   ///
   /// The walk is redone on each frame rather than cached: routes come and go,
   /// and a stale list would silently stop shielding whatever appeared since.
-  List<ValueNotifier<bool>> _notifiers() {
-    final List<ValueNotifier<bool>> found = <ValueNotifier<bool>>[];
+  List<ValueNotifier<TickerModeData>> _notifiers() {
+    final List<ValueNotifier<TickerModeData>> found =
+        <ValueNotifier<TickerModeData>>[];
     void visit(Element element) {
       if (element.widget is TickerMode) {
         // The notifier lives on the inherited widget TickerMode builds, so it
         // is only visible from below.
         Element? child;
         element.visitChildren((Element e) => child ??= e);
-        final ValueNotifier<bool>? notifier = child == null
+        final ValueNotifier<TickerModeData>? notifier = child == null
             ? null
             : writableNotifierOf(child!);
         if (notifier != null) found.add(notifier);

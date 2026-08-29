@@ -16,8 +16,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-const String kReportPath =
-    '/Users/oumari/Desktop/Code/reelforge/benchmarks/spike/bench_result.json';
+/// Where the run writes its numbers.
+///
+/// A macOS app's working directory is `/`, so this has to be absolute, and it
+/// cannot be hard-coded to one machine. Pass it in:
+///
+/// ```
+/// flutter run -d macos --release \
+///   --dart-define=reportPath="$PWD/bench_result.json"
+/// ```
+/// The ffmpeg the end-to-end encode pipes into.
+///
+/// An app launched from Finder does not inherit a shell's PATH, so this cannot
+/// be a bare `ffmpeg`.
+const String kFfmpegPath = String.fromEnvironment(
+  'ffmpegPath',
+  defaultValue: '/opt/homebrew/bin/ffmpeg',
+);
+
+const String kReportPath = String.fromEnvironment(
+  'reportPath',
+  defaultValue: '/tmp/reelforge_bench_result.json',
+);
 
 double interpolate(int frame, List<double> input, List<double> output) {
   if (frame <= input.first) return output.first;
@@ -260,7 +280,7 @@ class _BarPainter extends CustomPainter {
 // ---------------------------------------------------------------------------
 
 final Map<String, dynamic> report = <String, dynamic>{
-  'flutter': '3.35.0',
+  'flutter': '3.47.2',
   'device': 'Apple M3 Max',
   'mode': kReleaseMode ? 'release' : (kProfileMode ? 'profile' : 'debug'),
   'benchmarks': <Map<String, dynamic>>[],
@@ -487,9 +507,13 @@ Future<void> endToEndEncode() async {
   final OffscreenComposition comp =
       OffscreenComposition(size: size, builder: complexComposition);
 
+  // Next to the report, for the same reason the report is passed in: a
+  // hard-coded absolute path belongs to whoever's machine it was written on,
+  // and ffmpeg answers a missing directory with exit 254 and an empty file
+  // rather than anything that reads like an error.
   final String outPath =
-      '/Users/oumari/Desktop/Code/reelforge/benchmarks/spike/out.mp4';
-  final Process ff = await Process.start('/opt/homebrew/bin/ffmpeg', <String>[
+      '${File(kReportPath).parent.path}${Platform.pathSeparator}out.mp4';
+  final Process ff = await Process.start(kFfmpegPath, <String>[
     '-y',
     '-f', 'rawvideo',
     '-pix_fmt', 'rgba',

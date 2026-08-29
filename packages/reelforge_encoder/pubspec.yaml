@@ -1,6 +1,6 @@
 name: reelforge_encoder
 description: On-device video encoding and decoding for ReelForge, so a Flutter app can export video with no ffmpeg.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/mooumari/reelforge-flutter
 
 # Held back from the first release. On-device export is the one thing this
@@ -11,12 +11,12 @@ publish_to: none
 
 environment:
   sdk: ^3.9.0
-  flutter: ">=3.35.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  reelforge: ^0.1.0
+  reelforge: ^0.2.0
 
 dev_dependencies:
   flutter_test:

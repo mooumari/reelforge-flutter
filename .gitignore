@@ -5,12 +5,16 @@ build/
 pubspec.lock
 *.iml
 
-# Spike + benchmark outputs
+# Spike + benchmark outputs. bench_result.json is deliberately not here: the
+# guide quotes it, and a quoted number nobody can open is just a claim.
 benchmarks/**/out.mp4
 benchmarks/**/*.png
-benchmarks/**/bench_result.json
 example/build/
 example/.dart_tool/
+
+# export_main writes this beside its output; on a phone it is the only way to
+# read the run's log back, and on desktop it is just litter.
+export_log.txt
 
 # Python bytecode from the tools in tool/.
 __pycache__/

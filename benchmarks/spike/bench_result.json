@@ -1,0 +1,137 @@
+{
+  "flutter": "3.47.2",
+  "device": "Apple M3 Max",
+  "mode": "release",
+  "benchmarks": [
+    {
+      "name": "simple / no readback",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "readback": false,
+      "total_s": 0.024,
+      "fps": 5028.28,
+      "ms_per_frame": 0.2,
+      "breakdown_ms": {
+        "pump": 0.0,
+        "toImage": 0.19,
+        "readback": 0.0
+      },
+      "realtime_ratio_at_60fps": 83.8
+    },
+    {
+      "name": "simple",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "readback": true,
+      "total_s": 0.801,
+      "fps": 149.73,
+      "ms_per_frame": 6.68,
+      "breakdown_ms": {
+        "pump": 0.01,
+        "toImage": 0.14,
+        "readback": 6.52
+      },
+      "realtime_ratio_at_60fps": 2.5
+    },
+    {
+      "name": "complex",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "readback": true,
+      "total_s": 1.092,
+      "fps": 109.85,
+      "ms_per_frame": 9.1,
+      "breakdown_ms": {
+        "pump": 0.73,
+        "toImage": 0.91,
+        "readback": 7.45
+      },
+      "realtime_ratio_at_60fps": 1.83
+    },
+    {
+      "name": "complex / 1920x1080",
+      "resolution": "1920x1080",
+      "frames": 120,
+      "readback": true,
+      "total_s": 0.985,
+      "fps": 121.86,
+      "ms_per_frame": 8.21,
+      "breakdown_ms": {
+        "pump": 0.61,
+        "toImage": 0.65,
+        "readback": 6.94
+      },
+      "realtime_ratio_at_60fps": 2.03
+    },
+    {
+      "name": "complex / 4K",
+      "resolution": "2160x3840",
+      "frames": 60,
+      "readback": true,
+      "total_s": 1.583,
+      "fps": 37.91,
+      "ms_per_frame": 26.38,
+      "breakdown_ms": {
+        "pump": 0.6,
+        "toImage": 0.99,
+        "readback": 24.76
+      },
+      "realtime_ratio_at_60fps": 0.63
+    },
+    {
+      "name": "complex / pipelined d=2",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "pipeline_depth": 2,
+      "total_s": 0.806,
+      "fps": 148.94,
+      "ms_per_frame": 6.71,
+      "realtime_ratio_at_60fps": 2.48
+    },
+    {
+      "name": "complex / pipelined d=4",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "pipeline_depth": 4,
+      "total_s": 0.701,
+      "fps": 171.28,
+      "ms_per_frame": 5.84,
+      "realtime_ratio_at_60fps": 2.85
+    },
+    {
+      "name": "complex / pipelined d=8",
+      "resolution": "1080x1920",
+      "frames": 120,
+      "pipeline_depth": 8,
+      "total_s": 0.68,
+      "fps": 176.48,
+      "ms_per_frame": 5.67,
+      "realtime_ratio_at_60fps": 2.94
+    }
+  ],
+  "determinism": {
+    "isolated_hashes": [
+      "-5a0c54a37387ac05",
+      "-5a0c54a37387ac05",
+      "-5a0c54a37387ac05"
+    ],
+    "isolated_stable": true,
+    "forward_scrub": "-5a0c54a37387ac05",
+    "backward_scrub": "-5a0c54a37387ac05",
+    "scrub_order_independent": true,
+    "matches_isolated": true
+  },
+  "pipeline_correctness": {
+    "frames_compared": 24,
+    "mismatches": 0,
+    "safe": true
+  },
+  "end_to_end": {
+    "frames": 300,
+    "video_duration_s": 5.0,
+    "encode_wall_s": 4.14,
+    "realtime_ratio": 1.21,
+    "ffmpeg_exit": 0,
+    "output_bytes": 7881421
+  }
+}

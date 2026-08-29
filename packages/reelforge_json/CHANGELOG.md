@@ -1,3 +1,7 @@
+## 0.2.0
+
+Requires Flutter 3.41 or newer, with `reelforge` 0.2.0. Nothing else changed.
+
 ## 0.1.1
 
 * Adds `example/`, so the package page has an Example tab.

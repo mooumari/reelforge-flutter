@@ -1,3 +1,7 @@
+## 0.2.0
+
+* `init` writes `^0.2.0` for the framework packages.
+
 ## 0.1.1
 
 * Adds `example/`, so the package page has an Example tab.

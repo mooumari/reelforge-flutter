@@ -20,4 +20,10 @@ the ffmpeg decoder does.
 
 **iOS and macOS.** Android is not implemented yet.
 
+**Not yet a Swift package.** The plugin ships a podspec and no `Package.swift`,
+so Flutter builds it through CocoaPods and prints a warning saying that will
+become an error in a future release. It builds and runs today; adopting Swift
+Package Manager is outstanding work, and it has to happen before the version of
+Flutter that drops the fallback.
+
 Full documentation is in the [guide](https://github.com/mooumari/reelforge-flutter/blob/main/docs/guide.md).

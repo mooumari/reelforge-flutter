@@ -1,3 +1,7 @@
+## 0.2.0
+
+* Tracks the 0.2.0 release. Nothing else changed.
+
 ## 0.1.1
 
 * Adds `example/`, so the package page has an Example tab.

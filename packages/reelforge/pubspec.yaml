@@ -1,11 +1,11 @@
 name: reelforge
 description: Build videos with Flutter. Use any Flutter widget as motion graphics, preview them instantly, and render them anywhere.
-version: 0.1.1
+version: 0.2.0
 repository: https://github.com/mooumari/reelforge-flutter
 
 environment:
   sdk: ^3.9.0
-  flutter: ">=3.35.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:

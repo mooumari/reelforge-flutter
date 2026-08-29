@@ -248,7 +248,7 @@ String? _locateFrameworkPackage() {
 /// framework's own pubspec and fails if this drifts from it, because the
 /// mistake is silent otherwise: a stale constraint still resolves, just to
 /// a version older than the CLI writing it.
-const String frameworkConstraint = '^0.1.1';
+const String frameworkConstraint = '^0.2.0';
 
 /// [original] with a dependency on [name], or null if it already has one.
 ///

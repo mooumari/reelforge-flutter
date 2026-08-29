@@ -1225,19 +1225,45 @@ sixty-second render.
 
 ## Validated so far
 
-Measured on an M3 Max, Flutter 3.35 release mode, at 1080x1920 with a complex
-composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
+Measured on an M3 Max in release mode, at 1080x1920 with a complex composition
+(40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`).
+
+The per-frame figures and the end-to-end encode below were re-measured on
+Flutter 3.47.2; `benchmarks/spike/bench_result.json` is the machine-readable
+copy, and it records the Flutter version alongside the numbers because neither
+means anything without the other. The device exports and the SSIM comparisons
+further down were measured on 3.35 and have not been repeated -- half of that
+needs a physical phone -- so they are labelled where they appear.
+
+Wall-clock numbers here are the *warm* figure. A first render after an SDK
+change or a reboot is materially slower: the showreel took 8.2 s, then 6.7 s,
+then 5.5 s on three consecutive runs of the same command. Quoting the first
+would be as dishonest as quoting the best of ten.
 
 - **Determinism is byte-exact.** Identical output across isolated renders and
   across forward and backward scrubbing to the same frame.
-- **Rasterisation is the entire cost.** build+layout+paint is 0.5 ms/frame;
-  `toImage()` is ~17 ms; GPU readback is 0.2 ms.
-- **~0.75x realtime end-to-end** to MP4, single process. A 60 s vertical video
-  exports in roughly 80 s.
+- **Rasterisation is the entire cost.** Of 9.1 ms/frame, build+layout+paint is
+  0.7 ms and getting the pixels off the GPU is the other 8.4. Where inside that
+  8.4 the time is spent moved between 3.35 and 3.47 -- it used to be charged to
+  `toImage()`, and is now charged to the readback that follows it, because the
+  image comes back before the GPU has done the work -- but the conclusion did
+  not move: widget work is not what this costs.
+- **1.8x realtime single-process, 2.9x pipelined** at four frames in flight; a
+  fifth buys nothing. 4K is 26 ms/frame, 0.6x realtime.
+- **~1.2x realtime end-to-end** to MP4 through ffmpeg, single process and
+  unpipelined -- 300 frames encoded in 4.1 s. The sharded CLI does better than
+  this; it is the floor, not the ceiling.
+
+  Run to run these move by a few percent, and the per-frame figures more than
+  the ratios; anything quoted here is the committed `bench_result.json` rather
+  than the best of several runs.
 - **Video clips land on the exact source frame**, identically across 1, 2, 4
   and 8 shards, verified per frame by pixel value rather than by eye.
 - **On-device export matches the ffmpeg render.** Run headless on macOS and on
   an iOS simulator with no ffmpeg present, mean SSIM 0.99036 per frame.
+  *(Flutter 3.35.)* Re-checked on 3.47.2 for macOS only: `AudioProbe` exported
+  in-app and rendered through the CLI are identical, SSIM 1.000000 on every
+  plane. The iOS half still stands on the 3.35 measurement.
 - **In-app video decoding lands on the same frames as ffmpeg**, at the source's
   frame rate and at half it. All 200 frames of `VideoProbe` and all 60 clip
   frames of `VideoProbeHalf` identical between the in-app export and the CLI
@@ -1275,7 +1301,9 @@ composition (40 shadowed cards, gradients, `CustomPaint`, `BackdropFilter`):
 ### Sharding does scale
 
 The spike could not answer whether separate processes would contend on the one
-GPU. Measured end to end on `WeeklyDeals` (1080x1920, 300 frames):
+GPU. Measured end to end on `WeeklyDeals` (1080x1920, 300 frames), on Flutter
+3.35 and not repeated on 3.47 -- the absolute times have moved, the knee is
+what this table is for:
 
 | shards | wall time | vs realtime | speedup | output size |
 |---|---|---|---|---|

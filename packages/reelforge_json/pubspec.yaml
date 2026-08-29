@@ -1,18 +1,18 @@
 name: reelforge_json
 description: Describe a ReelForge composition in JSON and build it at runtime.
-version: 0.1.1
+version: 0.2.0
 repository: https://github.com/mooumari/reelforge-flutter
 
 environment:
   sdk: ^3.9.0
-  flutter: ">=3.35.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  reelforge: ^0.1.0
-  reelforge_kit: ^0.1.0
-  reelforge_schema: ^0.1.0
+  reelforge: ^0.2.0
+  reelforge_kit: ^0.2.0
+  reelforge_schema: ^0.2.0
 
 dev_dependencies:
   flutter_test:

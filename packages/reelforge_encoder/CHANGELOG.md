@@ -1,3 +1,10 @@
+## 0.2.0
+
+Requires Flutter 3.41 or newer, with `reelforge` 0.2.0.
+
+* No code change. Noted in the README that the plugin has no `Package.swift`
+  yet: Flutter 3.47 warns that the CocoaPods fallback will be removed.
+
 ## 0.1.0
 
 First release.

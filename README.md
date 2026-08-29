@@ -53,7 +53,7 @@ not a redrawn approximation of them.
 
 ## Getting started
 
-Requires Flutter 3.35+ and ffmpeg for the CLI. macOS is the developed and
+Requires Flutter 3.41+ and ffmpeg for the CLI. macOS is the developed and
 tested path today.
 
 ```bash

@@ -2,26 +2,12 @@
 
 Six packages ship together: `reelforge`, `reelforge_schema`,
 `reelforge_kit`, `reelforge_json`, `reelforge_encoder` and
-`reelforge_cli`. All are at 0.1.0 and none has been published.
+`reelforge_cli`. Five of them are published; `reelforge_encoder` is held back
+deliberately, and says why in its own `pubspec.yaml`.
 
-## What is still gating a first release
-
-One decision, not work.
-
-1. ~~**The licensor.**~~ Settled: Mohammad Oumari, named in `LICENSE.md`, in
-   each package's copy of it, and as the Licensor the CLA assigns to. ReelForge
-   is the name of the software, not a party that can grant a licence -- the FSL
-   grant is made by a legal person, and copyright in the code vests in its
-   author. An entity can be formed later and the copyright assigned to it
-   without redoing anything already published.
-
-2. **The repository URL.** There is no git remote. `pub publish --dry-run`
-   warns about the missing `repository:` field, and without a public URL a
-   source-available licence is a promise nobody can check.
-
-It does not block development, and no work is outstanding: every
-inter-package dependency is now a version constraint with a
-`pubspec_overrides.yaml` pointing back at the local checkout.
+All six carry the same version, and they are bumped together whether or not
+each one changed -- a reader who has `reelforge 0.2.0` should not have to work
+out which of its siblings moved with it.
 
 ## Before publishing
 
@@ -47,10 +33,13 @@ flutter pub publish --dry-run
 Publishing is irreversible. A version can be retracted but never removed, and
 the package name is claimed permanently.
 
-1. Fill in the licensor in `LICENSE.md` and each package's `LICENSE` file.
-2. Add `repository:` to each `pubspec.yaml`.
-3. Delete the `publish_to: none` line from each `pubspec.yaml`.
-4. Publish in dependency order, because pub will not accept a package whose
+1. Bump `version:` in all six `pubspec.yaml` files, and the constraints the
+   siblings put on each other, and `frameworkConstraint` in
+   `reelforge_cli/lib/src/init_command.dart` -- that last one is what `init`
+   writes into a user's project, and a test fails if it drifts.
+2. Add a `CHANGELOG.md` entry to every package, including the ones that only
+   moved to keep the versions in step.
+3. Publish in dependency order, because pub will not accept a package whose
    dependencies do not resolve:
 
    ```
