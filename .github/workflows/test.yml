@@ -1,0 +1,85 @@
+# The determinism claims are the product. Nothing here is worth anything if a
+# frame stops being byte-identical when rendered twice, so every suite runs on
+# every push rather than when somebody remembers.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # macOS, because that is the developed and tested path -- the render host
+    # is a macOS build of the user's own app, and the CLI's sandbox rules are
+    # macOS rules. Running on ubuntu would test less than it appears to.
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.0
+          channel: stable
+          cache: true
+
+      # The packages depend on each other by version and are overridden back to
+      # the checkout, so each one resolves on its own. Doing this up front means
+      # a resolution failure is reported as itself rather than as a test error.
+      - name: Resolve
+        run: |
+          for dir in packages/reelforge packages/reelforge_kit \
+                     packages/reelforge_json packages/reelforge_encoder example; do
+            (cd "$dir" && flutter pub get)
+          done
+          for dir in packages/reelforge_schema packages/reelforge_cli; do
+            (cd "$dir" && dart pub get)
+          done
+
+      - name: Analyze
+        run: flutter analyze packages example
+
+      - name: Test the Flutter packages
+        run: |
+          for dir in packages/reelforge packages/reelforge_kit \
+                     packages/reelforge_json packages/reelforge_encoder example; do
+            (cd "$dir" && flutter test)
+          done
+
+      # Plain `dart test`, no engine and no build: the document format is pure
+      # Dart, which is what makes validating a document something you run
+      # rather than something you wait for.
+      - name: Test the Dart packages
+        run: |
+          for dir in packages/reelforge_schema packages/reelforge_cli; do
+            (cd "$dir" && dart test)
+          done
+
+  publishable:
+    # A package that no longer packs cleanly is a release-day discovery
+    # otherwise, and the fix is never as small as it looks at that point.
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.0
+          channel: stable
+          cache: true
+
+      - name: Dry-run publish every package
+        run: |
+          for dir in packages/reelforge packages/reelforge_kit \
+                     packages/reelforge_json; do
+            (cd "$dir" && flutter pub get && flutter pub publish --dry-run)
+          done
+          for dir in packages/reelforge_schema packages/reelforge_cli; do
+            (cd "$dir" && dart pub get && dart pub publish --dry-run)
+          done

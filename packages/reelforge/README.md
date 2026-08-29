@@ -4,6 +4,8 @@ Build videos with Flutter. A composition is a pure function of frame number,
 rendered frame by frame into a video file -- `data -> Flutter widgets -> frames
 -> MP4`. Not screen recording.
 
+![A reel rendered by ReelForge](https://raw.githubusercontent.com/mooumari/reelforge-flutter/main/docs/media/showreel.webp)
+
 ```dart
 final Composition hello = Composition(
   id: 'Hello',

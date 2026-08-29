@@ -4,6 +4,12 @@
 hot reload, then render it to MP4 — on your machine, in CI, or from inside a
 running app on someone's phone.
 
+![A reel rendered by ReelForge](docs/media/showreel.webp)
+
+*Seventeen seconds, 1020 frames at 1920x1080, five audio clips. Rendered by
+ReelForge from a composition in `example/lib/showreel.dart` — the tool made its
+own demo.*
+
 This is **not** a screen recorder. A composition is a deterministic function of
 frame number: `data → widgets → frames → MP4`. Frame 900 produces the same
 pixels whether you played forward to it, scrubbed backward to it, or rendered
