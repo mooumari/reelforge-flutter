@@ -4,6 +4,7 @@
 build/
 pubspec.lock
 *.iml
+.env
 
 # Spike + benchmark outputs. bench_result.json is deliberately not here: the
 # guide quotes it, and a quoted number nobody can open is just a claim.
