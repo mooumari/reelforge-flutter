@@ -149,8 +149,10 @@ class CaveShot extends StatelessWidget {
             foreground: Stack(fit: StackFit.expand, clipBehavior: Clip.none, children: <Widget>[
               _cave(const Offset(_caveX, _ground + 8), 1.0, glow, light, t),
               const RainSplash(left: -500, right: 2600, top: 900, bottom: 1060, count: 200),
-              CustomPaint(painter: _HeatAura(Offset(kx, _ground - 100), heat, along(t, steal - 0.4, 0.6))),
               for (int i = 0; i < _runs.length; i++) _runner(i, frame, light, t, heat),
+              // Over the child, round the chest: warmth is something the body
+              // gives off, not something it stands in front of.
+              CustomPaint(painter: _HeatAura(Offset(kx, _ground - 200), heat, along(t, steal - 0.4, 0.6))),
             ]),
           ),
         ]),
@@ -167,7 +169,8 @@ class CaveShot extends StatelessWidget {
       (int fr) => _runs[i].at(
         fr,
         adjust: (Pose pose) {
-          final double sh = math.sin(fr * 1.9 + i * 2.7) * 0.7;
+          // A slow shudder; faster than a few beats a second reads as the picture shaking.
+          final double sh = math.sin(fr * 0.5 + i * 2.7) * 0.7;
           // Once stopped they huddle; the child shivers harder as heat goes.
           final double cold = child ? (1 - heat) : 0.4;
           return pose.plus(c.stance).plus(c.life(i + 3).at(fr, rainFps)).plus(Pose(<String, Joint>{

@@ -178,14 +178,24 @@ class _CloudPainter extends CustomPainter {
     // Layers: far and small and pale, to near and large and heavy.
     for (int layer = 0; layer < 3; layer++) {
       final math.Random r = math.Random(40 + layer);
-      final int count = (4 + layer * 3 + storm * (4 + layer * 5)).round();
-      final double drift = (14 + layer * 16) * (1 + storm * 0.6);
-      final double wide = size.width + 900;
-      for (int i = 0; i < count; i++) {
-        final double x = ((r.nextDouble() * wide + t * drift) % wide) - 450;
-        final double y = 80 + layer * 80 + r.nextDouble() * (150 + storm * 90) - storm * layer * 30;
-        final double s = (0.7 + r.nextDouble() * 0.9) * (0.8 + layer * 0.35) * (1 + storm * 0.5);
-        final double alpha = (0.5 + layer * 0.2) * (0.3 + storm * 0.7 + (1 - storm) * 0.45).clamp(0.0, 1.0);
+      // Every cloud the storm will ever have is there from the start, in the
+      // same place whatever the weather; the extra ones fade in one after
+      // another as it thickens. (A count that rounds to a new number draws a
+      // new cloud at full strength, in a frame of its own.)
+      final int base = 4 + layer * 3, extra = 4 + layer * 5;
+      final double drift = 14 + layer * 16;
+      // Wide enough that even the biggest storm cloud is clear of the screen
+      // where it wraps round.
+      const double margin = 950;
+      final double wide = size.width + 2 * margin;
+      for (int i = 0; i < base + extra; i++) {
+        final double ux = r.nextDouble(), uy = r.nextDouble(), us = r.nextDouble();
+        final double presence = i < base ? 1.0 : (storm * (extra + 1) - (i - base)).clamp(0.0, 1.0);
+        if (presence <= 0) continue;
+        final double x = ((ux * wide + t * drift) % wide) - margin;
+        final double y = 80 + layer * 80 + uy * (150 + storm * 90) - storm * layer * 30;
+        final double s = (0.7 + us * 0.9) * (0.8 + layer * 0.35) * (1 + storm * 0.5);
+        final double alpha = (0.5 + layer * 0.2) * (0.3 + storm * 0.7 + (1 - storm) * 0.45).clamp(0.0, 1.0) * presence;
         _cloud(canvas, Offset(x, y), s, body, alpha, storm);
       }
     }
