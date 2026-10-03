@@ -50,6 +50,7 @@ Camera(
 | `Part.clip` | children only inside the part's own shapes: pupils in eyes, teeth in a mouth |
 | `FaceStyle`, `FaceJoints`, `Emotion` | a face drawn from a style; eight emotions, `look`, `turn`, `moods` |
 | `Speech`, `Viseme`, `Gaze` | mouth shapes from Azure's visemes or from text; eyes that hold and dart |
+| `Performance`, `Beat`, `Line` | a performer's part in seconds -- `Move`, `Say`, `Feel`, `Look`, `Act` -- with voiced lines, their audio and their mouth |
 | `Character`, `Body`, `Garment`, `Fitting` | a person from proportions, a skin, a face and an outfit; walks, waves and talks |
 | the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, boots, robot parts, props -- each fits any `Body` |
 | `Light`, `Shade` | light for flat drawings: a gradient, a shadow crescent, a rim and cast shadows, from the outline alone |
@@ -181,6 +182,47 @@ with long arms and short legs, a skin the colour of its coat, and `Fur` (a
 pale belly, a darker crown), `MonkeyFace` (a mask, a muzzle and nostrils in
 place of the nose, big ears) and `Tail` (a `Chain` that curls up at rest and
 swings on follow-through). It walks, waves and talks like anyone else.
+
+## Performances and voices
+
+A scene is acted by giving each performer a `Performance`: a list of beats
+in seconds. `Move` walks to an x (a `Stroll`: setting off, steady, arriving),
+`Say` speaks a `Line`, `Feel` eases into an `Emotion` until the next one,
+`Look` darts the eyes, and `Act` plays a gesture such as `Character.wave`
+over the body. Beats are values with an `end`, so a scene is laid out with
+arithmetic rather than frame numbers:
+
+```dart
+const Say hello = Say(SavannaVoices.leoHello, at: 6.0);
+final Say answer = Say(SavannaVoices.momoHi, at: hello.end + 0.45);
+
+final Performance momo = Performance(fps: 30, startX: 2120, beats: <Beat>[
+  const Move(1370, at: 1.0, seconds: 4.9),
+  Act(Character.wave, at: answer.at - 0.3),
+  answer,
+]);
+
+final Walk walk = Walk(rig: ..., route: momo.route, ...);
+Posed at(int frame) => walk.at(frame, adjust: (Pose pose) =>
+    momo.acts(frame, pose).plus(momo.face(face, frame)));
+// and in the scene's Stack: ...momo.audio()
+```
+
+Lines are voiced, not guessed. `tool/voice.py` reads a script -- a cast of
+Azure neural voices (with a style, rate and pitch) and their lines -- and
+writes each line's audio and a Dart file of `Line`s carrying Azure's
+visemes and word timings, so `hello.end` is when the voice really stops and
+the mouth moves to the voice itself:
+
+```sh
+python3 -m venv tool/.venv && tool/.venv/bin/pip install azure-cognitiveservices-speech
+tool/.venv/bin/python tool/voice.py example/voices/savanna.json
+```
+
+It reads `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` from the environment
+or the repository's `.env`, and only calls Azure for lines whose text or
+voice changed. The audio and the Dart file are committed, so a render needs
+neither the network nor a key.
 
 ## Faces
 

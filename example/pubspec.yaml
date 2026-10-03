@@ -69,6 +69,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/voices/savanna/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

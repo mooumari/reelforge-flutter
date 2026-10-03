@@ -534,7 +534,8 @@ class Character {
 
   /// A nod hello, for hands too full to wave: the head dips, the chest a
   /// little with it, and comes back up. Add it; null before and after.
-  static Pose? nod(int frame, int fps) {
+  /// ([from] is unused: it is there so a nod is an [Act] as a wave is.)
+  static Pose? nod(int frame, int fps, {Pose from = Pose.rest}) {
     const Pose down = Pose(<String, Joint>{'head': Joint.rotate(14), 'chest': Joint.rotate(4)});
     const Gesture dip = Gesture(to: down, anticipation: 3, action: 8, settle: 6, windUp: 0.15, overshoot: 0.1);
     const Gesture rise = Gesture(from: down, to: Pose.rest, anticipation: 2, action: 10, settle: 8, windUp: 0.05, overshoot: 0.08);

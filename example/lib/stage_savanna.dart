@@ -5,16 +5,56 @@ import 'package:reelforge/reelforge.dart';
 import 'package:reelforge_stage/reelforge_stage.dart';
 
 import 'compositions.dart' show typeset;
+import 'savanna_voices.dart';
 
-/// Two animals: a lion on four legs and a monkey on two.
+/// Two animals meet: a lion on four legs and a monkey on two.
 ///
-/// Leo walks in from the left with a [Gait] -- hind, fore, hind, fore, his
-/// paws planted -- and stops. Momo walks in from the right with the same
-/// [Walk] people use, because a monkey here is a [Character] in fur: a body
-/// with long arms, a coat-coloured skin, a [MonkeyFace] and a [Tail]. They
-/// say hello. Both tails swing on follow-through.
+/// The scene is two [Performance]s -- each a list of beats in seconds -- and
+/// its dialogue is voiced: `tool/voice.py` gave each line to an Azure voice
+/// (Davis for Leo, Ana for Momo) and wrote [SavannaVoices], so every line
+/// starts when the one before it has really finished, the mouths move to
+/// the voices' own visemes, and the audio plays under the picture.
+///
+/// Leo walks in from the left with a [Gait] and stops; Momo walks in from
+/// the right with a [Walk], because a monkey here is a [Character] in fur.
+/// Leo says hello, Momo waves and answers, Leo is pleased to meet him.
 const int _fps = 30;
-const int _frames = 330;
+
+// --- the script ---
+
+const Say _leoHello = Say(SavannaVoices.leoHello, at: 6.0);
+final Say _momoHi = Say(SavannaVoices.momoHi, at: _leoHello.end + 0.45);
+final Say _leoNice = Say(SavannaVoices.leoNice, at: _momoHi.end + 0.4);
+
+final Performance _leoPart = Performance(
+  fps: _fps,
+  startX: -560,
+  beats: <Beat>[
+    const Move(560, at: 0, seconds: 5.4),
+    const Look(Offset(0.6, 0.15), at: 5.0),
+    _leoHello,
+    const Feel(Emotion.happy, at: 5.7, amount: 0.5),
+    _leoNice,
+    Feel(Emotion.happy, at: _leoNice.at - 0.2, amount: 0.9),
+  ],
+);
+
+final Performance _momoPart = Performance(
+  fps: _fps,
+  startX: 2120,
+  beats: <Beat>[
+    const Move(1370, at: 1.0, seconds: 4.9),
+    const Feel(Emotion.happy, at: 6.1, amount: 0.8),
+    const Look(Offset(0.5, 0.1), at: 6.1),
+    Act(Character.wave, at: _momoHi.at - 0.3),
+    _momoHi,
+    Feel(Emotion.surprised, at: _leoNice.at + 0.6, amount: 0.3),
+    Feel(Emotion.happy, at: _leoNice.end, amount: 0.9),
+  ],
+);
+
+/// A beat and a half after the last word.
+final int _frames = ((math.max(_leoPart.end, _momoPart.end) + 1.5) * _fps).ceil();
 
 final Composition stageSavanna = Composition(
   id: 'StageSavanna',
@@ -42,30 +82,23 @@ const double _lionScale = 1.45;
 
 final Gait _lionGait = Gait(
   rig: leo.part,
-  route: const <Waypoint>[
-    Waypoint(0, -560),
-    Waypoint(14, -500, curve: Curves.easeInSine),
-    Waypoint(128, 470, curve: Curves.linear),
-    Waypoint(160, 560, curve: Curves.easeOutSine),
-  ],
+  route: _leoPart.route,
   groundY: _ground,
   fps: _fps,
   scale: _lionScale,
   body: leo.quadruped,
 );
 
-final Speech _leoSays = Speech.fromText("Well, hello there. I'm Leo.", start: 6.2);
+/// When Leo has stopped, and his tail can swish.
+final int _leoStops = (_leoPart.route.last.frame + 0.3 * _fps).round();
 
 Posed _lion(int frame) => _lionGait.at(frame, adjust: (Pose pose) {
-      final double still = ((frame - 150) / 20).clamp(0.0, 1.0);
-      final double smile = ((frame - 170) / 12).clamp(0.0, 1.0);
+      final double still = ((frame - _leoStops) / 20).clamp(0.0, 1.0);
       return pose
           .plus(leo.stance)
           .plus(leo.life(7).at(frame, _fps))
           .plus(Pose.lerp(Pose.rest, leo.swish(frame, _fps), still))
-          .plus(leo.face.express(Emotion.happy, amount: 0.6 * smile))
-          .plus(leo.face.look(Offset(0.6 * still, 0.15 * still)))
-          .plus(_leoSays.at(frame, _fps));
+          .plus(_leoPart.face(leo.face, frame));
     });
 
 // --- the monkey ---
@@ -103,30 +136,16 @@ const double _monkeyScale = 1.25;
 
 final Walk _monkeyWalk = Walk(
   rig: momo.part,
-  route: const <Waypoint>[
-    Waypoint(30, 2120),
-    Waypoint(48, 2060, curve: Curves.easeInSine),
-    Waypoint(150, 1450, curve: Curves.linear),
-    Waypoint(176, 1370, curve: Curves.easeOutSine),
-  ],
+  route: _momoPart.route,
   groundY: _ground,
   fps: _fps,
   scale: _monkeyScale,
   body: momo.biped,
 );
 
-const int _waveAt = 236;
-final Speech _momoSays = Speech.fromText("Hi Leo! I'm Momo.", start: 8.1);
-
 Posed _monkey(int frame) => _monkeyWalk.at(frame, adjust: (Pose pose) {
-      Pose out = pose.plus(momo.stance).plus(momo.life(12).at(frame, _fps));
-      final Pose? arm = Character.wave(frame - _waveAt, _fps, from: pose);
-      if (arm != null) out = out.overlay(arm);
-      final double smile = ((frame - 182) / 10).clamp(0.0, 1.0);
-      return out
-          .plus(momo.face.express(Emotion.happy, amount: 0.8 * smile))
-          .plus(momo.face.look(Offset(0.5 * smile, 0.1 * smile)))
-          .plus(_momoSays.at(frame, _fps));
+      final Pose body = pose.plus(momo.stance).plus(momo.life(12).at(frame, _fps));
+      return _momoPart.acts(frame, body).plus(_momoPart.face(momo.face, frame));
     });
 
 Posed _swinging(Posed Function(int) perform, List<Jiggle> jiggles, int frame) =>
@@ -240,11 +259,6 @@ Widget _bubble(String text, Offset at) => Positioned(
       ),
     );
 
-/// While [s] is being said, and a beat after -- until [until], if the
-/// other one starts talking first.
-bool _talking(Speech s, int frame, {double until = double.infinity}) =>
-    frame / _fps >= s.words.first.start - 0.15 && frame / _fps <= math.min(s.end + 1.0, until);
-
 class _StageSavanna extends StatelessWidget {
   const _StageSavanna();
 
@@ -254,7 +268,12 @@ class _StageSavanna extends StatelessWidget {
     final Posed lion = _swinging(_lion, leo.jiggles, frame);
     final Posed monkey = _swinging(_monkey, momo.jiggles, frame);
     final double lionX = _lionGait.xAt(frame), monkeyX = _monkeyWalk.xAt(frame);
+    // One bubble at a time: whoever spoke last.
+    final Say? leoSays = _leoPart.sayingAt(frame), momoSays = _momoPart.sayingAt(frame);
+    final bool leoLast = leoSays != null && (momoSays == null || leoSays.at > momoSays.at);
     return Stack(children: <Widget>[
+      ..._leoPart.audio(),
+      ..._momoPart.audio(),
       Drawing(_sky),
       Drawing(_distance, light: _sun),
       Drawing(_plain, light: _sun),
@@ -262,8 +281,8 @@ class _StageSavanna extends StatelessWidget {
       Drawing(_shadow(monkeyX, 52 * _monkeyScale)),
       Drawing(lion.part, pose: lion.pose, light: _sun),
       Drawing(monkey.part, pose: monkey.pose, light: _sun),
-      if (_talking(_leoSays, frame, until: _momoSays.words.first.start - 0.3)) _bubble("Well, hello there. I'm Leo.", Offset(lionX + 330, 330)),
-      if (_talking(_momoSays, frame)) _bubble("Hi Leo! I'm Momo.", Offset(monkeyX - 40, 470)),
+      if (leoLast) _bubble(leoSays.line.text, Offset(lionX + 330, 330)),
+      if (!leoLast && momoSays != null) _bubble(momoSays.line.text, Offset(monkeyX - 40, 470)),
     ]);
   }
 }

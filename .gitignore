@@ -19,3 +19,4 @@ export_log.txt
 
 # Python bytecode from the tools in tool/.
 __pycache__/
+tool/.venv/

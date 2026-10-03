@@ -1,0 +1,121 @@
+{
+ "seconds": 3.928,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1043480,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 2266300,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3896740,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 4300000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 7157610,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 7565210,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 8108690,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 9195650,
+   "visemeId": 8
+  },
+  {
+   "audioOffset": 9875000,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 10690210,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 11369559,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 12592380,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 14490000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 22961960,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 23505430,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 24728260,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 25543480,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 26494560,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 27445650,
+   "visemeId": 8
+  },
+  {
+   "audioOffset": 28940210,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 30431960,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 543540,
+   "duration": 3260830,
+   "text": "Well"
+  },
+  {
+   "audioOffset": 6657700,
+   "duration": 3396660,
+   "text": "hello"
+  },
+  {
+   "audioOffset": 10190200,
+   "duration": 3804370,
+   "text": "there"
+  },
+  {
+   "audioOffset": 23505410,
+   "duration": 1902079,
+   "text": "I'm"
+  },
+  {
+   "audioOffset": 25543540,
+   "duration": 4891250,
+   "text": "Leo"
+  }
+ ],
+ "hash": "34cfed970e394cd1"
+}

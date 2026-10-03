@@ -31,6 +31,12 @@
 /// that fit any body. The rig it builds walks, breathes, waves and talks
 /// with everything above.
 ///
+/// And a scene's acting: a [Performance] is a performer's [Beat]s -- [Move],
+/// [Say], [Feel], [Look], [Act] -- in seconds, laid out with arithmetic on
+/// when each ends. Lines are [Line]s, voiced by `tool/voice.py` with Azure
+/// so their timing is the voice's own; it plays their audio, moves the
+/// mouth to them, and gives the route to walk.
+///
 /// And animals: a [Lion] is a four-legged template -- a lion, a lioness, a
 /// cub -- that walks with a [Gait], hind and fore legs in turn with every
 /// paw planted. An animal that stands up and talks is a [Character] in fur:
@@ -52,6 +58,7 @@ export 'src/kinematics.dart';
 export 'src/life.dart';
 export 'src/outline.dart';
 export 'src/part.dart';
+export 'src/performance.dart';
 export 'src/pose.dart';
 export 'src/shape.dart';
 export 'src/skin.dart';

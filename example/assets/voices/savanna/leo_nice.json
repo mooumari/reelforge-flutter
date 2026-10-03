@@ -1,0 +1,109 @@
+{
+ "seconds": 2.528,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1043480,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1994560,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 2809780,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 3625000,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4304340,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4576080,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 5255430,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 6206520,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 6614120,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 7157600,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 8240000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 11233690,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 11777159,
+   "visemeId": 8
+  },
+  {
+   "audioOffset": 12524450,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 13271730,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 14086950,
+   "visemeId": 8
+  },
+  {
+   "audioOffset": 15445640,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 16800000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 543540,
+   "duration": 2445620,
+   "text": "Nice"
+  },
+  {
+   "audioOffset": 3125000,
+   "duration": 815200,
+   "text": "to"
+  },
+  {
+   "audioOffset": 4076040,
+   "duration": 1902079,
+   "text": "meet"
+  },
+  {
+   "audioOffset": 6114160,
+   "duration": 1630410,
+   "text": "you"
+  },
+  {
+   "audioOffset": 10733750,
+   "duration": 5570619,
+   "text": "Momo"
+  }
+ ],
+ "hash": "6c120f62c992efdf"
+}

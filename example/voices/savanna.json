@@ -1,0 +1,14 @@
+{
+  "class": "SavannaVoices",
+  "audio": "assets/voices/savanna",
+  "dart": "lib/savanna_voices.dart",
+  "cast": {
+    "leo": {"voice": "en-US-DavisNeural", "style": "friendly", "rate": "-8%", "pitch": "-6%"},
+    "momo": {"voice": "en-US-AnaNeural", "rate": "+4%"}
+  },
+  "lines": {
+    "leoHello": {"who": "leo", "text": "Well, hello there. I'm Leo."},
+    "momoHi": {"who": "momo", "text": "Hi Leo! I'm Momo."},
+    "leoNice": {"who": "leo", "text": "Nice to meet you, Momo."}
+  }
+}
