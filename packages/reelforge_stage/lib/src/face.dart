@@ -110,7 +110,12 @@ class FaceStyle {
 
   /// The face as parts: a `face` part holding the brows, eyes (pupils clipped
   /// inside them) and mouth (teeth and tongue clipped inside it).
-  Part build() => Part(
+  ///
+  /// [turn] draws it already turned (see [turn]), for a character drawn in
+  /// three-quarter view: the turn is its rest, and posing adds to it.
+  Part build({double turn = 0}) => turn == 0 ? _build() : _build().bake(this.turn(turn));
+
+  Part _build() => Part(
         name: FaceJoints.face,
         children: <Part>[
           if (cheeks != null)

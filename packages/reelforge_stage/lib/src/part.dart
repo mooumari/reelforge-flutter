@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'pose.dart';
 import 'shape.dart';
 
 /// A drawing with a joint at its origin: the one building block.
@@ -75,6 +76,28 @@ class Part {
         children: children,
         clip: clip,
       );
+
+  /// This tree with [pose] drawn into it: each named part placed where the
+  /// pose puts it, as its new rest.
+  ///
+  /// For building a drawing from another one -- a face drawn turned, a hand
+  /// drawn holding something -- so the pose is where the drawing starts and
+  /// animation adds to it. Shape keys and morphs are not placements, and
+  /// stay to be posed.
+  Part bake(Pose pose) {
+    final Joint j = name.isEmpty ? Joint.rest : pose[name];
+    return Part(
+      name: name,
+      at: at + j.move,
+      degrees: degrees + j.degrees,
+      scaleX: scaleX * j.scaleX,
+      scaleY: scaleY * j.scaleY,
+      opacity: opacity * j.opacity,
+      shapes: shapes,
+      children: <Part>[for (final Part child in children) child.bake(pose)],
+      clip: clip,
+    );
+  }
 
   /// Mirrored left to right about this part's own origin.
   Part flipped() => placed(scaleX: -scaleX);

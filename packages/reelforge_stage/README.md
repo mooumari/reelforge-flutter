@@ -48,6 +48,10 @@ Camera(
 | `Part.clip` | children only inside the part's own shapes: pupils in eyes, teeth in a mouth |
 | `FaceStyle`, `FaceJoints`, `Emotion` | a face drawn from a style; eight emotions, `look`, `turn`, `moods` |
 | `Speech`, `Viseme`, `Gaze` | mouth shapes from Azure's visemes or from text; eyes that hold and dart |
+| `Character`, `Body`, `Garment`, `Fitting` | a person from proportions, a skin, a face and an outfit; walks, waves and talks |
+| the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, boots, robot parts, props -- each fits any `Body` |
+| `Shape.live`, `Where` | an outline computed from the pose: a robe's hem that spans both legs mid-stride |
+| `Part.bake` | fold a pose into the drawing, so it is where animation starts |
 
 The demo is `example/lib/stage_demo.dart`: two characters on one skeleton,
 each given only a route; a wave and a wave back; a camera that follows and
@@ -72,6 +76,52 @@ reelforge render --composition StageFaces --out faces.mp4
 captions from the speech's own word timings, eyes that glance and then follow
 a firefly with the head turning after them -- and six more people, a robot and
 an alien among them, showing all eight emotions on the same rig.
+
+`example/lib/stage_cast.dart` has ten people from one template -- a cowboy,
+a Bedouin man and woman, a legionary, a pharaoh, a philosopher, a cyborg, a
+scientist, a kid and a grandmother -- walking on in two rows, waving and
+saying hello.
+
+## Characters
+
+A `Character` is a `Body`'s proportions, a skin colour, a `FaceStyle` and a
+list of `Garment`s:
+
+```dart
+const Character cowboy = Character(
+  skin: Color(0xFFE2A27A),
+  outfit: <Garment>[
+    ShortHair(Color(0xFF6B4226)),
+    Moustache(Color(0xFF5A3A22)),
+    Shirt(Color(0xFFB8432F)),
+    Vest(Color(0xFF6E4B2A)),
+    Trousers(Color(0xFF35507A)),
+    CowboyBoots(Color(0xFF7A4A26)),
+    CowboyHat(Color(0xFFB98A55)),
+  ],
+);
+
+final Walk walk = Walk(rig: cowboy.part, body: cowboy.biped, ...);
+final Pose pose = cowboy.life(seed).at(frame, fps)
+    .plus(cowboy.face.express(Emotion.happy));
+```
+
+Its rig has the joint names everything else here uses, so `Walk`, `Life`,
+`followThrough` (with `cowboy.jiggles` for capes and ponytails), gestures,
+emotions and speech all work on it unchanged. `Body.child`, `stocky`, `slim`
+and `elder` are starting points; every measurement can be changed.
+
+Garments are measured from the body, not drawn for it: head pieces in head
+radii around the head and cut round the face, torso pieces from the torso's
+own outline, sleeves and trouser legs as `Cover`s skinned to the limb, and
+robes and skirts as live outlines from the legs' posed positions. So the
+cowboy hat fits the child, and a robe stays closed over a stride. A new
+garment is a class with one method, `dress(Fitting)`, that adds drawings to
+the layers it belongs in. `Character.build(hold: ...)` hangs props on the
+hands; `Props` has a staff, a spear, a shield, a scroll and more.
+
+The body is side on and the face three-quarters (`faceTurn`), which is how a
+walking cast reads; front-on talking shots use a `FaceStyle` on its own.
 
 ## Faces
 

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import 'kinematics.dart';
 import 'part.dart';
 import 'pose.dart';
 import 'shape.dart';
@@ -54,18 +55,20 @@ class _PartPainter extends CustomPainter {
   final Pose pose;
 
   @override
-  void paint(Canvas canvas, Size size) => _paintPart(canvas, part, part, pose);
+  void paint(Canvas canvas, Size size) => _paintPart(canvas, part, part, pose, Affine.identity);
 
   @override
   bool shouldRepaint(_PartPainter oldDelegate) =>
       oldDelegate.part != part || oldDelegate.pose != pose;
 }
 
-void _paintPart(Canvas canvas, Part root, Part part, Pose pose) {
+void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent) {
   final Joint joint = part.name.isEmpty ? Joint.rest : pose[part.name];
   final double opacity = (part.opacity * joint.opacity).clamp(0.0, 1.0);
   if (opacity <= 0) return;
 
+  // Where this part is in the drawing: what a live shape measures from.
+  final Affine here = parent * Affine.of(part, joint);
   canvas.save();
   canvas.translate(part.at.dx + joint.move.dx, part.at.dy + joint.move.dy);
   final double degrees = part.degrees + joint.degrees;
@@ -83,7 +86,8 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose) {
       shape.path ??
           shape.morph?.at(joint.morph) ??
           shape.blend?.at(joint.weights) ??
-          shape.skin!.deformed(root, pose),
+          shape.skin?.deformed(root, pose) ??
+          shape.live!(Where(root, pose, here)),
   ];
   for (int i = 0; i < outlines.length; i++) {
     part.shapes[i].paint(canvas, outlines[i]);
@@ -97,7 +101,7 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose) {
     canvas.clipPath(inside);
   }
   for (final Part child in part.children) {
-    _paintPart(canvas, root, child, pose);
+    _paintPart(canvas, root, child, pose, here);
   }
   if (part.clip && part.children.isNotEmpty) canvas.restore();
   if (faded) canvas.restore();

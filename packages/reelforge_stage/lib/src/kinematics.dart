@@ -115,6 +115,25 @@ Affine parentFrameOf(Part root, Pose pose, String name) {
   return _chain(path.sublist(0, path.length - 1), pose);
 }
 
+/// A posed drawing as seen from one part: where its other joints are, in
+/// that part's own coordinates.
+///
+/// What a [Shape.live] outline is built from -- a robe's hem finds the knees
+/// and ankles with it, wherever the walk has put them.
+class Where {
+  Where(this.root, this.pose, Affine here) : _inverse = here.inverse;
+
+  final Part root;
+  final Pose pose;
+  final Affine _inverse;
+
+  /// The frame of the part called [name], in this part's coordinates.
+  Affine frame(String name) => _inverse * frameOf(root, pose, name);
+
+  /// [local], a point in the part called [name], in this part's coordinates.
+  Offset point(String name, [Offset local = Offset.zero]) => frame(name).apply(local);
+}
+
 double _deg(double radians) => radians * 180 / math.pi;
 
 /// Turns two joints so the end of a limb lands on [target].

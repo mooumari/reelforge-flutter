@@ -26,11 +26,17 @@
 /// [Emotion], [Speech] turns Azure's visemes (or plain text) into mouth
 /// shapes, and [Gaze] moves the eyes the way eyes move.
 ///
+/// And people: a [Character] is a [Body]'s proportions, a skin, a face and
+/// an outfit of [Garment]s -- hair, beards, hats, robes, armour, boots --
+/// that fit any body. The rig it builds walks, breathes, waves and talks
+/// with everything above.
+///
 /// The rule is the rest of ReelForge's: a frame is a pure function of its
 /// frame number. Nothing here holds state, runs a clock or reads one.
 library;
 
 export 'src/camera.dart';
+export 'src/character.dart';
 export 'src/drawing.dart';
 export 'src/face.dart';
 export 'src/follow.dart';
@@ -43,3 +49,4 @@ export 'src/pose.dart';
 export 'src/shape.dart';
 export 'src/skin.dart';
 export 'src/walk.dart';
+export 'src/wardrobe.dart';

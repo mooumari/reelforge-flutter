@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
+import 'kinematics.dart';
 import 'outline.dart';
 import 'skin.dart';
 
@@ -26,6 +27,7 @@ class Shape {
   })  : morph = null,
         skin = null,
         blend = null,
+        live = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
@@ -41,6 +43,7 @@ class Shape {
   })  : path = null,
         skin = null,
         blend = null,
+        live = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
@@ -56,6 +59,7 @@ class Shape {
   })  : path = null,
         morph = null,
         blend = null,
+        live = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
@@ -71,17 +75,41 @@ class Shape {
   })  : path = null,
         morph = null,
         skin = null,
+        live = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
         );
 
-  /// The outline, for a still shape. Exactly one of [path], [morph], [skin]
-  /// and [blend] is set.
+  /// A shape whose outline is worked out from the pose as it is drawn: [live]
+  /// is given [Where] the drawing's joints are, and returns a path in this
+  /// part's space. For outlines that depend on several limbs at once -- a
+  /// robe that has to cover both legs mid-stride, a rope between two hands.
+  ///
+  /// It runs every time the part is painted, so keep it cheap, and keep it a
+  /// function of [Where] alone.
+  const Shape.live(
+    Path Function(Where where) this.live, {
+    this.color,
+    this.gradient,
+    this.stroke,
+    this.strokeWidth = 0,
+  })  : path = null,
+        morph = null,
+        skin = null,
+        blend = null,
+        assert(
+          color == null || gradient == null,
+          'A shape is filled with a colour or a gradient, not both.',
+        );
+
+  /// The outline, for a still shape. Exactly one of [path], [morph], [skin],
+  /// [blend] and [live] is set.
   final Path? path;
   final Morph? morph;
   final Skin? skin;
   final Blend? blend;
+  final Path Function(Where where)? live;
 
   /// Flat fill. Null leaves the inside undrawn, unless there is a [gradient].
   final Color? color;

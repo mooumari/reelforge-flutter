@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
 import 'package:example/stage_faces.dart';
@@ -119,5 +120,20 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[64]!, expected[80]!), isFalse);
+  });
+
+  test('the cast is deterministic, and walks on', () async {
+    // Ten characters, live hems, a cape and a ponytail on follow-through,
+    // and every garment's paths built once and cached.
+    final CompositionRenderer walked = CompositionRenderer(stageCast);
+    final Map<int, Uint8List> expected = <int, Uint8List>{};
+    for (int frame = 0; frame <= 440; frame += 20) {
+      expected[frame] = await _frame(walked, frame);
+    }
+    for (final int frame in <int>[100, 300, 440]) {
+      expect(_same(await _frame(CompositionRenderer(stageCast), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    expect(_same(expected[100]!, expected[120]!), isFalse);
   });
 }

@@ -7,6 +7,7 @@ import 'longform_json.dart';
 import 'report_data.dart';
 import 'showreel.dart';
 import 'stage_compare.dart';
+import 'stage_cast.dart';
 import 'stage_faces.dart';
 import 'stage_shapes.dart';
 import 'stage_demo.dart';
@@ -26,6 +27,7 @@ Future<void> main(List<String> args) async {
     walkCompare,
     stageShapes,
     stageFaces,
+    stageCast,
     longform,
     longformJson,
     showreel,

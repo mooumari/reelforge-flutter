@@ -7,6 +7,7 @@ import 'package:reelforge_encoder/reelforge_encoder.dart';
 import 'compositions.dart';
 import 'longform.dart';
 import 'stage_compare.dart';
+import 'stage_cast.dart';
 import 'stage_faces.dart';
 import 'stage_shapes.dart';
 import 'stage_demo.dart';
@@ -30,6 +31,7 @@ Future<void> main() async {
         walkCompare,
         stageShapes,
         stageFaces,
+        stageCast,
         longform,
         helloFlutter,
         weeklyDeals,
