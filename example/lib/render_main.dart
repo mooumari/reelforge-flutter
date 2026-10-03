@@ -6,6 +6,9 @@ import 'longform.dart';
 import 'longform_json.dart';
 import 'report_data.dart';
 import 'showreel.dart';
+import 'stage_compare.dart';
+import 'stage_shapes.dart';
+import 'stage_demo.dart';
 
 /// Render host entry point. The CLI builds this and drives it.
 ///
@@ -18,6 +21,9 @@ Future<void> main(List<String> args) async {
   await loadReport();
   await loadLongformJson();
   await renderMain(args, <Composition>[
+    stageDemo,
+    walkCompare,
+    stageShapes,
     longform,
     longformJson,
     showreel,

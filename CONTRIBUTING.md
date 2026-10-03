@@ -14,7 +14,8 @@ the project's terms. Say so in the pull request and that is enough.
 
 ```bash
 for dir in packages/reelforge packages/reelforge_kit \
-           packages/reelforge_json packages/reelforge_encoder example; do
+           packages/reelforge_json packages/reelforge_encoder \
+           packages/reelforge_stage example; do
   (cd "$dir" && flutter test)
 done
 for dir in packages/reelforge_schema packages/reelforge_cli; do

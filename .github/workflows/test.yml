@@ -34,7 +34,8 @@ jobs:
       - name: Resolve
         run: |
           for dir in packages/reelforge packages/reelforge_kit \
-                     packages/reelforge_json packages/reelforge_encoder example; do
+                     packages/reelforge_json packages/reelforge_encoder \
+                     packages/reelforge_stage example; do
             (cd "$dir" && flutter pub get)
           done
           for dir in packages/reelforge_schema packages/reelforge_cli; do
@@ -47,7 +48,8 @@ jobs:
       - name: Test the Flutter packages
         run: |
           for dir in packages/reelforge packages/reelforge_kit \
-                     packages/reelforge_json packages/reelforge_encoder example; do
+                     packages/reelforge_json packages/reelforge_encoder \
+                     packages/reelforge_stage example; do
             (cd "$dir" && flutter test)
           done
 

@@ -6,6 +6,9 @@ import 'package:reelforge_encoder/reelforge_encoder.dart';
 
 import 'compositions.dart';
 import 'longform.dart';
+import 'stage_compare.dart';
+import 'stage_shapes.dart';
+import 'stage_demo.dart';
 import 'report_data.dart';
 
 /// Preview app. `flutter run -d macos` here, then scrub -- and hot reload
@@ -22,6 +25,9 @@ Future<void> main() async {
   await loadReport();
   previewMain(
       <Composition>[
+        stageDemo,
+        walkCompare,
+        stageShapes,
         longform,
         helloFlutter,
         weeklyDeals,

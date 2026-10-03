@@ -18,5 +18,7 @@ dependency_overrides:
     path: ../packages/reelforge_json
   reelforge_kit:
     path: ../packages/reelforge_kit
+  reelforge_stage:
+    path: ../packages/reelforge_stage
   reelforge_schema:
     path: ../packages/reelforge_schema

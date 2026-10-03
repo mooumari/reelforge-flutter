@@ -1,0 +1,18 @@
+name: reelforge_stage
+description: Vector parts, puppets and a parallax camera for ReelForge compositions -- drawn, rigged and animated in code.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  reelforge: ^0.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

@@ -34,6 +34,8 @@ dependencies:
   reelforge_kit: ^0.2.0
   reelforge_json: ^0.2.0
   reelforge_encoder: ^0.2.0
+  reelforge_stage:
+    path: ../packages/reelforge_stage
 
   # Android starts an activity, not a process: there is no argv and no writable
   # working directory. The headless export finds both through here.
