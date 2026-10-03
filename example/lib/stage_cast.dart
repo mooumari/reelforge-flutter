@@ -5,7 +5,7 @@ import 'package:reelforge/reelforge.dart';
 import 'package:reelforge_stage/reelforge_stage.dart';
 
 import 'compositions.dart' show typeset;
-import 'stage_hero.dart' show wave;
+import 'stage_style.dart' show wyatt;
 
 /// Ten people from one template: a cowboy, a Bedouin and his sister, a
 /// legionary, a pharaoh, a philosopher, a cyborg, a scientist, a kid and a
@@ -29,94 +29,92 @@ final Composition stageCast = Composition(
 
 // --- the ten ---
 
-const Color _black = Color(0xFF1E1A1A);
+const Color _black = Color(0xFF2B2220);
 const Color _white = Color(0xFFF3EEE4);
+const Color _grey = Color(0xFFC9C4BE);
 
+/// Wyatt's face, retuned: bigger or smaller eyes, brows of a colour and a
+/// weight, a mouth, blush.
 FaceStyle _face({
   double eyes = 1,
   Color brows = const Color(0xFF3B2416),
-  double browThickness = 7,
-  double mouth = 46,
-  Color? cheeks,
-  bool nose = true,
+  double browThickness = 6.5,
+  double mouth = 38,
+  Color? cheeks = const Color(0x22E0607A),
 }) =>
     FaceStyle(
-      eyeWidth: 30 * eyes,
-      eyeHeight: 36 * eyes,
-      pupilRadius: 9 * eyes,
-      browColor: brows,
+      eyeSpacing: 60,
+      eyeWidth: 24 * eyes,
+      eyeHeight: 30 * eyes,
+      pupilRadius: 9.5 * eyes,
+      browGap: 30,
+      browLength: 26,
       browThickness: browThickness,
+      browColor: brows,
+      mouthY: 52,
       mouthWidth: mouth,
       cheeks: cheeks,
-      nose: nose
-          ? <Shape>[
-              Shape(Paths.smooth(const <Offset>[Offset(-6, 6), Offset(4, -14), Offset(14, 6), Offset(4, 10)]),
-                  color: const Color(0x2A000000)),
-            ]
-          : const <Shape>[],
     );
 
-/// Who's who: a name, a greeting, the character, and anything in its hands.
-typedef Cast = ({String name, String hello, Character who, Map<String, List<Part>> hold});
+/// Who's who: a name, a greeting, the character, anything in its hands --
+/// in the far hand, so the near one is free to wave -- and whether it waves
+/// or, hands full, nods.
+typedef Cast = ({String name, String hello, Character who, Map<String, List<Part>> hold, bool waves});
 
 final List<Cast> castOfTen = <Cast>[
   (
     name: 'Wyatt',
     hello: 'Howdy!',
-    who: Character(
-      skin: const Color(0xFFE2A27A),
-      face: _face(brows: const Color(0xFF5A3A22)),
-      outfit: const <Garment>[
-        ShortHair(Color(0xFF6B4226)),
-        Moustache(Color(0xFF5A3A22)),
-        Shirt(Color(0xFFB8432F), vNeck: false),
-        Vest(Color(0xFF6E4B2A)),
-        Bandana(Color(0xFFD8B04A)),
-        Trousers(Color(0xFF35507A)),
-        Belt(Color(0xFF3B2416)),
-        CowboyBoots(Color(0xFF7A4A26)),
-        CowboyHat(Color(0xFFB98A55)),
-      ],
-    ),
+    who: wyatt,
     hold: <String, List<Part>>{'handB': <Part>[Props.lasso()]},
+    waves: true,
   ),
   (
     name: 'Khalid',
     hello: 'As-salamu alaykum!',
     who: Character(
-      body: Body.slim,
+      body: Body(
+        headRadius: 60, torso: 128, shoulders: 84, hips: 72, upperArm: 56, forearm: 51, armRadius: 10.5, wristRadius: 8.5,
+        upperLeg: 66, lowerLeg: 62, legRadius: 15, ankleRadius: 10.5, head: HeadShape.long,
+      ),
       skin: const Color(0xFFC68B59),
-      face: _face(brows: _black, browThickness: 8),
+      face: _face(brows: _black, browThickness: 8, cheeks: null),
       outfit: const <Garment>[
-        Beard(_black, length: 0.8),
-        Robe(_white),
+        Beard(Color(0xFF3A2A22), length: 0.25),
+        Robe(_white, collar: true),
         Headcloth(_white, check: Color(0xFFC0392B)),
         Sandals(),
       ],
     ),
     hold: const <String, List<Part>>{},
+    waves: true,
   ),
   (
     name: 'Layla',
     hello: 'Marhaba!',
     who: Character(
+      body: const Body(head: HeadShape.heart),
       skin: const Color(0xFFD9A06E),
-      face: _face(eyes: 1.12, brows: _black, browThickness: 5, mouth: 40, cheeks: const Color(0x33E0607A)),
+      face: _face(eyes: 1.12, brows: _black, browThickness: 5, mouth: 34, cheeks: const Color(0x33E0607A)),
       outfit: const <Garment>[
         Robe(Color(0xFF2A2233), trim: Color(0xFFD4A94A)),
         Hijab(Color(0xFF5B3A6E)),
-        Sneakers(Color(0xFF2A2233)),
+        Boots(Color(0xFF2A2233), height: 0),
       ],
     ),
     hold: const <String, List<Part>>{},
+    waves: true,
   ),
   (
     name: 'Marcus',
     hello: 'Ave!',
     who: Character(
-      body: Body.stocky,
+      body: Body(
+        torso: 124, shoulders: 118, hips: 104, belly: 8, chest: 6, armRadius: 15, wristRadius: 11.5, hand: 14,
+        legRadius: 21, ankleRadius: 14, upperLeg: 54, lowerLeg: 50, head: HeadShape.square.adjusted(jaw: 0.08, width: 1.04),
+      ),
       skin: const Color(0xFFD69A6C),
-      face: _face(eyes: 0.9, brows: _black, browThickness: 10, mouth: 50),
+      face: _face(eyes: 0.92, brows: _black, browThickness: 9, mouth: 42, cheeks: null),
       outfit: const <Garment>[
         Cape(Color(0xFFA8262C)),
         Tunic(Color(0xFFB83236)),
@@ -128,50 +126,63 @@ final List<Cast> castOfTen = <Cast>[
     ),
     hold: <String, List<Part>>{
       'handF': <Part>[Props.shield()],
-      'handB': <Part>[Props.spear()],
+      'handB': <Part>[Props.spear(length: 470)],
     },
+    waves: false,
   ),
   (
     name: 'Nefer',
     hello: 'Greetings from the Nile!',
     who: Character(
-      body: Body.slim,
+      body: Body(
+        headRadius: 60, torso: 128, shoulders: 82, hips: 70, upperArm: 56, forearm: 51, armRadius: 10.5, wristRadius: 8.5,
+        upperLeg: 66, lowerLeg: 62, legRadius: 15, ankleRadius: 10.5, head: HeadShape.lerp(HeadShape.long, HeadShape.heart, 0.4),
+      ),
       skin: const Color(0xFFB07A4F),
-      face: _face(brows: _black, browThickness: 6),
+      face: _face(brows: _black, browThickness: 6, cheeks: null),
       outfit: const <Garment>[
-        Kilt(_white),
+        Kilt(_white, length: 0.42),
         BroadCollar(),
         Sandals(color: Color(0xFFD4A94A)),
         Nemes(),
       ],
     ),
-    hold: <String, List<Part>>{'handF': <Part>[Props.staff(length: 260, color: const Color(0xFFD4A94A))]},
+    hold: <String, List<Part>>{'handB': <Part>[Props.staff(length: 260, color: const Color(0xFFD4A94A))]},
+    waves: true,
   ),
   (
     name: 'Socrates',
     hello: 'I know that I know nothing.',
-    who: Character(
-      body: Body.elder,
-      skin: const Color(0xFFE4AE84),
-      face: _face(eyes: 0.88, brows: const Color(0xFFBDBDBD), browThickness: 9),
-      outfit: const <Garment>[
-        Curls(Color(0xFFCFCFCF), size: 1.08),
-        Beard(Color(0xFFDADADA), length: 1.5),
+    who: const Character(
+      body: Body(
+        headRadius: 62, torso: 108, shoulders: 88, hips: 82, belly: 8, upperArm: 46, forearm: 42,
+        upperLeg: 50, lowerLeg: 48, legRadius: 16, hunch: 9, head: HeadShape.long,
+      ),
+      skin: Color(0xFFE4AE84),
+      face: FaceStyle(
+        eyeSpacing: 60, eyeWidth: 22, eyeHeight: 27, pupilRadius: 8.5, browGap: 30, browLength: 28, browThickness: 9,
+        browColor: Color(0xFFBDBDBD), mouthY: 52, mouthWidth: 36,
+      ),
+      outfit: <Garment>[
+        Balding(_grey),
+        Beard(_grey, length: 1.1),
         Toga(_white, border: Color(0xFF2F5DA8)),
         Sandals(),
       ],
     ),
-    hold: <String, List<Part>>{'handF': <Part>[Props.scroll()]},
+    hold: const <String, List<Part>>{},
+    waves: true,
   ),
   (
     name: 'Kai',
     hello: 'Systems online.',
     who: Character(
+      body: Body(head: HeadShape.lerp(HeadShape.square, HeadShape.oval, 0.35)),
       skin: const Color(0xFFEFC3A0),
-      face: _face(brows: const Color(0xFF222222)),
+      face: _face(brows: const Color(0xFF222222), cheeks: null),
       outfit: const <Garment>[
-        ShortHair(Color(0xFF222222)),
-        Shirt(Color(0xFF2C3440), sleeves: 0.4, vNeck: false),
+        Buzz(Color(0xFF222222)),
+        Shirt(Color(0xFF2C3440), sleeves: 0.35, collar: false),
         ChestLights(),
         Trousers(Color(0xFF3A4350)),
         Boots(Color(0xFF1C2128)),
@@ -181,23 +192,26 @@ final List<Cast> castOfTen = <Cast>[
       ],
     ),
     hold: const <String, List<Part>>{},
+    waves: true,
   ),
   (
     name: 'Dr. Ada',
     hello: 'Fascinating!',
     who: Character(
+      body: const Body(head: HeadShape.heart),
       skin: const Color(0xFFF1C9A5),
-      face: _face(eyes: 1.06, brows: const Color(0xFF8C3A12), browThickness: 6, mouth: 42, cheeks: const Color(0x33FF6B6B)),
+      face: _face(eyes: 1.06, brows: const Color(0xFF8C3A12), browThickness: 5.5, mouth: 34, cheeks: const Color(0x33FF6B6B)),
       outfit: const <Garment>[
         Ponytail(Color(0xFFC0501F)),
-        Shirt(Color(0xFF2EC4B6), vNeck: false),
+        Shirt(Color(0xFF2EC4B6), collar: false),
         Trousers(Color(0xFF4A5568)),
         Sneakers(Color(0xFF4A5568)),
         Coat(Color(0xFFF7F7F2), length: 0.45),
         Glasses(),
       ],
     ),
-    hold: <String, List<Part>>{'handF': <Part>[Props.clipboard()]},
+    hold: <String, List<Part>>{'handB': <Part>[Props.clipboard()]},
+    waves: true,
   ),
   (
     name: 'Milo',
@@ -205,34 +219,38 @@ final List<Cast> castOfTen = <Cast>[
     who: Character(
       body: Body.child,
       skin: const Color(0xFF8D5A3B),
-      face: _face(eyes: 1.2, brows: _black, browThickness: 6, mouth: 44, nose: false),
+      face: _face(eyes: 1.2, brows: _black, browThickness: 6, mouth: 40, cheeks: const Color(0x33E0607A)),
       faceSize: 1.12,
       outfit: const <Garment>[
-        Curls(_black, size: 1.08),
-        Shirt(Color(0xFFFFC233), sleeves: 0.35, vNeck: false),
+        Curls(_black, size: 0.92),
+        Shirt(Color(0xFFFFC233), sleeves: 0.35, collar: false),
         Trousers(Color(0xFF3A6EA5), length: 0.45),
         Sneakers(Color(0xFFE63946)),
-        Cap(Color(0xFFE63946)),
       ],
     ),
     hold: const <String, List<Part>>{},
+    waves: true,
   ),
   (
     name: 'Rosa',
     hello: 'Hello, dears!',
     who: Character(
-      body: Body.elder,
+      body: Body(
+        headRadius: 61, torso: 108, shoulders: 88, hips: 86, belly: 10, chest: 4, upperArm: 46, forearm: 42,
+        upperLeg: 50, lowerLeg: 48, legRadius: 16, hunch: 7, head: HeadShape.round.adjusted(width: 1.03),
+      ),
       skin: const Color(0xFFE9B994),
-      face: _face(eyes: 0.95, brows: const Color(0xFF9A9A9A), browThickness: 6, mouth: 40, cheeks: const Color(0x33E0607A)),
+      face: _face(eyes: 0.95, brows: const Color(0xFF9A9A9A), browThickness: 5.5, mouth: 34, cheeks: const Color(0x33E0607A)),
       outfit: const <Garment>[
         Bun(Color(0xFFDADADA)),
-        Shirt(Color(0xFF8E6BBF), vNeck: false),
+        Shirt(Color(0xFF8E6BBF), collar: false),
         Skirt(Color(0xFF4F3B6E), length: 0.72),
         Boots(Color(0xFF5A3A22), height: 0),
         Glasses(color: Color(0xFF8C3A12)),
       ],
     ),
-    hold: <String, List<Part>>{'handF': <Part>[Props.staff(length: 190, color: const Color(0xFF6B4226))]},
+    hold: <String, List<Part>>{'handF': <Part>[Props.cane(length: 108)]},
+    waves: false,
   ),
 ];
 
@@ -314,12 +332,13 @@ Posed _perform(int i, int frame) {
   final int hello = _helloAt(i);
   return _walks[i].at(frame, adjust: (Pose pose) {
     Pose out = pose.plus(who.stance).plus(who.life(31 + i).at(frame, _fps));
-    final Pose? arm = wave(
-      frame - hello,
-      _fps,
-      from: Pose(<String, Joint>{'shoulderF': pose['shoulderF'], 'elbowF': pose['elbowF'], 'handF': pose['handF']}),
-    );
-    if (arm != null) out = out.overlay(arm);
+    if (c.waves) {
+      final Pose? arm = Character.wave(frame - hello, _fps, from: pose);
+      if (arm != null) out = out.overlay(arm);
+    } else {
+      final Pose? nod = Character.nod(frame - hello, _fps);
+      if (nod != null) out = out.plus(nod);
+    }
     // A smile as they wave, kept.
     final double smile = ((frame - hello) / 10).clamp(0.0, 1.0);
     if (smile > 0) out = out.plus(who.face.express(Emotion.happy, amount: 0.75 * smile));
@@ -335,10 +354,21 @@ Posed _posed(int i, int frame) {
 
 // --- the scene ---
 
+/// The setting sun, up to the right.
+const Light _light = Light(
+  from: Offset(0.62, -0.78),
+  shadow: Color(0xFF6A5AB0),
+  highlight: Color(0xFFFFD9A8),
+  cast: Color(0xFF1F1640),
+);
+
 final Part _backdrop = Part(shapes: <Shape>[
   Shape(Paths.rect(const Rect.fromLTRB(0, 0, 1920, 1080)), gradient: verticalGradient(const Color(0xFF1F2A5C), const Color(0xFF5B4B9A))),
-  Shape(Paths.circle(const Offset(1560, 210), 120), color: const Color(0xFFFFD98A)),
-  Shape(Paths.circle(const Offset(1560, 210), 170), color: const Color(0x22FFD98A)),
+  Shape(
+    Paths.circle(const Offset(1560, 210), 300),
+    gradient: const RadialGradient(colors: <Color>[Color(0x66FFD98A), Color(0x22FFD98A), Color(0x00FFD98A)], stops: <double>[0.35, 0.6, 1]),
+  ),
+  Shape(Paths.circle(const Offset(1560, 210), 110), color: const Color(0xFFFFE3A3)),
   Shape(Paths.smooth(const <Offset>[
     Offset(-100, 600), Offset(300, 520), Offset(700, 575), Offset(1100, 505), Offset(1500, 560),
     Offset(2020, 520), Offset(2020, 1180), Offset(-100, 1180),
@@ -370,7 +400,7 @@ class _StageCast extends StatelessWidget {
       final bool talking = seconds >= hello.words.first.start - 0.15 && seconds <= hello.end + 1.2;
       rows.addAll(<Widget>[
         Drawing(_shadow(s, x)),
-        Drawing(p.part, pose: p.pose),
+        Drawing(p.part, pose: p.pose, light: _light),
         if (frame >= _arrived - 10)
           Positioned(
             left: s.x - 150,

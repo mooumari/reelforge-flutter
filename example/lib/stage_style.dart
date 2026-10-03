@@ -82,50 +82,11 @@ final Walk _walk = Walk(
 
 const int _waveAt = 108;
 
-/// A wave for a character seen three-quarters on: the near arm goes up and
-/// out to the side, away from the face, the forearm upright, and the hand
-/// waggles a beat behind the forearm.
-const Pose _armUp = Pose(<String, Joint>{
-  'shoulderF': Joint.rotate(128),
-  'elbowF': Joint.rotate(44),
-  'handF': Joint.rotate(-10),
-});
-
-Pose? _wave(int frame, Pose from) {
-  if (frame < 0) return null;
-  final Gesture raise = Gesture(
-    from: from, to: _armUp, anticipation: 4, action: 10, settle: 8, windUp: 0.06, overshoot: 0.1,
-    lag: const <String, int>{'elbowF': 2, 'handF': 4},
-  );
-  final Gesture lower = Gesture(
-    from: _armUp, to: from, anticipation: 3, action: 11, settle: 9, windUp: 0.05, overshoot: 0.06,
-    lag: const <String, int>{'elbowF': 2, 'handF': 3},
-  );
-  const int waggle = 40;
-  final int rise = raise.anticipation + raise.action;
-  if (frame < rise + 8) return raise.at(frame);
-  final int w = frame - rise;
-  if (w < waggle) {
-    final double t = w / _fps;
-    final double envelope = math.sin(math.pi * w / waggle).clamp(0.0, 1.0);
-    return raise.at(frame).plus(Pose(<String, Joint>{
-      'elbowF': Joint.rotate(-18 * envelope * math.sin(2 * math.pi * 2.3 * t)),
-      'handF': Joint.rotate(-14 * envelope * math.sin(2 * math.pi * 2.3 * t - math.pi / 2)),
-    }));
-  }
-  final int l = w - waggle;
-  return l < lower.length ? lower.at(l) : null;
-}
-
 final Speech _hello = Speech.fromText("Howdy! I'm Wyatt. Pleased to meet y'all.", start: 4.3);
 
 Posed _perform(int frame) => _walk.at(frame, adjust: (Pose pose) {
       Pose out = pose.plus(wyatt.stance).plus(wyatt.life(5).at(frame, _fps));
-      final Pose? arm = _wave(frame - _waveAt, Pose(<String, Joint>{
-        'shoulderF': pose['shoulderF'],
-        'elbowF': pose['elbowF'],
-        'handF': pose['handF'],
-      }));
+      final Pose? arm = Character.wave(frame - _waveAt, _fps, from: pose);
       if (arm != null) out = out.overlay(arm);
       final double smile = ((frame - _waveAt + 6) / 10).clamp(0.0, 1.0);
       out = out.plus(wyatt.face.express(Emotion.happy, amount: 0.7 * smile));

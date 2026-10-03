@@ -39,7 +39,11 @@ void _near(Offset a, Offset b, [double tolerance = 1e-6]) {
 /// Every garment in the wardrobe, so each is at least fitted and built.
 const List<Garment> _everything = <Garment>[
   ShortHair(Color(0xFF000000)),
+  Buzz(Color(0xFF000000)),
+  Quiff(Color(0xFF000000)),
+  Balding(Color(0xFF000000)),
   LongHair(Color(0xFF000000)),
+  LongHair(Color(0xFF000000), fringe: true),
   Bun(Color(0xFF000000)),
   Ponytail(Color(0xFF000000)),
   Curls(Color(0xFF000000)),
@@ -264,6 +268,48 @@ void main() {
       }
     });
 
+    test('head shapes mix, and adjust at the jaw only', () {
+      final HeadShape mid = HeadShape.lerp(HeadShape.square, HeadShape.oval, 0.5);
+      for (int i = 0; i < mid.points.length; i++) {
+        expect(mid.points[i].$1, closeTo((HeadShape.square.points[i].$1 + HeadShape.oval.points[i].$1) / 2, 1e-9));
+      }
+      expect(HeadShape.lerp(HeadShape.heart, HeadShape.long, 0).points, HeadShape.heart.points);
+      final HeadShape jaw = HeadShape.oval.adjusted(jaw: 0.2);
+      for (int i = 0; i < jaw.points.length; i++) {
+        final (double x, double y) = HeadShape.oval.points[i];
+        // The skull is shared, so hats still fit; the chin comes down.
+        if (y <= 0.2) expect(jaw.points[i], (x, y));
+        if (y > 0.5) expect(jaw.points[i].$2, greaterThan(y));
+      }
+    });
+
+    test('a wave raises the near arm and gives it back; a nod comes back up', () {
+      const Pose walking = Pose(<String, Joint>{'shoulderF': Joint.rotate(-12), 'elbowF': Joint.rotate(8)});
+      expect(Character.wave(-1, 30, from: walking), isNull);
+      expect(Character.wave(0, 30, from: walking)!['shoulderF'].degrees, closeTo(-12, 1e-9));
+      final double up = Character.wave(30, 30, from: walking)!['shoulderF'].degrees;
+      expect(up, greaterThan(100));
+      int end = 0;
+      while (Character.wave(end, 30, from: walking) != null) {
+        end++;
+      }
+      expect(Character.wave(end - 1, 30, from: walking)!['shoulderF'].degrees, closeTo(-12, 0.5));
+      expect(Character.nod(10, 30)!['head'].degrees, greaterThan(5));
+      int nodEnd = 0;
+      while (Character.nod(nodEnd, 30) != null) {
+        nodEnd++;
+      }
+      expect(nodEnd, lessThan(60));
+    });
+
+    test('a skirt hangs at least as wide as the hips', () {
+      late Fitting fit;
+      final Character c = Character(outfit: <Garment>[_Probe((Fitting f) => fit = f)]);
+      final Where w = Where(c.part, Pose.rest, Affine.identity);
+      final Rect hem = fit.skirt(w, length: 0.4, flare: 0).getBounds();
+      expect(hem.width, greaterThanOrEqualTo(c.body.hips));
+    });
+
     test('the stance stoops an elder and nobody else', () {
       expect(const Character().stance, Pose.rest);
       expect(const Character(body: Body.elder).stance['chest'].degrees, greaterThan(0));
@@ -286,4 +332,13 @@ void main() {
       expect(far(atCheek, skin), lessThan(far(atCheek, shirt)));
     });
   });
+}
+
+/// A garment that only looks at its [Fitting].
+class _Probe extends Garment {
+  const _Probe(this.look);
+  final void Function(Fitting f) look;
+
+  @override
+  void dress(Fitting fit) => look(fit);
 }

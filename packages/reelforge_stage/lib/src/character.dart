@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'face.dart';
 import 'follow.dart';
+import 'gesture.dart';
 import 'kinematics.dart';
 import 'life.dart';
 import 'part.dart';
@@ -187,11 +188,38 @@ class HeadShape {
 
   /// Round and full in the cheek: a child.
   static const HeadShape round = HeadShape(<(double, double)>[
-    (0, -1.0), (0.55, -0.88), (0.9, -0.5), (1.02, 0.0), (0.98, 0.4), (0.78, 0.74), (0.42, 0.94),
-    (0.0, 0.96), (-0.4, 0.86), (-0.74, 0.6), (-0.96, 0.2), (-1.0, -0.3), (-0.8, -0.74), (-0.45, -0.95),
+    (0, -1.0), (0.55, -0.88), (0.9, -0.5), (1.02, 0.0), (0.98, 0.4), (0.8, 0.72), (0.5, 0.92),
+    (0.15, 0.98), (-0.2, 0.94), (-0.5, 0.8), (-0.76, 0.56), (-0.96, 0.2), (-1.0, -0.3), (-0.8, -0.74),
+    (-0.45, -0.95),
   ]);
 
   final List<(double, double)> points;
+
+  /// Part way from [a] to [b]: `HeadShape.lerp(HeadShape.square,
+  /// HeadShape.oval, 0.4)` is a squarish jaw, softened. Every preset has the
+  /// same number of points, in the same places round the head, so any two
+  /// mix.
+  static HeadShape lerp(HeadShape a, HeadShape b, double t) {
+    assert(a.points.length == b.points.length, 'Head shapes mix only with the same number of points.');
+    return HeadShape(<(double, double)>[
+      for (int i = 0; i < a.points.length; i++)
+        (
+          a.points[i].$1 + (b.points[i].$1 - a.points[i].$1) * t,
+          a.points[i].$2 + (b.points[i].$2 - a.points[i].$2) * t,
+        ),
+    ]);
+  }
+
+  /// This shape with the jaw and chin pushed out (or in, negative) by
+  /// [jaw], and the whole head made [width] times as wide: small changes
+  /// that make two people with the same preset look like two people.
+  HeadShape adjusted({double jaw = 0, double width = 1}) => HeadShape(<(double, double)>[
+        for (final (double x, double y) in points)
+          (
+            x * width + (y > 0.2 && x > -0.4 ? jaw * 0.6 * (y - 0.2) : 0),
+            y + (y > 0.2 ? jaw * (y - 0.2) : 0),
+          ),
+      ]);
 
   /// The outline around [center], [radius] to a head radius.
   Path outline(Offset center, double radius) => (_outlines[this] ??= <String, Path>{}).putIfAbsent('$center $radius', () => Paths.smooth(<Offset>[
@@ -348,19 +376,24 @@ class Fitting {
     final Body b = body;
     final Offset f = legPoint(w, 'F', length), k = legPoint(w, 'B', length);
     final double reach = b.legRadius * (1 + flare);
-    final double front = math.max(f.dx, k.dx) + reach, back = math.min(f.dx, k.dx) - reach;
-    final double hem = math.max(f.dy, k.dy) + 4;
     Offset chest(double x, double y) => w.point('chest', Offset(x, y));
     final double hw = b.hips / 2;
+    final Offset hipBack = chest(-hw - 3, 8), hipFront = chest(hw + b.belly * 0.6 + 3, 8);
+    // Cloth hangs from the hips: the hem is never narrower than they are,
+    // or it reads as a nappy.
+    final double front = math.max(math.max(f.dx, k.dx) + reach, hipFront.dx + reach * flare);
+    final double back = math.min(math.min(f.dx, k.dx) - reach, hipBack.dx - reach * flare);
+    final double hem = math.max(f.dy, k.dy) + 4;
     return Paths.smooth(<Offset>[
-      chest(-hw - 2, -b.torso * waist),
-      chest(-hw - 3, 8),
+      chest(-hw * 0.96, -b.torso * waist),
+      hipBack,
       Offset(back, hem - 10),
       Offset(back + (front - back) * 0.3, hem),
       Offset(back + (front - back) * 0.7, hem),
       Offset(front, hem - 10),
-      chest(hw + b.belly * 0.6 + 3, 8),
-      chest(hw + b.belly + 2, -b.torso * waist),
+      hipFront,
+      chest(hw * 0.98 + b.belly, -b.torso * waist),
+      chest(b.mid(waist), -b.torso * waist - 3),
     ]);
   }
 }
@@ -455,6 +488,54 @@ class Character {
           'chest': Joint.rotate(body.hunch),
           'head': Joint.rotate(-body.hunch * 0.7),
         });
+
+  static const Pose _armUp = Pose(<String, Joint>{
+    'shoulderF': Joint.rotate(128),
+    'elbowF': Joint.rotate(44),
+    'handF': Joint.rotate(-10),
+  });
+
+  /// A wave hello with the near arm, [frame] frames after it starts: up and
+  /// out to the side, away from the face, the forearm upright and the hand
+  /// waggling a beat behind it, then back down to where the arm is in
+  /// [from] -- the pose it is overlaid on. Null before and after.
+  static Pose? wave(int frame, int fps, {Pose from = Pose.rest}) {
+    if (frame < 0) return null;
+    final Pose arm = Pose(<String, Joint>{for (final String j in _armUp.joints.keys) j: from[j]});
+    final Gesture raise = Gesture(
+      from: arm, to: _armUp, anticipation: 4, action: 10, settle: 8, windUp: 0.06, overshoot: 0.1,
+      lag: const <String, int>{'elbowF': 2, 'handF': 4},
+    );
+    final Gesture lower = Gesture(
+      from: _armUp, to: arm, anticipation: 3, action: 11, settle: 9, windUp: 0.05, overshoot: 0.06,
+      lag: const <String, int>{'elbowF': 2, 'handF': 3},
+    );
+    final int rise = raise.anticipation + raise.action, waggle = (fps * 1.33).round();
+    if (frame < rise + 8) return raise.at(frame);
+    final int w = frame - rise;
+    if (w < waggle) {
+      final double t = w / fps, envelope = math.sin(math.pi * w / waggle);
+      return raise.at(frame).plus(Pose(<String, Joint>{
+        'elbowF': Joint.rotate(-18 * envelope * math.sin(2 * math.pi * 2.3 * t)),
+        'handF': Joint.rotate(-14 * envelope * math.sin(2 * math.pi * 2.3 * t - math.pi / 2)),
+      }));
+    }
+    final int l = w - waggle;
+    return l < lower.length ? lower.at(l) : null;
+  }
+
+  /// A nod hello, for hands too full to wave: the head dips, the chest a
+  /// little with it, and comes back up. Add it; null before and after.
+  static Pose? nod(int frame, int fps) {
+    const Pose down = Pose(<String, Joint>{'head': Joint.rotate(14), 'chest': Joint.rotate(4)});
+    const Gesture dip = Gesture(to: down, anticipation: 3, action: 8, settle: 6, windUp: 0.15, overshoot: 0.1);
+    const Gesture rise = Gesture(from: down, to: Pose.rest, anticipation: 2, action: 10, settle: 8, windUp: 0.05, overshoot: 0.08);
+    final int hold = (fps * 0.25).round();
+    if (frame < 0) return null;
+    if (frame < dip.length + hold) return dip.at(frame);
+    final int r = frame - dip.length - hold;
+    return r < rise.length ? rise.at(r) : null;
+  }
 
   /// The near foot on the ground at [groundY] -- the far one a touch higher,
   /// as it is further back: where to place [part] when not walking. ([Walk]

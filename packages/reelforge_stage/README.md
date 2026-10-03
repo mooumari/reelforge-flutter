@@ -109,8 +109,15 @@ final Pose pose = cowboy.life(seed).at(frame, fps)
 
 Its rig has the joint names everything else here uses, so `Walk`, `Life`,
 `followThrough` (with `cowboy.jiggles` for capes and ponytails), gestures,
-emotions and speech all work on it unchanged. `Body.child`, `stocky`, `slim`
-and `elder` are starting points; every measurement can be changed.
+emotions and speech all work on it unchanged. `Character.wave` and
+`Character.nod` are ready-made hellos. `Body.child`, `stocky`, `slim` and
+`elder` are starting points; every measurement can be changed.
+
+A `HeadShape` is the head's silhouette: `oval`, `square`, `heart`, `long` and
+`round` share one skull and differ in the cheek, jaw and chin, so every hat
+fits every head. Mix two with `HeadShape.lerp`, or nudge one with
+`adjusted(jaw:, width:)`, so that two people with the same preset still look
+like two people.
 
 Garments are measured from the body, not drawn for it: head pieces in head
 radii around the head and cut round the face, torso pieces from the torso's
@@ -119,7 +126,14 @@ robes and skirts as live outlines from the legs' posed positions. So the
 cowboy hat fits the child, and a robe stays closed over a stride. A new
 garment is a class with one method, `dress(Fitting)`, that adds drawings to
 the layers it belongs in. `Character.build(hold: ...)` hangs props on the
-hands; `Props` has a staff, a spear, a shield, a scroll and more.
+hands; `Props` has a staff, a cane, a spear, a shield, a scroll and more.
+
+Hair is a mass, darker locks inside it that say which way it is combed, a
+band of shine, and a small shadow cast on the forehead: `ShortHair`, `Buzz`,
+`Quiff`, `Curls` (each curl lit), `LongHair` (with or without a fringe; what
+falls below the head hangs behind the body), `Bun`, `Ponytail` (it swings)
+and `Balding`. `example/lib/stage_wardrobe.dart` puts every hairstyle and
+headpiece on one sheet.
 
 Everything is drawn from one angle, three-quarters on and facing right --
 body, head, face, ear, hair and clothes agree about which way the
