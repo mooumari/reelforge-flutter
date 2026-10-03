@@ -21,12 +21,18 @@
 /// several joints so a limb bends in a curve; a [Chain] is a skinned row of
 /// joints -- tail, trunk, tentacle -- with a travelling [Chain.wave].
 ///
+/// And faces: a [FaceStyle] draws eyes, brows and a mouth whose shape keys
+/// mix by [Joint.weights] in a [Blend]; [FaceStyle.express] poses an
+/// [Emotion], [Speech] turns Azure's visemes (or plain text) into mouth
+/// shapes, and [Gaze] moves the eyes the way eyes move.
+///
 /// The rule is the rest of ReelForge's: a frame is a pure function of its
 /// frame number. Nothing here holds state, runs a clock or reads one.
 library;
 
 export 'src/camera.dart';
 export 'src/drawing.dart';
+export 'src/face.dart';
 export 'src/follow.dart';
 export 'src/gesture.dart';
 export 'src/kinematics.dart';

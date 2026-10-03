@@ -215,6 +215,7 @@ Joint _withDegrees(Joint j, double degrees) => Joint(
       scaleY: j.scaleY,
       opacity: j.opacity,
       morph: j.morph,
+      weights: j.weights,
     );
 
 /// Into (-180, 180], so blending two solved poses never spins a joint the

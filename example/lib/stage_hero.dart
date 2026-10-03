@@ -170,22 +170,8 @@ Part _head(Color suit, Color visor) {
           ]), color: const Color(0x55FFFFFF)),
         ],
         children: <Part>[
-          Part(
-            name: 'eyeL',
-            at: const Offset(2, -6),
-            shapes: <Shape>[Shape(Paths.ellipse(Offset.zero, 7, 9), color: const Color(0xFFFFFFFF))],
-          ),
-          Part(
-            name: 'eyeR',
-            at: const Offset(30, -6),
-            shapes: <Shape>[Shape(Paths.ellipse(Offset.zero, 7, 9), color: const Color(0xFFFFFFFF))],
-          ),
-          // Speech is this part's Joint.morph: see [mouthShapes].
-          Part(
-            name: 'mouth',
-            at: const Offset(16, 20),
-            shapes: <Shape>[Shape.morph(mouthShapes, color: const Color(0xFFFF9E80))],
-          ),
+          // The face rig every character shares, sized to the visor.
+          Part(at: const Offset(16, -6), children: <Part>[heroFace.build()]),
         ],
       ),
     ],
@@ -209,8 +195,25 @@ Life heroLife(int seed) => Life(
       seed: seed,
       head: 'head',
       chest: 'chest',
-      eyes: const <String>['eyeL', 'eyeR'],
+      eyes: FaceJoints.eyes,
+      blinkKey: 'closed',
     );
+
+/// White eyes with no pupils, no brows, on a dark visor: the hero's face
+/// is mostly eyes and mouth, and every expression still reads on it.
+const FaceStyle heroFace = FaceStyle(
+  eyeSpacing: 28,
+  eyeWidth: 14,
+  eyeHeight: 18,
+  pupilColor: Color(0xFFFFFFFF),
+  pupilRadius: 4,
+  highlight: false,
+  browThickness: 0,
+  mouthY: 26,
+  mouthWidth: 24,
+  mouthColor: Color(0xFFFF9E80),
+  tongueColor: Color(0xFFE0607A),
+);
 
 /// A wave as an animator would time it: wind up, raise the arm with the elbow
 /// and hand trailing, waggle the forearm with the hand a beat behind, then
@@ -281,34 +284,9 @@ Pose? wave(int frame, int fps, {required Pose from}) {
   return null;
 }
 
-/// The mouth's key shapes, in the order a mouth passes through them:
-/// shut in a smile (0), wide as in "ee" (1), open as in "ah" (2), round as in
-/// "oo" (3). Every one is a single closed outline, and the morph does the
-/// in-betweens.
-final Morph mouthShapes = Morph(<Path>[
-  Paths.smooth(const <Offset>[
-    Offset(-12, -2), Offset(0, 1), Offset(12, -2), Offset(7, 2), Offset(0, 4), Offset(-7, 2),
-  ]),
-  Paths.smooth(const <Offset>[
-    Offset(-15, -2), Offset(0, 0), Offset(15, -2), Offset(10, 4), Offset(0, 7), Offset(-10, 4),
-  ]),
-  Paths.smooth(const <Offset>[
-    Offset(-12, -3), Offset(0, -2), Offset(12, -3), Offset(9, 7), Offset(0, 13), Offset(-9, 7),
-  ]),
-  Paths.ellipse(const Offset(0, 4), 7, 8),
-]);
+/// What the hero says when it reaches Pip.
+final Speech heroLine = Speech.fromText('Hey Pip! Look at this place.');
 
-/// Speech-like mouth movement: a new shape every syllable, eased into. No
-/// words yet -- this is where a text-to-speech viseme track will plug in.
-Pose talk(int frame, int fps) {
-  const double syllablesPerSecond = 4.2;
-  final double s = frame / fps * syllablesPerSecond;
-  final int i = s.floor();
-  // Each syllable picks a shape from the seeded noise; the mouth moves to it
-  // over the first 45% of the syllable and holds.
-  double shape(int k) => 0.4 + 2.6 * (0.5 + 0.5 * noise(7, k * 1.618));
-  final double t = Curves.easeInOutSine.transform(((s - i) / 0.45).clamp(0.0, 1.0));
-  return Pose(<String, Joint>{
-    'mouth': Joint.morphTo(shape(i - 1) + (shape(i) - shape(i - 1)) * t),
-  });
-}
+/// The hero saying [heroLine], [frame] frames in, and pleased about it.
+Pose talk(int frame, int fps) =>
+    heroLine.at(frame, fps).plus(heroFace.express(Emotion.happy, amount: 0.8));

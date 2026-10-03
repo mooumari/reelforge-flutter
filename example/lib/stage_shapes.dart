@@ -11,7 +11,7 @@ import 'stage_hero.dart';
 ///
 ///  * the same two-bone arm drawn as two rigid capsules and as one skin;
 ///  * one shape morphing through key outlines, driven by a joint;
-///  * the hero's mouth morphing as it talks;
+///  * a mouth morphing through key shapes, beside the hero talking;
 ///  * chains -- a critter's tail swinging on follow-through, kelp swaying on
 ///    a travelling wave.
 const int _fps = 30;
@@ -145,6 +145,21 @@ final Part _morphKeysRow = Part(children: <Part>[
 
 // --- the talking head ---
 
+/// Mouth keys in the order a mouth passes through them: shut in a smile,
+/// wide as in "ee", open as in "ah", round as in "oo".
+final Morph _mouthShapes = Morph(<Path>[
+  Paths.smooth(const <Offset>[
+    Offset(-12, -2), Offset(0, 1), Offset(12, -2), Offset(7, 2), Offset(0, 4), Offset(-7, 2),
+  ]),
+  Paths.smooth(const <Offset>[
+    Offset(-15, -2), Offset(0, 0), Offset(15, -2), Offset(10, 4), Offset(0, 7), Offset(-10, 4),
+  ]),
+  Paths.smooth(const <Offset>[
+    Offset(-12, -3), Offset(0, -2), Offset(12, -3), Offset(9, 7), Offset(0, 13), Offset(-9, 7),
+  ]),
+  Paths.ellipse(const Offset(0, 4), 7, 8),
+]);
+
 final Part _hero = hero().placed(at: const Offset(330, 540 + 500), scale: 1.6);
 final Life _life = heroLife(3);
 
@@ -155,7 +170,7 @@ final Part _mouthKeys = Part(children: <Part>[
       at: Offset(760, 540 + 170 + i * 90),
       scaleX: 3,
       scaleY: 3,
-      shapes: <Shape>[Shape.morph(mouthShapes, color: const Color(0xFFFF9E80))],
+      shapes: <Shape>[Shape.morph(_mouthShapes, color: const Color(0xFFFF9E80))],
     ),
 ]);
 const Pose _mouthKeyPose = Pose(<String, Joint>{
@@ -262,7 +277,7 @@ class _StageShapes extends StatelessWidget {
     final int frame = Video.frame(context);
     final double m = _morphAt(frame);
     final Posed critter = followThrough(_critterAt, frame, jiggles: _tailJiggles, fps: _fps);
-    final Pose heroPose = _life.at(frame, _fps).plus(talk(frame, _fps));
+    final Pose heroPose = _life.at(frame, _fps).plus(talk(frame % 75, _fps));
     return Stack(
       children: <Widget>[
         const ColoredBox(color: Color(0xFF241245), child: SizedBox.expand()),
@@ -302,7 +317,7 @@ class _StageShapes extends StatelessWidget {
         Drawing(critter.part, pose: critter.pose),
         const Positioned(left: 40, top: 24, child: _Label('Skinned limbs', 'left: two rigid parts   right: one outline over two bones')),
         const Positioned(left: 1000, top: 24, child: _Label('Morph', 'one shape through key outlines, posed like a joint')),
-        const Positioned(left: 40, top: 566, child: _Label('Mouth shapes', 'four keys, every in-between drawn by the morph')),
+        const Positioned(left: 40, top: 566, child: _Label('Mouth shapes', 'right: a morph through four keys   left: speech')),
         const Positioned(left: 1000, top: 566, child: _Label('Chains', 'tail: follow-through   kelp: a travelling wave')),
       ],
     );

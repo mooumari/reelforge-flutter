@@ -18,9 +18,14 @@ class Joint {
     this.scaleY = 1,
     this.opacity = 1,
     this.morph = 0,
+    this.weights = const <String, double>{},
   });
 
   const Joint.rotate(double degrees) : this(degrees: degrees);
+
+  /// Sets the weights of the part's [Blend] shape keys: `{'smile': 1}`,
+  /// `{'ah': 0.6, 'smile': 0.4}`.
+  const Joint.weigh(Map<String, double> weights) : this(weights: weights);
 
   /// Picks the shape of the part's morphing shapes: 0 is the first key shape,
   /// 1 the second, 1.5 halfway between the second and the third.
@@ -49,8 +54,13 @@ class Joint {
   /// mouth changing shape is animated exactly as an arm turning is.
   final double morph;
 
-  /// Layers [other] on top: angles, offsets and morphs add; scales and
-  /// opacity multiply.
+  /// How much of each named shape key the part's [Blend] shapes show; a key
+  /// not mentioned is 0. This is how a face is posed: a viseme, an emotion
+  /// and a blink are each a few weights, and they add.
+  final Map<String, double> weights;
+
+  /// Layers [other] on top: angles, offsets, morphs and weights add; scales
+  /// and opacity multiply.
   Joint plus(Joint other) => Joint(
         degrees: degrees + other.degrees,
         move: move + other.move,
@@ -58,7 +68,16 @@ class Joint {
         scaleY: scaleY * other.scaleY,
         opacity: opacity * other.opacity,
         morph: morph + other.morph,
+        weights: _addWeights(weights, other.weights),
       );
+
+  static Map<String, double> _addWeights(Map<String, double> a, Map<String, double> b) {
+    if (b.isEmpty) return a;
+    if (a.isEmpty) return b;
+    return <String, double>{
+      for (final String k in <String>{...a.keys, ...b.keys}) k: (a[k] ?? 0) + (b[k] ?? 0),
+    };
+  }
 
   static Joint lerp(Joint a, Joint b, double t) => Joint(
         degrees: a.degrees + (b.degrees - a.degrees) * t,
@@ -67,6 +86,12 @@ class Joint {
         scaleY: a.scaleY + (b.scaleY - a.scaleY) * t,
         opacity: a.opacity + (b.opacity - a.opacity) * t,
         morph: a.morph + (b.morph - a.morph) * t,
+        weights: a.weights.isEmpty && b.weights.isEmpty
+            ? const <String, double>{}
+            : <String, double>{
+                for (final String k in <String>{...a.weights.keys, ...b.weights.keys})
+                  k: (a.weights[k] ?? 0) + ((b.weights[k] ?? 0) - (a.weights[k] ?? 0)) * t,
+              },
       );
 
   @override
@@ -77,14 +102,26 @@ class Joint {
       other.scaleX == scaleX &&
       other.scaleY == scaleY &&
       other.opacity == opacity &&
-      other.morph == morph;
+      other.morph == morph &&
+      mapEquals(other.weights, weights);
 
   @override
-  int get hashCode => Object.hash(degrees, move, scaleX, scaleY, opacity, morph);
+  int get hashCode => Object.hash(
+        degrees,
+        move,
+        scaleX,
+        scaleY,
+        opacity,
+        morph,
+        Object.hashAllUnordered(
+          weights.entries.map((MapEntry<String, double> e) => Object.hash(e.key, e.value)),
+        ),
+      );
 
   @override
   String toString() => 'Joint(degrees: $degrees, move: $move, '
-      'scale: $scaleX x $scaleY, opacity: $opacity, morph: $morph)';
+      'scale: $scaleX x $scaleY, opacity: $opacity, morph: $morph'
+      '${weights.isEmpty ? '' : ', weights: $weights'})';
 }
 
 /// Where the parts of one puppet are at one instant, by name.

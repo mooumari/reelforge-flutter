@@ -13,8 +13,8 @@ import 'skin.dart';
 /// are shared between every place they appear.
 ///
 /// The outline can also move: [Shape.morph] changes between key shapes as
-/// its part's [Joint.morph] says, and [Shape.skin] bends with the joints
-/// under it.
+/// its part's [Joint.morph] says, [Shape.blend] mixes shape keys by its
+/// part's [Joint.weights], and [Shape.skin] bends with the joints under it.
 @immutable
 class Shape {
   const Shape(
@@ -25,6 +25,7 @@ class Shape {
     this.strokeWidth = 0,
   })  : morph = null,
         skin = null,
+        blend = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
@@ -39,6 +40,7 @@ class Shape {
     this.strokeWidth = 0,
   })  : path = null,
         skin = null,
+        blend = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
@@ -53,16 +55,33 @@ class Shape {
     this.strokeWidth = 0,
   })  : path = null,
         morph = null,
+        blend = null,
         assert(
           color == null || gradient == null,
           'A shape is filled with a colour or a gradient, not both.',
         );
 
-  /// The outline, for a still shape. Exactly one of [path], [morph] and
-  /// [skin] is set.
+  /// A shape whose outline is [blend] at the part's [Joint.weights].
+  const Shape.blend(
+    Blend this.blend, {
+    this.color,
+    this.gradient,
+    this.stroke,
+    this.strokeWidth = 0,
+  })  : path = null,
+        morph = null,
+        skin = null,
+        assert(
+          color == null || gradient == null,
+          'A shape is filled with a colour or a gradient, not both.',
+        );
+
+  /// The outline, for a still shape. Exactly one of [path], [morph], [skin]
+  /// and [blend] is set.
   final Path? path;
   final Morph? morph;
   final Skin? skin;
+  final Blend? blend;
 
   /// Flat fill. Null leaves the inside undrawn, unless there is a [gradient].
   final Color? color;

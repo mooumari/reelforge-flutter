@@ -162,3 +162,89 @@ class Morph {
     return _cache[c] ??= outlineAt(c).toPath();
   }
 }
+
+/// A shape with named shape keys that mix: a mouth that can be "ah" and
+/// smiling at once, an eye that is wide and blinking.
+///
+/// Where a [Morph] is a line of shapes -- from the first, through the
+/// second, to the third -- a blend is a base shape plus any amount of each
+/// key's difference from it, which is what a face needs: speech jumps from
+/// any mouth shape to any other, and emotion sits on top of it.
+///
+/// Each key is sampled and aligned to [base], so the keys can be drawn
+/// independently. They blend best drawn alike -- the same number of corners
+/// in the same places -- because then every point's move is the obvious one.
+///
+/// The part's [Joint.weights] say how much of each key to show. A key in
+/// [overriding] replaces the others as it comes in rather than adding to
+/// them: a blink closes a smiling eye, rather than adding "shut" to
+/// "smiling" and turning the eye inside out.
+class Blend {
+  Blend(
+    Path base,
+    Map<String, Path> keys, {
+    this.samples = 96,
+    this.overriding = const <String>{},
+  })  : _basePath = base,
+        _keyPaths = keys,
+        assert(
+          overriding.every(keys.containsKey),
+          'Overriding keys must be keys of the blend.',
+        );
+
+  final Path _basePath;
+  final Map<String, Path> _keyPaths;
+  final int samples;
+  final Set<String> overriding;
+
+  Iterable<String> get keys => _keyPaths.keys;
+
+  late final Outline base = Outline.of(_basePath, samples: samples);
+
+  late final Map<String, List<Offset>> _deltas = <String, List<Offset>>{
+    for (final MapEntry<String, Path> key in _keyPaths.entries)
+      key.key: () {
+        final Outline o = Outline.of(key.value, samples: samples).alignedTo(base);
+        return <Offset>[
+          for (int i = 0; i < samples; i++) o.points[i] - base.points[i],
+        ];
+      }(),
+  };
+
+  /// The outline for [weights]. Names that are not keys are ignored, so one
+  /// face pose can weigh the eyes and the mouth in the same map.
+  Outline outlineFor(Map<String, double> weights) {
+    double keep = 1;
+    for (final String k in overriding) {
+      keep *= 1 - (weights[k] ?? 0).clamp(0.0, 1.0);
+    }
+    final List<double> xs = <double>[for (final Offset p in base.points) p.dx];
+    final List<double> ys = <double>[for (final Offset p in base.points) p.dy];
+    weights.forEach((String name, double w) {
+      final List<Offset>? d = _deltas[name];
+      if (d == null || w == 0) return;
+      final double scaled = overriding.contains(name) ? w : w * keep;
+      for (int i = 0; i < samples; i++) {
+        xs[i] += d[i].dx * scaled;
+        ys[i] += d[i].dy * scaled;
+      }
+    });
+    return Outline(
+      <Offset>[for (int i = 0; i < samples; i++) Offset(xs[i], ys[i])],
+      closed: base.closed,
+    );
+  }
+
+  final Map<String, Path> _cache = <String, Path>{};
+
+  /// The path for [weights]; see [outlineFor].
+  Path at(Map<String, double> weights) {
+    final List<String> names = weights.keys.where(_keyPaths.containsKey).toList()..sort();
+    final String id = <String>[
+      for (final String n in names)
+        if (weights[n] != 0) '$n=${weights[n]}',
+    ].join(',');
+    if (_cache.length > 1024) _cache.clear();
+    return _cache[id] ??= outlineFor(weights).toPath();
+  }
+}

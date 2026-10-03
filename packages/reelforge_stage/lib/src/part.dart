@@ -27,6 +27,7 @@ class Part {
     this.opacity = 1,
     this.shapes = const <Shape>[],
     this.children = const <Part>[],
+    this.clip = false,
   });
 
   final String name;
@@ -44,6 +45,12 @@ class Part {
 
   final List<Shape> shapes;
   final List<Part> children;
+
+  /// Whether [children] only show inside this part's own shapes: a pupil
+  /// inside its eye, teeth inside a mouth, a pattern inside a shirt. The clip
+  /// follows the shapes as they morph or blend, so an eye that blinks shut
+  /// hides its pupil without the pupil being animated at all.
+  final bool clip;
 
   /// This part with its own placement replaced; shapes and children are shared.
   ///
@@ -66,6 +73,7 @@ class Part {
         opacity: opacity ?? this.opacity,
         shapes: shapes,
         children: children,
+        clip: clip,
       );
 
   /// Mirrored left to right about this part's own origin.

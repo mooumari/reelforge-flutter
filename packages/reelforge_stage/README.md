@@ -44,6 +44,10 @@ Camera(
 | `Morph`, `Shape.morph`, `Joint.morph` | one outline through key shapes, posed and keyed like a joint |
 | `Skin`, `Shape.skin`, `Paths.taper` | one outline over several bones, so a bend is a curve |
 | `Chain` | a skinned row of joints -- tail, trunk, kelp -- with `wave`, `curl` and `jiggles` |
+| `Blend`, `Shape.blend`, `Joint.weights` | shape keys that mix: a mouth that is "ah" and smiling at once |
+| `Part.clip` | children only inside the part's own shapes: pupils in eyes, teeth in a mouth |
+| `FaceStyle`, `FaceJoints`, `Emotion` | a face drawn from a style; eight emotions, `look`, `turn`, `moods` |
+| `Speech`, `Viseme`, `Gaze` | mouth shapes from Azure's visemes or from text; eyes that hold and dart |
 
 The demo is `example/lib/stage_demo.dart`: two characters on one skeleton,
 each given only a route; a wave and a wave back; a camera that follows and
@@ -61,7 +65,36 @@ cd example
 reelforge render --composition StageDemo --out stage.mp4
 reelforge render --composition WalkCompare --out compare.mp4
 reelforge render --composition StageShapes --out shapes.mp4
+reelforge render --composition StageFaces --out faces.mp4
 ```
+
+`example/lib/stage_faces.dart` has one person talking -- mood on cue words,
+captions from the speech's own word timings, eyes that glance and then follow
+a firefly with the head turning after them -- and six more people, a robot and
+an alien among them, showing all eight emotions on the same rig.
+
+## Faces
+
+A face is a `FaceStyle`: sizes, spacing and colours. `build()` draws it as
+parts with the joints in `FaceJoints`, and every way of posing a face is a
+pose on those joints, so it works on any style:
+
+```dart
+final Pose face = style.express(Emotion.happy)       // a feeling
+    .plus(speech.at(frame, fps))                      // the mouth, from TTS
+    .plus(style.look(gaze.at(frame)))                 // the eyes
+    .plus(life.at(frame, fps));                       // breathing and blinks
+```
+
+Feelings and visemes are weights on the same mouth `Blend`, and they add: a
+smile while saying "ah" is both. A blink is an overriding key, so it closes a
+smiling eye rather than adding to it. Pupils are clipped to the eye's
+outline, so a closed or squinting eye hides them without their being posed.
+
+`Speech.azure` takes Azure's `VisemeReceived` and `WordBoundary` events as
+the SDK reports them (offsets in 100ns ticks), and maps its 22 viseme ids to
+eight mouth shapes. `Speech.fromText` guesses both from spelling, for work
+before there is audio.
 
 ## Shapes that move
 

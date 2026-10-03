@@ -78,17 +78,28 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose) {
   if (faded) {
     canvas.saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, opacity));
   }
-  for (final Shape shape in part.shapes) {
-    shape.paint(
-      canvas,
+  final List<Path> outlines = <Path>[
+    for (final Shape shape in part.shapes)
       shape.path ??
           shape.morph?.at(joint.morph) ??
+          shape.blend?.at(joint.weights) ??
           shape.skin!.deformed(root, pose),
-    );
+  ];
+  for (int i = 0; i < outlines.length; i++) {
+    part.shapes[i].paint(canvas, outlines[i]);
+  }
+  if (part.clip && part.children.isNotEmpty) {
+    canvas.save();
+    final Path inside = Path();
+    for (final Path outline in outlines) {
+      inside.addPath(outline, Offset.zero);
+    }
+    canvas.clipPath(inside);
   }
   for (final Part child in part.children) {
     _paintPart(canvas, root, child, pose);
   }
+  if (part.clip && part.children.isNotEmpty) canvas.restore();
   if (faded) canvas.restore();
 
   canvas.restore();

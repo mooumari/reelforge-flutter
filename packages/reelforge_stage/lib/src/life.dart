@@ -56,6 +56,8 @@ class Life {
     this.head,
     this.chest,
     this.eyes = const <String>[],
+    this.blinkKey,
+    this.pupils = const <String>[],
     this.breathsPerMinute = 16,
     this.blinkEvery = const (2.2, 5.5),
     this.headDrift = 2.2,
@@ -72,6 +74,14 @@ class Life {
 
   /// Joints that close for a blink (by `scaleY`) and shift for a glance.
   final List<String> eyes;
+
+  /// If set, a blink weighs this shape key of the [eyes] -- a [Blend] eye
+  /// shutting -- instead of squashing them.
+  final String? blinkKey;
+
+  /// If given, these glance instead of the [eyes]: pupils moving inside eyes
+  /// that stay put.
+  final List<String> pupils;
 
   final double breathsPerMinute;
 
@@ -98,8 +108,17 @@ class Life {
     if (eyes.isNotEmpty) {
       final double open = _openness(frame, fps);
       final Offset look = _glance(t);
+      final bool pupilsLook = pupils.isNotEmpty;
       for (final String eye in eyes) {
-        joints[eye] = Joint(move: look, scaleY: open);
+        joints[eye] = blinkKey == null
+            ? Joint(move: pupilsLook ? Offset.zero : look, scaleY: open)
+            : Joint(
+                move: pupilsLook ? Offset.zero : look,
+                weights: <String, double>{blinkKey!: ((1 - open) / 0.92).clamp(0.0, 1.0)},
+              );
+      }
+      for (final String pupil in pupils) {
+        joints[pupil] = Joint.move(look);
       }
     }
     return Pose(joints);

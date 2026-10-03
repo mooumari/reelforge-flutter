@@ -89,7 +89,7 @@ Posed _perform(
       );
       if (arm != null) out = out.overlay(arm);
       if (talking != null && frame >= talking.$1 && frame < talking.$2) {
-        out = out.plus(talk(frame, stageFps));
+        out = out.plus(talk(frame - talking.$1, stageFps));
       }
       return out;
     });

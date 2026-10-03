@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
+import 'package:example/stage_faces.dart';
 import 'package:example/stage_shapes.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelforge/reelforge.dart';
@@ -103,5 +104,20 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[40]!, expected[80]!), isFalse);
+  });
+
+  test('the faces demo is deterministic, and its faces move', () async {
+    // Speech, moods, gaze, blinks and the blend-shape cache all feed every
+    // frame; none of it may depend on the frames drawn before.
+    final CompositionRenderer walked = CompositionRenderer(stageFaces);
+    final Map<int, Uint8List> expected = <int, Uint8List>{};
+    for (int frame = 0; frame <= 480; frame += 16) {
+      expected[frame] = await _frame(walked, frame);
+    }
+    for (final int frame in <int>[64, 208, 480]) {
+      expect(_same(await _frame(CompositionRenderer(stageFaces), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    expect(_same(expected[64]!, expected[80]!), isFalse);
   });
 }
