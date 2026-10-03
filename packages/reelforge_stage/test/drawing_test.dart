@@ -97,6 +97,23 @@ void main() {
     expect(await _pixel(tester, image, 40, 140), _red);
   });
 
+  testWidgets('an inked drawing is flat, with a marker line round the edge', (tester) async {
+    const Ink pen = Ink(width: 6);
+    final ui.Image image = await _paint(tester, Drawing(_rig, ink: pen));
+    expect(await _pixel(tester, image, 100, 100), _red); // flat inside
+    expect(await _pixel(tester, image, 90, 100), pen.color); // the line, on the edge
+    expect(await _pixel(tester, image, 60, 100), isNot(pen.color)); // nothing outside it
+  });
+
+  testWidgets('a line too fine to carry an outline is left unoutlined', (tester) async {
+    final Part thread = Part(
+      at: const Offset(100, 100),
+      shapes: <Shape>[Shape(Paths.rect(const Rect.fromLTWH(-30, -1, 60, 2)), color: _blue)],
+    );
+    final ui.Image image = await _paint(tester, Drawing(thread, ink: const Ink(width: 6)));
+    expect(await _pixel(tester, image, 100, 100), _blue);
+  });
+
   testWidgets('a faded part fades as one: no seam where limb meets body', (tester) async {
     final Part overlapping = Part(
       at: const Offset(100, 100),

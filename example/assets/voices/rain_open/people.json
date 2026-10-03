@@ -1,0 +1,188 @@
+{
+ "seconds": 3.008,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1346350,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 1671870,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2192710,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 2713540,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3104160,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3625000,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 4145830,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4666660,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4927080,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5447910,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 6098950,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 6749990,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 7921870,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 8442700,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 8963540,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 9480000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 11437490,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 11828119,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 12479160,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 12999990,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 13520820,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 14041660,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 14432280,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 14757800,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 15213530,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 15864570,
+   "visemeId": 5
+  },
+  {
+   "audioOffset": 16515610,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 17687490,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 18143220,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 18598950,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 19770820,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 20552070,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 21590000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 2473950,
+   "text": "Just"
+  },
+  {
+   "audioOffset": 3104160,
+   "duration": 2864580,
+   "text": "twenty"
+  },
+  {
+   "audioOffset": 6098950,
+   "duration": 3385410,
+   "text": "people"
+  },
+  {
+   "audioOffset": 11437500,
+   "duration": 911450,
+   "text": "and"
+  },
+  {
+   "audioOffset": 12479160,
+   "duration": 1432290,
+   "text": "what"
+  },
+  {
+   "audioOffset": 14041660,
+   "duration": 1041660,
+   "text": "they"
+  },
+  {
+   "audioOffset": 15213540,
+   "duration": 1171870,
+   "text": "were"
+  },
+  {
+   "audioOffset": 16515619,
+   "duration": 5078120,
+   "text": "wearing"
+  }
+ ],
+ "hash": "209408086ada9b82"
+}

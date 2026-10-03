@@ -1,0 +1,89 @@
+{
+ "seconds": 1.863,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 1802080,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 2843750,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 3234370,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3625000,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 4796870,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 5447910,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 6229160,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7531240,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 8052080,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 8963540,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 10130000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 1171870,
+   "text": "A"
+  },
+  {
+   "audioOffset": 1802080,
+   "duration": 2864580,
+   "text": "whole"
+  },
+  {
+   "audioOffset": 4796870,
+   "duration": 1953120,
+   "text": "week"
+  },
+  {
+   "audioOffset": 6880200,
+   "duration": 1041660,
+   "text": "of"
+  },
+  {
+   "audioOffset": 8052080,
+   "duration": 2083330,
+   "text": "it"
+  }
+ ],
+ "hash": "c88a841865c8038e"
+}

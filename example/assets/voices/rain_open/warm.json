@@ -1,0 +1,54 @@
+{
+ "seconds": 1.758,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 2192710,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2973960,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3494790,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4145830,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 5317710,
+   "visemeId": 3
+  },
+  {
+   "audioOffset": 7401040,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 9090000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 3515620,
+   "text": "Stay"
+  },
+  {
+   "audioOffset": 4145830,
+   "duration": 4947910,
+   "text": "warm"
+  }
+ ],
+ "hash": "50fa59993250f411"
+}

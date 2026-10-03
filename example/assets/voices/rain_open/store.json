@@ -1,0 +1,79 @@
+{
+ "seconds": 2.005,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2062500,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2453120,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2973960,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 4015620,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 5187500,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5708330,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 6359370,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7531250,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 8572910,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 9223950,
+   "visemeId": 3
+  },
+  {
+   "audioOffset": 11560000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 2343750,
+   "text": "No"
+  },
+  {
+   "audioOffset": 2973950,
+   "duration": 4427080,
+   "text": "hardware"
+  },
+  {
+   "audioOffset": 7531250,
+   "duration": 4036449,
+   "text": "store"
+  }
+ ],
+ "hash": "64e15e468d8e501a"
+}

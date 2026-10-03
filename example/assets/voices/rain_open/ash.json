@@ -1,0 +1,29 @@
+{
+ "seconds": 1.407,
+ "visemes": [
+  {
+   "audioOffset": 125000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 645830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2989580,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 5715000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 515620,
+   "duration": 5208330,
+   "text": "Ash"
+  }
+ ],
+ "hash": "ab363ada48e9d8db"
+}

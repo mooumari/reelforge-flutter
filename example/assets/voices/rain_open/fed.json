@@ -1,0 +1,54 @@
+{
+ "seconds": 1.68,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 2192710,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2973960,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3559900,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4276040,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 5578120,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 7270830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8310000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 3645830,
+   "text": "Stay"
+  },
+  {
+   "audioOffset": 4276040,
+   "duration": 4036449,
+   "text": "fed"
+  }
+ ],
+ "hash": "c048cd1f261f677d"
+}

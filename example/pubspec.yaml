@@ -72,6 +72,7 @@ flutter:
     - assets/voices/savanna/
     - assets/voices/lion_sleep/
     - assets/voices/rain_week/
+    - assets/voices/rain_open/
     - assets/sound/
 
   # To add assets to your application, add an assets section, like this:
@@ -104,6 +105,10 @@ flutter:
           weight: 500
         - asset: assets/fonts/Roboto-Bold.ttf
           weight: 700
+    # The doodle look's lettering (SIL Open Font License, assets/fonts/PatrickHand-OFL.txt).
+    - family: PatrickHand
+      fonts:
+        - asset: assets/fonts/PatrickHand-Regular.ttf
 
   # fonts:
   #   - family: Schyler

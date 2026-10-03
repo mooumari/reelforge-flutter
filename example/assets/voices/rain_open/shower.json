@@ -1,0 +1,59 @@
+{
+ "seconds": 1.705,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1932290,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 2453120,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3104160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 3755210,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 5057290,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 8570000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 2473950,
+   "text": "Not"
+  },
+  {
+   "audioOffset": 3104160,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 3755200,
+   "duration": 4817700,
+   "text": "shower"
+  }
+ ],
+ "hash": "746f422edb1a1956"
+}

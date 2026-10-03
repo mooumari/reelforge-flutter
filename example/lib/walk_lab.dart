@@ -38,14 +38,25 @@ final Composition walkLab = Composition(
   builder: (BuildContext context) => typeset(const _WalkLab()),
 );
 
+final Composition walkLabDoodle = Composition(
+  id: 'WalkLabDoodle',
+  width: 1920,
+  height: 1080,
+  fps: _fps,
+  durationInFrames: 240,
+  builder: (BuildContext context) => typeset(const _WalkLab(ink: Ink(width: 6))),
+);
+
 class _WalkLab extends StatelessWidget {
-  const _WalkLab();
+  const _WalkLab({this.ink});
+
+  final Ink? ink;
 
   @override
   Widget build(BuildContext context) {
     final int frame = Video.frame(context);
     return Stack(children: <Widget>[
-      const ColoredBox(color: Color(0xFF2B2250), child: SizedBox.expand()),
+      ColoredBox(color: ink == null ? const Color(0xFF2B2250) : const Color(0xFFF4EBD8), child: const SizedBox.expand()),
       for (int i = 0; i < _lab.length; i++) ...<Widget>[
         Positioned(left: 20, top: _lab[i].$3.groundY - 400, child: Text(_lab[i].$1, style: const TextStyle(fontFamily: 'Roboto', fontSize: 28, color: Color(0xFFFFFFFF)))),
         Positioned(left: 0, right: 0, top: _lab[i].$3.groundY, height: 3, child: const ColoredBox(color: Color(0x55FFFFFF))),
@@ -63,7 +74,7 @@ class _WalkLab extends StatelessWidget {
       jiggles: c.jiggles,
       fps: _fps,
     );
-    return Drawing(p.part, pose: p.pose);
+    return Drawing(p.part, pose: p.pose, ink: ink);
   }
 }
 

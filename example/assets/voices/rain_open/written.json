@@ -1,0 +1,134 @@
+{
+ "seconds": 2.423,
+ "visemes": [
+  {
+   "audioOffset": 125000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 645830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1817709,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2208330,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2598960,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 3119790,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 3640620,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3901040,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4421870,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 5593750,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 6049480,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 6505210,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 7286460,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 7807290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8328120,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 8979160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 9500000,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 9890620,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 10411450,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 10932280,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 11583330,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 12234369,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 14057280,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 15745000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 515620,
+   "duration": 3776040,
+   "text": "Nobody"
+  },
+  {
+   "audioOffset": 4421870,
+   "duration": 2734370,
+   "text": "wrote"
+  },
+  {
+   "audioOffset": 7286450,
+   "duration": 1562500,
+   "text": "any"
+  },
+  {
+   "audioOffset": 8979160,
+   "duration": 781250,
+   "text": "of"
+  },
+  {
+   "audioOffset": 9890620,
+   "duration": 1562500,
+   "text": "this"
+  },
+  {
+   "audioOffset": 11583330,
+   "duration": 4166660,
+   "text": "down"
+  }
+ ],
+ "hash": "ffb7331a8d170b12"
+}

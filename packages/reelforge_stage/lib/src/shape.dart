@@ -135,8 +135,12 @@ class Shape {
   /// transform. [Drawing] works out the outline -- still, morphed or bent --
   /// and, for a [shade]d shape, which way the light comes from in this
   /// shape's own coordinates.
-  void paint(Canvas canvas, Path outline, {Light? light, Offset toLight = Offset.zero}) {
+  void paint(Canvas canvas, Path outline, {Light? light, Offset toLight = Offset.zero, Ink? ink, double inkScale = 1}) {
     final Path path = outline;
+    if (ink != null) {
+      _paintInked(canvas, path, ink, inkScale);
+      return;
+    }
     final Shade? sh = light == null || toLight == Offset.zero ? null : shade;
     if (sh != null && sh.cast > 0) sh._paintCast(canvas, path, light!, toLight);
     if (color != null || gradient != null) {
@@ -165,6 +169,74 @@ class Shape {
       );
     }
   }
+
+  void _paintInked(Canvas canvas, Path path, Ink ink, double scale) {
+    Color? flat = color;
+    if (flat == null && gradient != null) {
+      final List<Color> cs = gradient!.colors;
+      flat = cs[cs.length ~/ 2];
+    }
+    final double line = ink.width / scale;
+    final bool outlined = ink.width > 0;
+    if (flat != null && flat.a > 0) {
+      canvas.drawPath(path, Paint()..style = PaintingStyle.fill..color = flat);
+      final Rect box = path.getBounds();
+      final bool big = box.shortestSide >= ink.thin * line;
+      if (outlined && flat.a >= ink.seeThrough && big) {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = line
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..color = ink.color,
+        );
+      }
+    }
+    if (stroke != null && strokeWidth > 0) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = math.max(strokeWidth, line * 0.6)
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = stroke!,
+      );
+    }
+  }
+}
+
+/// A doodle: every shape flat in its own colour, with a thick dark line round
+/// it, the way a person draws with a marker. Light and shade are dropped.
+///
+/// [width] is in the drawing's own units, so lines scale with the picture and
+/// the camera. Shapes thinner than about two line widths (hairs, creases,
+/// stitches) are left unoutlined, or the line would swallow them, and so are
+/// the see-through ones.
+@immutable
+class Ink {
+  const Ink({this.color = const Color(0xFF1C1A24), this.width = 5, this.thin = 2.2, this.seeThrough = 0.9});
+
+  final Color color;
+  final double width;
+
+  /// Shapes narrower than this many line widths are not outlined.
+  final double thin;
+
+  /// Fills fainter than this are not outlined.
+  final double seeThrough;
+
+  /// The same pen, [factor] times as wide: finer lines for a face.
+  Ink scaled(double factor) => Ink(color: color, width: width * factor, thin: thin, seeThrough: seeThrough);
+
+  @override
+  bool operator ==(Object other) =>
+      other is Ink && other.color == color && other.width == width && other.thin == thin && other.seeThrough == seeThrough;
+
+  @override
+  int get hashCode => Object.hash(color, width, thin, seeThrough);
 }
 
 /// Where the light in a [Drawing] comes from, and its colours.

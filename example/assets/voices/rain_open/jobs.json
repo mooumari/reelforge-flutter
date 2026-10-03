@@ -1,0 +1,203 @@
+{
+ "seconds": 3.463,
+ "visemes": [
+  {
+   "audioOffset": 125000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 645830,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 1427080,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 1817709,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2208330,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 2729160,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3380210,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 3901040,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4421870,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4942700,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5593750,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 6114580,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 6635410,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7286450,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7937490,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 9109370,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 10541660,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 11185000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 13145820,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 13796869,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 14708320,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 15619780,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 16140619,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 16531240,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 17052070,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 17572900,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 18223950,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 19005200,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 19786450,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 20958320,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 21609360,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 22260400,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 23822900,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 24734360,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 26165000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 515620,
+   "duration": 1562500,
+   "text": "When"
+  },
+  {
+   "audioOffset": 2208330,
+   "duration": 1041660,
+   "text": "it"
+  },
+  {
+   "audioOffset": 3380200,
+   "duration": 2604160,
+   "text": "rains"
+  },
+  {
+   "audioOffset": 6114580,
+   "duration": 1041660,
+   "text": "for"
+  },
+  {
+   "audioOffset": 7286450,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 7937500,
+   "duration": 3255199,
+   "text": "week"
+  },
+  {
+   "audioOffset": 13145830,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 13796869,
+   "duration": 2604160,
+   "text": "camp"
+  },
+  {
+   "audioOffset": 16531250,
+   "duration": 1562500,
+   "text": "has"
+  },
+  {
+   "audioOffset": 18223950,
+   "duration": 2604160,
+   "text": "three"
+  },
+  {
+   "audioOffset": 20958330,
+   "duration": 5208330,
+   "text": "jobs"
+  }
+ ],
+ "hash": "e458f1fae729cbb2"
+}

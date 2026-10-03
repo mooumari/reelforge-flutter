@@ -1,0 +1,92 @@
+{
+ "seconds": 1.992,
+ "visemes": [
+  {
+   "audioOffset": 0,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 520830,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 1041670,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 1432290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1822920,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 2213540,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2539060,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 2994790,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 4166660,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4817700,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 5338540,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5989580,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 6510410,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 7291660,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 9635410,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 11450000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 520830,
+   "duration": 1171870,
+   "text": "But"
+  },
+  {
+   "audioOffset": 1822910,
+   "duration": 1041660,
+   "text": "they"
+  },
+  {
+   "audioOffset": 2994790,
+   "duration": 2864580,
+   "text": "left"
+  },
+  {
+   "audioOffset": 5989580,
+   "duration": 5468750,
+   "text": "clues"
+  }
+ ],
+ "hash": "23ccc132640b81e3"
+}

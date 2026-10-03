@@ -1,0 +1,188 @@
+{
+ "seconds": 3.321,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1671870,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 2192710,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2713540,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2973960,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3494790,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4145830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4927080,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 6359370,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7270830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 7661450,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8052080,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 9223950,
+   "visemeId": 5
+  },
+  {
+   "audioOffset": 9744790,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 10395830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 10916660,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 11437490,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 12153640,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 12860000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 14692700,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 15473950,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 16124990,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 16776030,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 17427070,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 18468740,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 18989570,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 19510400,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 20031240,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 20552070,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 21593739,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 22440090,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 23286439,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 24710000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 3515620,
+   "text": "Twenty"
+  },
+  {
+   "audioOffset": 4145830,
+   "duration": 3776040,
+   "text": "thousand"
+  },
+  {
+   "audioOffset": 8052080,
+   "duration": 2213540,
+   "text": "years"
+  },
+  {
+   "audioOffset": 10395830,
+   "duration": 2473950,
+   "text": "ago"
+  },
+  {
+   "audioOffset": 14692700,
+   "duration": 1302080,
+   "text": "it"
+  },
+  {
+   "audioOffset": 16125000,
+   "duration": 3255199,
+   "text": "starts"
+  },
+  {
+   "audioOffset": 19510410,
+   "duration": 911450,
+   "text": "to"
+  },
+  {
+   "audioOffset": 20552080,
+   "duration": 4166660,
+   "text": "rain"
+  }
+ ],
+ "hash": "49f63bb219507a3f"
+}

@@ -1,0 +1,37 @@
+{
+ "seconds": 1.614,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1932290,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 3755210,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 5968750,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 7790000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 7291660,
+   "text": "Tools"
+  }
+ ],
+ "hash": "da652b37fdaade30"
+}

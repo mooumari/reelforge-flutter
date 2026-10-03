@@ -1,0 +1,41 @@
+{
+ "seconds": 1.589,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 1671870,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2778639,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3885419,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5708330,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 7530000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 7031250,
+   "text": "Bones"
+  }
+ ],
+ "hash": "65a0343cb86b6c64"
+}

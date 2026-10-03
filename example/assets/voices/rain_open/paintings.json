@@ -1,0 +1,53 @@
+{
+ "seconds": 1.706,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 1932290,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2453120,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 2973960,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3625000,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4406250,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 5317710,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 7010410,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 8700000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 8203120,
+   "text": "Paintings"
+  }
+ ],
+ "hash": "a6cfb64507a776a3"
+}

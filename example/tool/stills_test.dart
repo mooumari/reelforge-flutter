@@ -36,6 +36,7 @@ final Map<String, Composition> _all = <String, Composition>{
   stageStyle.id: stageStyle,
   lionSleep.id: lionSleep,
   walkLab.id: walkLab,
+  walkLabDoodle.id: walkLabDoodle,
 };
 
 void main() {
@@ -49,6 +50,9 @@ void main() {
       roboto.addFont(Future<ByteData>.value(ByteData.sublistView(File('assets/fonts/Roboto-$file.ttf').readAsBytesSync())));
     }
     await roboto.load();
+    final FontLoader hand = FontLoader('PatrickHand')
+      ..addFont(Future<ByteData>.value(ByteData.sublistView(File('assets/fonts/PatrickHand-Regular.ttf').readAsBytesSync())));
+    await hand.load();
     Directory(_out).createSync(recursive: true);
     // ignore: avoid_print
     print('${composition.id}: ${composition.durationInFrames} frames at ${composition.fps} fps');

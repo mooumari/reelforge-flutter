@@ -1,0 +1,67 @@
+{
+ "seconds": 1.758,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2192710,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2583330,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3104169,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 4015620,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4666660,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 5187500,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 6098960,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 7791660,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 9090000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 2473950,
+   "text": "No"
+  },
+  {
+   "audioOffset": 3104160,
+   "duration": 2864580,
+   "text": "weather"
+  },
+  {
+   "audioOffset": 6098950,
+   "duration": 2994790,
+   "text": "app."
+  }
+ ],
+ "hash": "d4ee10f805518cd9"
+}

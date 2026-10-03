@@ -1,0 +1,66 @@
+{
+ "seconds": 1.773,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 2322920,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3104169,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 3559900,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4145830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4927080,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 5578120,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 6098960,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 7140620,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 7661460,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 9220000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 3515620,
+   "text": "Stay"
+  },
+  {
+   "audioOffset": 4145830,
+   "duration": 5078120,
+   "text": "together"
+  }
+ ],
+ "hash": "8c5cf135842d93b1"
+}

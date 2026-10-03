@@ -1,0 +1,28 @@
+{
+  "class": "RainOpen",
+  "audio": "assets/voices/rain_open",
+  "dart": "lib/rain_open_voices.dart",
+  "cast": {
+    "narrator": {"voice": "en-GB-RyanNeural", "style": "chat", "rate": "-4%"}
+  },
+  "lines": {
+    "ago": {"who": "narrator", "text": "Twenty thousand years ago, it starts to rain."},
+    "shower": {"who": "narrator", "text": "Not a shower."},
+    "week": {"who": "narrator", "text": "A whole week of it."},
+    "app": {"who": "narrator", "text": "No weather app."},
+    "store": {"who": "narrator", "text": "No hardware store."},
+    "people": {"who": "narrator", "text": "Just twenty people, and what they were wearing."},
+    "what": {"who": "narrator", "text": "What do you do?"},
+    "jobs": {"who": "narrator", "text": "When it rains for a week, a camp has three jobs."},
+    "warm": {"who": "narrator", "text": "Stay warm."},
+    "fed": {"who": "narrator", "text": "Stay fed."},
+    "together": {"who": "narrator", "text": "Stay together."},
+    "written": {"who": "narrator", "text": "Nobody wrote any of this down."},
+    "clues": {"who": "narrator", "text": "But they left clues."},
+    "ash": {"who": "narrator", "text": "Ash."},
+    "tools": {"who": "narrator", "text": "Tools."},
+    "bones": {"who": "narrator", "text": "Bones."},
+    "paintings": {"who": "narrator", "text": "Paintings."},
+    "today": {"who": "narrator", "text": "And a few people alive today live much the same way."}
+  }
+}

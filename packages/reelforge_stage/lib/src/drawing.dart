@@ -18,10 +18,14 @@ import 'shape.dart';
 /// is looked up by part name and two copies of one character would otherwise
 /// have to share a pose.
 class Drawing extends StatelessWidget {
-  const Drawing(this.part, {super.key, this.pose = Pose.rest, this.light = const Light()});
+  const Drawing(this.part, {super.key, this.pose = Pose.rest, this.light = const Light(), this.ink});
 
   final Part part;
   final Pose pose;
+
+  /// Draw as a doodle instead: flat colour, a dark outline round every shape,
+  /// no light. See [Ink].
+  final Ink? ink;
 
   /// The light [Shade]d shapes take. Unshaded shapes ignore it.
   final Light light;
@@ -46,17 +50,18 @@ class Drawing extends StatelessWidget {
     }());
     return CustomPaint(
       size: Size.infinite,
-      painter: _PartPainter(part, pose, light),
+      painter: _PartPainter(part, pose, light, ink),
     );
   }
 }
 
 class _PartPainter extends CustomPainter {
-  const _PartPainter(this.part, this.pose, this.light);
+  const _PartPainter(this.part, this.pose, this.light, this.ink);
 
   final Part part;
   final Pose pose;
   final Light light;
+  final Ink? ink;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -64,13 +69,13 @@ class _PartPainter extends CustomPainter {
     // the drawing gets a layer of its own to land on.
     final bool casts = _casts(part);
     if (casts) canvas.saveLayer(null, Paint());
-    _paintPart(canvas, part, part, pose, Affine.identity, light);
+    _paintPart(canvas, part, part, pose, Affine.identity, light, ink, 1);
     if (casts) canvas.restore();
   }
 
   @override
   bool shouldRepaint(_PartPainter oldDelegate) =>
-      oldDelegate.part != part || oldDelegate.pose != pose || oldDelegate.light != light;
+      oldDelegate.part != part || oldDelegate.pose != pose || oldDelegate.light != light || oldDelegate.ink != ink;
 }
 
 final Expando<bool> _castsCache = Expando<bool>();
@@ -78,7 +83,7 @@ final Expando<bool> _castsCache = Expando<bool>();
 bool _casts(Part part) => _castsCache[part] ??=
     part.shapes.any((Shape s) => (s.shade?.cast ?? 0) > 0) || part.children.any(_casts);
 
-void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, Light light) {
+void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, Light light, Ink? ink, double size) {
   final Joint joint = part.name.isEmpty ? Joint.rest : pose[part.name];
   final double opacity = (part.opacity * joint.opacity).clamp(0.0, 1.0);
   if (opacity <= 0) return;
@@ -90,6 +95,9 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, L
   final double degrees = part.degrees + joint.degrees;
   if (degrees != 0) canvas.rotate(degrees * math.pi / 180);
   canvas.scale(part.scaleX * joint.scaleX, part.scaleY * joint.scaleY);
+  // How big a unit of this part's space is in the drawing's, so an outline
+  // is the same width on a small part as on a large one.
+  final double inside = size * (part.scaleX * joint.scaleX).abs();
 
   // A faded part has to fade as one thing: fading each shape alone would show
   // the overlap between a limb and the body it is joined to.
@@ -97,6 +105,14 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, L
   if (faded) {
     canvas.saveLayer(null, Paint()..color = Color.fromRGBO(0, 0, 0, opacity));
   }
+  // A face is drawn with a finer pen than a body, and pupils are just dots.
+  final Ink? inked = ink == null
+      ? null
+      : part.name.startsWith('pupil')
+      ? ink.scaled(0)
+      : part.name == 'face'
+      ? ink.scaled(0.5)
+      : ink;
   final List<Path> outlines = <Path>[
     for (final Shape shape in part.shapes)
       shape.path ??
@@ -111,7 +127,7 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, L
     toLight = here.inverse.applyVector(light.from);
   }
   for (int i = 0; i < outlines.length; i++) {
-    part.shapes[i].paint(canvas, outlines[i], light: light, toLight: toLight);
+    part.shapes[i].paint(canvas, outlines[i], light: ink == null ? light : null, toLight: toLight, ink: inked, inkScale: inside);
   }
   if (part.clip && part.children.isNotEmpty) {
     canvas.save();
@@ -122,7 +138,7 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, L
     canvas.clipPath(inside);
   }
   for (final Part child in part.children) {
-    _paintPart(canvas, root, child, pose, here, light);
+    _paintPart(canvas, root, child, pose, here, light, part.name == 'face' ? ink?.scaled(0.5) : ink, inside);
   }
   if (part.clip && part.children.isNotEmpty) canvas.restore();
   if (faded) canvas.restore();
