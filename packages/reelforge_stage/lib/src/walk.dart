@@ -543,7 +543,11 @@ class Walk {
       final double ahead = ((ankleAt(i, late).dx - xAt(late)) * _dir / stepLength).clamp(-1.2, 1.2);
       final double swing = armSwing * math.min(_paceAt(late), 1.2) * ahead;
       joints[arm.$1] = Joint.rotate(swing);
-      joints[arm.$2] = Joint.rotate(running ? -78 - 14 * ahead : -6 - 16 * math.min(_paceAt(late), 1) * math.max(0, -ahead));
+      // A runner's arms come down again as they slow to a stop.
+      final double cocked = math.min(_paceAt(late) / 0.4, 1);
+      joints[arm.$2] = Joint.rotate(running
+          ? -6 + (-72 - 14 * ahead) * cocked
+          : -6 - 16 * math.min(_paceAt(late), 1) * math.max(0, -ahead));
     }
 
     Pose pose = Pose(joints);

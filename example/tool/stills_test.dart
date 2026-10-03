@@ -4,6 +4,7 @@ import 'package:example/rain_cast.dart';
 import 'package:example/rain_week.dart';
 import 'package:example/lion_sleep.dart';
 import 'package:example/stage_cast.dart';
+import 'package:example/walk_lab.dart';
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_style.dart';
 import 'package:example/stage_demo.dart';
@@ -34,6 +35,7 @@ final Map<String, Composition> _all = <String, Composition>{
   walkCompare.id: walkCompare,
   stageStyle.id: stageStyle,
   lionSleep.id: lionSleep,
+  walkLab.id: walkLab,
 };
 
 void main() {
