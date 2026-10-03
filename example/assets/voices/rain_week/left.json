@@ -1,0 +1,569 @@
+{
+ "seconds": 10.485,
+ "visemes": [
+  {
+   "audioOffset": 125000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 645830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1947920,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2403640,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 2859370,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 3380210,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 3901040,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 4161460,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 4682290,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 5854160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 6244790,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 6635410,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 7286460,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 7807290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8458330,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8979160,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 10932290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 12615000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 21093750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 21614580,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 22135420,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 22526040,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 22916670,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 23307290,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 23567710,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 23958330,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 25000000,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 25651040,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 26171870,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 26692700,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 27343750,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 28125000,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 28776040,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 29427080,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 29817700,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 30338540,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 31380200,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 32682280,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 33723950,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 34113750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 36197910,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 36848950,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 38671870,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 39713530,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 40233750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 42057280,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 42708320,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 43749990,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 45182280,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 45823750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 47526030,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 48177070,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 48958320,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 49739570,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 51041650,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 51553750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 53124979,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 53906229,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 54427070,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 54947900,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 55598940,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 56510400,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 56966130,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 57421860,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 57942690,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 58593729,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 59374979,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 60807270,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 62233750,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 70828130,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 71348960,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 72130210,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 72520830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 73171870,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 73953120,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 74604170,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 75385410,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 76036460,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 76557290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 76947910,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 77468750,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 77989580,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 78510410,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 79552080,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 79942700,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 80333330,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 80723950,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 81244790,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 81765620,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 82286450,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 83328120,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 84499990,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 85151029,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 85671870,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 86192700,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 86713529,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 87234370,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 87885410,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 88927070,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 89447910,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 89968740,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 90619779,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 91140610,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 91791650,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 92703110,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 93874990,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 94265610,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 95177070,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 96348130,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 515620,
+   "duration": 4036449,
+   "text": "Nobody"
+  },
+  {
+   "audioOffset": 4682290,
+   "duration": 2473950,
+   "text": "wrote"
+  },
+  {
+   "audioOffset": 7286450,
+   "duration": 1041660,
+   "text": "it"
+  },
+  {
+   "audioOffset": 8458330,
+   "duration": 4166660,
+   "text": "down"
+  },
+  {
+   "audioOffset": 21614580,
+   "duration": 1171870,
+   "text": "But"
+  },
+  {
+   "audioOffset": 22916660,
+   "duration": 911450,
+   "text": "they"
+  },
+  {
+   "audioOffset": 23958330,
+   "duration": 2604160,
+   "text": "left"
+  },
+  {
+   "audioOffset": 26692700,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 27343750,
+   "duration": 1953120,
+   "text": "lot"
+  },
+  {
+   "audioOffset": 29427080,
+   "duration": 4687500,
+   "text": "behind"
+  },
+  {
+   "audioOffset": 36197910,
+   "duration": 4036449,
+   "text": "hearths"
+  },
+  {
+   "audioOffset": 42057290,
+   "duration": 3776040,
+   "text": "tools"
+  },
+  {
+   "audioOffset": 47526040,
+   "duration": 4036449,
+   "text": "bones"
+  },
+  {
+   "audioOffset": 53125000,
+   "duration": 2343750,
+   "text": "even"
+  },
+  {
+   "audioOffset": 55598950,
+   "duration": 6640620,
+   "text": "paintings"
+  },
+  {
+   "audioOffset": 71218750,
+   "duration": 1171870,
+   "text": "And"
+  },
+  {
+   "audioOffset": 72520830,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 73171870,
+   "duration": 2083330,
+   "text": "few"
+  },
+  {
+   "audioOffset": 75385410,
+   "duration": 6250000,
+   "text": "hunter-gatherers"
+  },
+  {
+   "audioOffset": 81765620,
+   "duration": 3255199,
+   "text": "alive"
+  },
+  {
+   "audioOffset": 85151040,
+   "duration": 2604160,
+   "text": "today"
+  },
+  {
+   "audioOffset": 87885410,
+   "duration": 2604160,
+   "text": "help"
+  },
+  {
+   "audioOffset": 90619790,
+   "duration": 1041660,
+   "text": "us"
+  },
+  {
+   "audioOffset": 91791660,
+   "duration": 2343750,
+   "text": "read"
+  },
+  {
+   "audioOffset": 94265620,
+   "duration": 2083330,
+   "text": "it"
+  }
+ ],
+ "hash": "0a950518630df63b"
+}

@@ -19,13 +19,13 @@ import 'performance.dart';
 /// ```
 @immutable
 class Narration {
-  Narration(List<Line> lines, {this.lead = 0.7, this.gap = 0.45, this.tail = 1.3})
+  Narration(List<Line> lines, {this.lead = 0.7, this.gap = 0.45, this.tail = 1.3, this.pauses = const <int, double>{}})
     : lines = List<Line>.unmodifiable(lines) {
     double at = lead;
     final List<double> from = <double>[];
-    for (final Line line in lines) {
+    for (int i = 0; i < lines.length; i++) {
       from.add(at);
-      at += line.spoken + gap;
+      at += lines[i].spoken + gap + (pauses[i] ?? 0);
     }
     starts = List<double>.unmodifiable(from);
   }
@@ -40,6 +40,10 @@ class Narration {
 
   /// Silence after the last.
   final double tail;
+
+  /// Extra silence after the line at each index, on top of [gap]: a title
+  /// card's worth of quiet, say.
+  final Map<int, double> pauses;
 
   /// When each line starts being said, in seconds.
   late final List<double> starts;
@@ -57,7 +61,8 @@ class Narration {
   Say say(int i) => Say(lines[i], at: starts[i]);
 
   /// Where to cut so each shot holds [counts] lines: the middle of the pause
-  /// after the last line of each shot, and the start and end of the video.
+  /// after the last line of each shot (so a long [pauses] is shared between
+  /// the shots either side of it), and the start and end of the video.
   /// `counts` must add up to the number of lines.
   List<double> cuts(List<int> counts) {
     assert(counts.fold(0, (int a, int b) => a + b) == lines.length, 'The shots have to hold every line, once.');
@@ -65,7 +70,7 @@ class Narration {
     int line = 0;
     for (final int n in counts) {
       line += n;
-      out.add(line == lines.length ? seconds : ends[line - 1] + gap / 2 + (starts[line] - ends[line - 1] - gap) / 2);
+      out.add(line == lines.length ? seconds : (ends[line - 1] + starts[line]) / 2);
     }
     return out;
   }

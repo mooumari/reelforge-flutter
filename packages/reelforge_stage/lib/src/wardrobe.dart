@@ -1364,6 +1364,161 @@ class Tail extends Garment {
   }
 }
 
+// --- hides ---
+//
+// What people wore before cloth: skins, scraped and sewn, with the fur left
+// on at the neck and the hem, and cut ragged because nobody hemmed a hide.
+
+/// A ragged edge: a zigzag of [teeth] along [from] to [to], hanging [depth]
+/// below the line, to be unioned with whatever it trims.
+Path _teeth(Offset from, Offset to, double depth, int teeth) {
+  final Path p = Path()..moveTo(from.dx, from.dy - depth);
+  for (int i = 0; i < teeth; i++) {
+    final double a = i / teeth, c = (i + 0.5) / teeth, z = (i + 1) / teeth;
+    // Alternate long and short teeth, so the edge is not a saw.
+    final double d = depth * (i.isEven ? 1.0 : 0.62);
+    p.lineTo(from.dx + (to.dx - from.dx) * a, from.dy + (to.dy - from.dy) * a);
+    p.lineTo(from.dx + (to.dx - from.dx) * c, from.dy + (to.dy - from.dy) * c + d);
+    p.lineTo(from.dx + (to.dx - from.dx) * z, from.dy + (to.dy - from.dy) * z);
+  }
+  p.lineTo(to.dx, to.dy - depth);
+  return p..close();
+}
+
+/// A tunic of animal skin: sleeveless, scooped at the neck, with darker
+/// patches where the hide was thick and a ragged hem [length] of the way
+/// down the legs.
+class HideTunic extends Garment {
+  const HideTunic(this.color, {this.length = 0.36, this.trim = const Color(0xFFE2CBA2), this.sleeves = 0});
+  final Color color;
+  final double length;
+
+  /// The fur at the neck.
+  final Color? trim;
+
+  /// How far down the arm; 0 for none.
+  final double sleeves;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    final double t = b.torso, m = b.mid(0.8);
+    f.torso.add(Shape(b.torsoPath, color: color, shade: _cloth));
+    if (sleeves > 0) f.arms.add(Cover(color, to: sleeves, extra: 4));
+    f.overLegs.add(Part(shapes: <Shape>[
+      Shape.live((w) => f.skirt(w, length: length, flare: 0.26, waist: 0.12), color: color, shade: _cloth),
+      // The ragged hem, a little darker, hanging below the skirt's own.
+      Shape.live(
+        (w) {
+          final Rect r = f.skirt(w, length: length, flare: 0.26, waist: 0.12).getBounds();
+          final double hem = r.bottom - 2;
+          return _and(_teeth(Offset(r.left + 2, hem), Offset(r.right - 2, hem), b.legRadius * 0.55, 9), Paths.rect(r.inflate(30)));
+        },
+        color: _dark(color, 0.1),
+        shade: _cloth,
+      ),
+    ]));
+    f.overTorso.add(_inside(
+      Shape(f.torsoBand(0.12, 1), color: color, shade: _cloth),
+      <Shape>[
+        // Patches of the animal's own colouring.
+        Shape(Paths.ellipse(Offset(m - 22, -t * 0.62), 13, 8), color: _dark(color, 0.14)),
+        Shape(Paths.ellipse(Offset(m + 8, -t * 0.4), 10, 7), color: _dark(color, 0.12)),
+        Shape(Paths.ellipse(Offset(m - 34, -t * 0.28), 8, 5), color: _dark(color, 0.1)),
+        // A stitched seam up the side, where the skins were joined.
+        for (int i = 0; i < 5; i++)
+          Shape(Paths.rect(Rect.fromLTWH(b.back + 6, -t * (0.2 + i * 0.14), 7, 2)), color: _light(color, 0.3)),
+        if (trim != null) Shape(Paths.ellipse(Offset(m - 4, -t + 2), b.shoulders * 0.26, 14), color: _dark(f.skin, 0.1)),
+      ],
+    ));
+    if (trim != null) {
+      // Fur round the neck.
+      f.overTorso.add(Part(shapes: <Shape>[
+        Shape(
+          _teeth(Offset(m - b.shoulders * 0.28, -t + 6), Offset(m + b.shoulders * 0.2, -t + 6), 13, 7),
+          color: trim,
+          shade: _cloth,
+        ),
+      ]));
+    }
+  }
+}
+
+/// A shaggy mantle of fur across the shoulders and down the upper chest:
+/// the warm thing, over the rest.
+class FurMantle extends Garment {
+  const FurMantle(this.color, {this.drop = 0.42});
+  final Color color;
+
+  /// How far down the torso it hangs, as a fraction.
+  final double drop;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    final double t = b.torso, w = b.shoulders / 2, d = t * drop;
+    final Path shoulders = _and(
+      Paths.smooth(<Offset>[
+        Offset(b.back - 12, -t + 18), Offset(b.back, -t - 6), Offset(b.mid(1) - 4, -t - 10), Offset(b.front + 8, -t), Offset(b.front + 12, -t + 24),
+        Offset(b.front + 4, -t + d * 0.7), Offset(b.mid(1) - 14, -t + d), Offset(b.back + 4, -t + d * 0.8),
+      ]),
+      _scaled(b.torsoPath, Offset(0, -t / 2), 1.12),
+    );
+    final Path fringe = _teeth(Offset(b.back + 2, -t + d * 0.78), Offset(b.front + 6, -t + d * 0.72), 15, 8);
+    f.overTorso.add(_inside(
+      Shape(_or(shoulders, _and(fringe, Paths.rect(Rect.fromLTRB(b.back - 20, -t, b.front + 30, 20)))), color: color, shade: _cloth),
+      <Shape>[
+        for (int i = 0; i < 7; i++)
+          Shape(
+            _ribbon(<Offset>[Offset(b.back + 8 + i * w * 0.27, -t + 6), Offset(b.back + 12 + i * w * 0.27, -t + d * 0.5), Offset(b.back + 8 + i * w * 0.27, -t + d * 0.92)], 5, tip: 0.2),
+            color: i.isEven ? _dark(color, 0.16) : _light(color, 0.12),
+          ),
+      ],
+    ));
+  }
+}
+
+/// A cord of sinew round the waist, tied, with a bone toggle.
+class Cord extends Garment {
+  const Cord(this.color, {this.toggle = const Color(0xFFEFE3C8)});
+  final Color color;
+  final Color? toggle;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    final double m = b.mid(0.1), t = b.torso;
+    f.overTorso.add(Part(shapes: <Shape>[
+      Shape(f.torsoBand(0.08, 0.13), color: color, shade: _cloth),
+      if (toggle != null) Shape(Paths.capsule(Offset(m - 4, -t * 0.12), Offset(m - 2, -t * 0.02), 3.4), color: toggle, shade: Shade.gentle),
+    ]));
+  }
+}
+
+/// A necklace of animal teeth, shells or beads on a cord.
+class BeadNecklace extends Garment {
+  const BeadNecklace(this.color, {this.count = 7});
+  final Color color;
+  final int count;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    final double m = b.mid(1), t = b.torso;
+    f.overTorso.add(Part(shapes: <Shape>[
+      for (int i = 0; i < count; i++)
+        () {
+          final double a = i / (count - 1) * 2 - 1;
+          return Shape(
+            Paths.ellipse(Offset(m - 4 + a * b.shoulders * 0.2, -t + 16 + (1 - a * a) * 16), 3.4, 5.4),
+            color: i == count ~/ 2 ? _light(color, 0.2) : color,
+            shade: Shade.gentle,
+          );
+        }(),
+    ]));
+  }
+}
+
 // --- things to hold ---
 
 /// Props for [Character.build]'s `hold`, drawn in the hand's space with the

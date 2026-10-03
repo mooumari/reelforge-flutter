@@ -119,6 +119,80 @@ def swell(seconds=2.2):
     return out * (t / seconds) ** 2 * np.exp(-((t - seconds) ** 2) * 0)
 
 
+def band(x, lo, hi):
+    """Brick-wall band-pass by FFT: fast, and good enough for noise."""
+    spec = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(len(x), 1 / RATE)
+    spec[(freqs < lo) | (freqs > hi)] = 0
+    return np.fft.irfft(spec, len(x))
+
+
+def shaped_noise(seconds, gen, slope, lo, hi):
+    """Noise whose power falls as 1/f**slope between lo and hi."""
+    n = int(seconds * RATE)
+    spec = np.fft.rfft(gen.standard_normal(n))
+    freqs = np.fft.rfftfreq(n, 1 / RATE)
+    gain = np.zeros_like(freqs)
+    inside = (freqs >= lo) & (freqs <= hi)
+    gain[inside] = (freqs[inside] / lo) ** (-slope / 2)
+    return np.fft.irfft(spec * gain, n)
+
+
+def rain(seconds=60):
+    """Steady rain: a wide hiss, a lower body of it, and the pitter of single
+    drops on leaves. The ends are crossfaded so it loops without a seam."""
+    gen = np.random.default_rng(11)
+    t = t_of(seconds)
+    hiss = shaped_noise(seconds, gen, 0.6, 600, 9000)
+    body = shaped_noise(seconds, gen, 1.2, 120, 900)
+    out = hiss / np.std(hiss) * 0.55 + body / np.std(body) * 0.35
+    # Single drops: short, bright, at random.
+    drops = np.zeros_like(t)
+    for at in gen.uniform(0, seconds - 0.05, int(seconds * 90)):
+        i = int(at * RATE)
+        n = int(0.012 * RATE)
+        k = np.arange(n) / RATE
+        drops[i:i + n] += np.sin(2 * np.pi * gen.uniform(2200, 5200) * k) * np.exp(-k * 520) * gen.uniform(0.1, 0.5)
+    out = out + drops * 0.5
+    # A slow swell in the downpour, so it breathes.
+    out *= 0.85 + 0.15 * np.sin(2 * np.pi * t / 9.0 + 1.0)
+    # Make it loop: fold the tail over the head.
+    xf = int(1.5 * RATE)
+    ramp = np.linspace(0, 1, xf)
+    out[:xf] = out[:xf] * ramp + out[-xf:] * (1 - ramp)
+    return out[:-xf]
+
+
+def thunder(seconds=7.0):
+    """A crack, then a long low roll that wobbles as it dies away."""
+    gen = np.random.default_rng(23)
+    t = t_of(seconds)
+    crack = band(gen.standard_normal(len(t)), 300, 5000) * np.exp(-t * 18) * 1.0
+    roll = shaped_noise(seconds, gen, 2.0, 25, 220)
+    roll = roll / np.max(np.abs(roll))
+    env = (1 - np.exp(-t * 14)) * np.exp(-t * 0.65)
+    wobble = 0.7 + 0.3 * np.sin(2 * np.pi * 3.1 * t + np.sin(2 * np.pi * 0.7 * t) * 3)
+    out = crack * 0.7 + roll * env * wobble * 2.4
+    return fade(out, 0, 1.5)
+
+
+def crackle(seconds=8.0):
+    """A fire: a low rustle under sharp snaps at random, loopable."""
+    gen = np.random.default_rng(31)
+    t = t_of(seconds)
+    rustle = shaped_noise(seconds, gen, 1.0, 80, 2500)
+    out = rustle / np.std(rustle) * 0.25 * (0.7 + 0.3 * np.sin(2 * np.pi * t * 0.8 + 2))
+    for at in gen.uniform(0, seconds - 0.1, int(seconds * 14)):
+        i = int(at * RATE)
+        n = int(gen.uniform(0.004, 0.03) * RATE)
+        k = np.arange(n) / RATE
+        out[i:i + n] += band(gen.standard_normal(n), 900, 7000) * np.exp(-k * gen.uniform(120, 420)) * gen.uniform(0.4, 2.0) if n > 16 else 0
+    xf = int(0.5 * RATE)
+    ramp = np.linspace(0, 1, xf)
+    out[:xf] = out[:xf] * ramp + out[-xf:] * (1 - ramp)
+    return out[:-xf]
+
+
 def main():
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("example/assets/sound")
     out.mkdir(parents=True, exist_ok=True)
@@ -136,6 +210,16 @@ def main():
     ):
         write(out / f"{name}.wav", signal)
         print(f"  {name}.wav  {len(signal) / RATE:.2f}s")
+    # Weather and fire. Rain is long, so it is kept compressed, like the bed.
+    for name, signal in (("rain", rain()), ("thunder", thunder()), ("crackle", crackle())):
+        wav = out / f"{name}.wav"
+        write(wav, signal)
+        if name == "thunder":
+            print(f"  {name}.wav  {len(signal) / RATE:.2f}s")
+            continue
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "aac", "-b:a", "96k", str(out / f"{name}.m4a")], check=True)
+        wav.unlink()
+        print(f"  {name}.m4a  {len(signal) / RATE:.2f}s")
 
 
 if __name__ == "__main__":

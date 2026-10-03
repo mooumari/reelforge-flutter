@@ -1,0 +1,16 @@
+{
+  "class": "RainVoices",
+  "audio": "assets/voices/rain_week",
+  "dart": "lib/rain_voices.dart",
+  "cast": {
+    "narrator": {"voice": "en-GB-RyanNeural", "style": "chat", "rate": "-4%"}
+  },
+  "lines": {
+    "start": {"who": "narrator", "text": "Twenty thousand years ago, somewhere in Ice Age Europe, it starts to rain."},
+    "week": {"who": "narrator", "text": "Not a shower. A whole week of it."},
+    "what": {"who": "narrator", "text": "No weather app. No hardware store. Just twenty people, and whatever they had on their backs. So what do you do?"},
+    "left": {"who": "narrator", "text": "Nobody wrote it down. But they left a lot behind: hearths, tools, bones, even paintings. And a few hunter-gatherers alive today help us read it."},
+    "dayOne": {"who": "narrator", "text": "Day one. First job: get out of the wet. Wet clothes steal body heat, and in the Ice Age that could kill you."},
+    "huts": {"who": "narrator", "text": "A cave, if you were lucky. If not, a hut: a frame of branches, or even mammoth bones, covered in hides. In what is now Ukraine, people built exactly that."}
+  }
+}

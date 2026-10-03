@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:example/rain_week.dart';
 import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
@@ -188,5 +189,28 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[120]!, expected[140]!), isFalse);
+  });
+
+  test('the rain video is deterministic: weather, fire, walks and a camera through the ground', () async {
+    // One frame from inside each shot, so every set, effect and camera move
+    // is drawn. Rain, splashes, fire and smoke are all seeded arithmetic on
+    // the frame; a leaked random or a ticking value would show here.
+    const List<int> sampled = <int>[60, 170, 400, 640, 760, 880, 1010, 1100, 1290, 1450];
+    final CompositionRenderer first = CompositionRenderer(rainWeek);
+    final Map<int, Uint8List> expected = <int, Uint8List>{
+      for (final int f in sampled) f: await _frame(first, f),
+    };
+    for (final int frame in <int>[170, 760, 1010, 1450]) {
+      expect(_same(await _frame(CompositionRenderer(rainWeek), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    for (final int frame in sampled.reversed) {
+      expect(_same(await _frame(first, frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs on the way back down');
+    }
+    // And the picture does move: the sky, the strata and the huts.
+    expect(_same(expected[60]!, expected[170]!), isFalse);
+    expect(_same(expected[640]!, expected[760]!), isFalse);
+    expect(_same(expected[1290]!, expected[1450]!), isFalse);
   });
 }

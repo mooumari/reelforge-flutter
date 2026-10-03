@@ -40,6 +40,18 @@ void main() {
       expect(lengths.fold(0.0, (double a, double b) => a + b), voice.seconds);
     });
 
+    test('leaves room for a pause after a line, shared by the shots round it', () {
+      final Narration titled = Narration(
+        <Line>[_line('one two'), _line('three'), _line('four five six')],
+        lead: 1,
+        gap: 0.5,
+        tail: 2,
+        pauses: const <int, double>{0: 2},
+      );
+      expect(titled.starts, <double>[1, 5.5, 7]);
+      expect(titled.cuts(<int>[1, 2]), <double>[0, 4.25, 12]);
+    });
+
     test('says which line is being said, and keeps it a moment', () {
       expect(voice.lineAt(0.2), isNull);
       expect(voice.lineAt(2), 0);

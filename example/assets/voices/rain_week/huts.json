@@ -1,0 +1,614 @@
+{
+ "seconds": 11.577,
+ "visemes": [
+  {
+   "audioOffset": 250000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 770830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 1812500,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 2984370,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 4156250,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 5328120,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 5970000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 7932290,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 8453120,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 8973960,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 9494790,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 10015620,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 10536450,
+   "visemeId": 5
+  },
+  {
+   "audioOffset": 11057290,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 12098950,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 12619790,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 13791660,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 14960000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 23432290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 23953130,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 24994790,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 25645830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 26427080,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 27729170,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 28372290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 30203120,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 30723960,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 31895830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 33067710,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 34102290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 36322910,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 36973950,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 37755200,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 38406240,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 38731760,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 39057290,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 39578120,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 40098950,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 40749990,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 41270830,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 41791660,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 42572910,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 43093740,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 43484370,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 43874990,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 45046870,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 45692290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 47781240,
+   "visemeId": 3
+  },
+  {
+   "audioOffset": 49473950,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 50645820,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 51166660,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 51687490,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 52208320,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 52729160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 53510410,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 54031240,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 54552070,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 55203110,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 55854150,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 56635400,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 57416650,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 58718740,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 59622290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 61583320,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 62234360,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 63015610,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 63536440,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 64057280,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 64447900,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 64968729,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 65489570,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 66661440,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 68484360,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 69786440,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 71212290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 79812500,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 80333330,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 81244790,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 81765630,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 82286460,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 82807290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 83458330,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 83979170,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 84630210,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 85281250,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 86453120,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 87494790,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 88145830,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 88796870,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 89708330,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 90489580,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 91270830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 91782500,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 93874990,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 94395830,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 95046870,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 95567700,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 96088529,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 96739570,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 97260410,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 97911450,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 98562490,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 99213529,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 99734360,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 100255200,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 100906240,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 101687490,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 102208320,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 102729150,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 103119779,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 103770820,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 104291650,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 105854150,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 107282500,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 510409,
+   "duration": 1171870,
+   "text": "A"
+  },
+  {
+   "audioOffset": 1812500,
+   "duration": 4166660,
+   "text": "cave"
+  },
+  {
+   "audioOffset": 7932290,
+   "duration": 911450,
+   "text": "if"
+  },
+  {
+   "audioOffset": 8973950,
+   "duration": 911450,
+   "text": "you"
+  },
+  {
+   "audioOffset": 10015620,
+   "duration": 911450,
+   "text": "were"
+  },
+  {
+   "audioOffset": 11057290,
+   "duration": 3906250,
+   "text": "lucky"
+  },
+  {
+   "audioOffset": 23822910,
+   "duration": 1692700,
+   "text": "If"
+  },
+  {
+   "audioOffset": 25645830,
+   "duration": 2734370,
+   "text": "not"
+  },
+  {
+   "audioOffset": 30203120,
+   "duration": 390620,
+   "text": "a"
+  },
+  {
+   "audioOffset": 30723950,
+   "duration": 3385410,
+   "text": "hut"
+  },
+  {
+   "audioOffset": 36322910,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 36973950,
+   "duration": 2473950,
+   "text": "frame"
+  },
+  {
+   "audioOffset": 39578120,
+   "duration": 1041660,
+   "text": "of"
+  },
+  {
+   "audioOffset": 40750000,
+   "duration": 4947910,
+   "text": "branches"
+  },
+  {
+   "audioOffset": 47781250,
+   "duration": 1562500,
+   "text": "or"
+  },
+  {
+   "audioOffset": 49473950,
+   "duration": 2604160,
+   "text": "even"
+  },
+  {
+   "audioOffset": 52208330,
+   "duration": 2864580,
+   "text": "mammoth"
+  },
+  {
+   "audioOffset": 55203120,
+   "duration": 4427080,
+   "text": "bones"
+  },
+  {
+   "audioOffset": 61583330,
+   "duration": 2734370,
+   "text": "covered"
+  },
+  {
+   "audioOffset": 64447910,
+   "duration": 911450,
+   "text": "in"
+  },
+  {
+   "audioOffset": 65489580,
+   "duration": 5729160,
+   "text": "hides"
+  },
+  {
+   "audioOffset": 80203120,
+   "duration": 1432290,
+   "text": "In"
+  },
+  {
+   "audioOffset": 81765620,
+   "duration": 1562500,
+   "text": "what"
+  },
+  {
+   "audioOffset": 83458330,
+   "duration": 1041660,
+   "text": "is"
+  },
+  {
+   "audioOffset": 84630200,
+   "duration": 1692700,
+   "text": "now"
+  },
+  {
+   "audioOffset": 86453120,
+   "duration": 5338540,
+   "text": "Ukraine"
+  },
+  {
+   "audioOffset": 93875000,
+   "duration": 2734370,
+   "text": "people"
+  },
+  {
+   "audioOffset": 96739580,
+   "duration": 2343750,
+   "text": "built"
+  },
+  {
+   "audioOffset": 99213540,
+   "duration": 4427080,
+   "text": "exactly"
+  },
+  {
+   "audioOffset": 103770830,
+   "duration": 3515620,
+   "text": "that"
+  }
+ ],
+ "hash": "dd307cc2a4e11ab2"
+}

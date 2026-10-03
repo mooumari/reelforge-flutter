@@ -71,6 +71,7 @@ flutter:
     - assets/
     - assets/voices/savanna/
     - assets/voices/lion_sleep/
+    - assets/voices/rain_week/
     - assets/sound/
 
   # To add assets to your application, add an assets section, like this:

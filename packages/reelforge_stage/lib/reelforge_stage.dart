@@ -45,6 +45,10 @@
 /// paw planted. An animal that stands up and talks is a [Character] in fur:
 /// a monkey is a body with long arms, [Fur], a [MonkeyFace] and a [Tail].
 ///
+/// And weather and fire: [Rain] falls in layers, [RainSplash] ripples where it
+/// lands, a [Fire] licks and throws sparks and says how brightly it lights,
+/// and [Lightning] flashes the frame -- each a pure function of the time.
+///
 /// The rule is the rest of ReelForge's: a frame is a pure function of its
 /// frame number. Nothing here holds state, runs a clock or reads one.
 library;
@@ -53,6 +57,7 @@ export 'src/animals.dart';
 export 'src/camera.dart';
 export 'src/character.dart';
 export 'src/drawing.dart';
+export 'src/effects.dart';
 export 'src/face.dart';
 export 'src/follow.dart';
 export 'src/gait.dart';

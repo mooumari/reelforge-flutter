@@ -1,0 +1,140 @@
+{
+ "seconds": 3.568,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 1932290,
+   "visemeId": 2
+  },
+  {
+   "audioOffset": 2453120,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3104160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 3755210,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 5057290,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 8570000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 17557290,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 18078130,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 18859370,
+   "visemeId": 12
+  },
+  {
+   "audioOffset": 19901040,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 20291670,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 20682290,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 21854160,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 22505210,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 23286460,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 23937500,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 24588540,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 25109370,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 26020830,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 27187290,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 2473950,
+   "text": "Not"
+  },
+  {
+   "audioOffset": 3104160,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 3755200,
+   "duration": 4817700,
+   "text": "shower"
+  },
+  {
+   "audioOffset": 17557290,
+   "duration": 1171870,
+   "text": "A"
+  },
+  {
+   "audioOffset": 18859370,
+   "duration": 2864580,
+   "text": "whole"
+  },
+  {
+   "audioOffset": 21854160,
+   "duration": 1953120,
+   "text": "week"
+  },
+  {
+   "audioOffset": 23937500,
+   "duration": 1041660,
+   "text": "of"
+  },
+  {
+   "audioOffset": 25109370,
+   "duration": 2083330,
+   "text": "it"
+  }
+ ],
+ "hash": "d8fc58774f7fc387"
+}

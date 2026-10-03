@@ -12,6 +12,7 @@ import 'stage_faces.dart';
 import 'stage_heads.dart';
 import 'stage_wardrobe.dart';
 import 'lion_sleep.dart';
+import 'rain_week.dart';
 import 'stage_savanna.dart';
 import 'stage_style.dart';
 import 'stage_shapes.dart';
@@ -42,6 +43,7 @@ Future<void> main() async {
         stageWardrobe,
         stageSavanna,
         lionSleep,
+        rainWeek,
         longform,
         helloFlutter,
         weeklyDeals,

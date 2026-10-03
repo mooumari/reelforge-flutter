@@ -53,7 +53,8 @@ Camera(
 | `Narration`, `Captions` | a voice-over laid end to end, the picture cut in its pauses, and captions that light each word as it is said |
 | `Performance`, `Beat`, `Line` | a performer's part in seconds -- `Move`, `Say`, `Feel`, `Look`, `Act` -- with voiced lines, their audio and their mouth |
 | `Character`, `Body`, `Garment`, `Fitting` | a person from proportions, a skin, a face and an outfit; walks, waves and talks |
-| the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, boots, robot parts, props -- each fits any `Body` |
+| the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, hides and furs, boots, robot parts, props -- each fits any `Body` |
+| `Rain`, `RainSplash`, `Fire`, `Lightning` | weather and flame as seeded arithmetic on the frame: streaks on the lens, ripples on the ground, a fire that flickers, a flash that is lit and then dark |
 | `Light`, `Shade` | light for flat drawings: a gradient, a shadow crescent, a rim and cast shadows, from the outline alone |
 | `Shape.live`, `Where` | an outline computed from the pose: a robe's hem that spans both legs mid-stride |
 | `Part.bake` | fold a pose into the drawing, so it is where animation starts |
@@ -244,12 +245,14 @@ double saidAt(int shot, int line, int word) =>
 // the giraffe's bar grows at saidAt(2, 2, 7): "A giraffe, about five."
 ```
 
+`Narration(pauses: {2: 3.4})` adds quiet before line 2 -- for a title card, say. The cut falls in the middle of the silence, so the shots either side share it.
+
 Re-voice a line and the cuts, the bars and the captions move with it.
 `Captions(narration: voice)` goes above the storyboard, and
 `...voice.audio(fps: 30)` beside it, outside any scene so a cut does not cut
 the voice off. Sound under it is made the same way as the pictures, in code:
 `tool/sound.py` writes a soft ambient bed and a few effects (a whoosh for a
-cut, a pop for a bar) as seeded arithmetic. `example/lib/lion_sleep.dart` is
+cut, a pop for a bar, and rain, thunder and a crackling fire) as seeded arithmetic. `example/lib/lion_sleep.dart` is
 a whole episode made this way.
 
 ## Faces
