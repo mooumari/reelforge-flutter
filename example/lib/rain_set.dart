@@ -534,14 +534,14 @@ Part groundShadow(double x, double rx, {double y = valleyGround}) => Part(at: Of
 /// The whole valley at [h] under [storm], as a stack of layers to go inside a
 /// [Camera]: sky, clouds, mountains, hills, river, plain -- each a
 /// [ParallaxLayer] at its own depth, the land toned by the time of day.
-List<Widget> valleyLayers(BuildContext context, {required double h, required double storm, double riverRise = 0, double rain = 0, Widget? foreground}) {
+List<Widget> valleyLayers(BuildContext context, {required double h, required double storm, double riverRise = 0, double rain = 0, double cloudSpeed = 1, Widget? foreground}) {
   final double t = Video.frame(context) / Video.fps(context);
   final Color tone = landTone(h, storm);
   Widget toned(Widget child) => ColorFiltered(colorFilter: ColorFilter.mode(tone, BlendMode.modulate), child: child);
   final Light light = skyLight(h, storm);
   return <Widget>[
     ParallaxLayer(depth: 0.0, child: IceSky(h: h, storm: storm)),
-    ParallaxLayer(depth: 0.04, child: IceClouds(h: h, storm: storm)),
+    ParallaxLayer(depth: 0.04, child: IceClouds(h: h, storm: storm, speed: cloudSpeed)),
     ParallaxLayer(depth: 0.18, child: toned(Drawing(valleyMountains, light: light))),
     ParallaxLayer(depth: 0.45, child: toned(Drawing(valleyHills, light: light))),
     ParallaxLayer(depth: 0.7, child: toned(Drawing(valleyMeadow, light: light))),

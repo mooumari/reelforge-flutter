@@ -1,3 +1,4 @@
+import 'package:example/rain_open.dart';
 import 'package:example/rain_week.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,7 @@ const int _to = int.fromEnvironment('TO', defaultValue: 60);
 const String _top = String.fromEnvironment('TOP', defaultValue: '0');
 const String _bottom = String.fromEnvironment('BOTTOM', defaultValue: '1');
 
-final Map<String, Composition> _all = <String, Composition>{rainWeek.id: rainWeek};
+final Map<String, Composition> _all = <String, Composition>{rainWeek.id: rainWeek, rainOpen.id: rainOpen, rainOpenDoodle.id: rainOpenDoodle};
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -34,7 +34,7 @@ Camera(
 | `Part` | shapes and child parts around a joint at the origin; immutable, so reuse is `placed()` |
 | `Pose`, `Joint` | where a tree's joints are, by name; `overlay` and `plus` layer them |
 | `Take`, `Keyframe` | poses at frames, blended; loops for cycles |
-| `Drawing` | paints a part in a pose |
+| `Drawing` | paints a part in a pose; give it an `Ink` and it draws flat with a marker line round every shape (finer on faces, none on pupils or hairline-thin shapes): the doodle look, from the same rigs |
 | `Camera`, `ParallaxLayer` | pan and zoom over layers at different depths |
 | `reach`, `frameOf` | two-bone IK to a point; forward kinematics, the painter's own arithmetic |
 | `Walk`, `Waypoint`, `Biped` | footsteps planned from a route; planted feet stay planted. `running: true` for a run with flight; `Walk.paced` for "go from here to there at this pace" (a route faster than the legs can show is an assertion, not a splayed-legs walk) |

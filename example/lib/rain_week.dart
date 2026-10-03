@@ -278,8 +278,8 @@ class _TallyPainter extends CustomPainter {
 
 // --- shot 3: caught in the open ---
 
-/// Twenty people: the five, and fifteen more.
-List<Character> _crowd() {
+/// The fifteen who are not the five.
+List<Character> bandCrowd() {
   const List<Color> skins = <Color>[Color(0xFF7A4B32), Color(0xFF8A5A3C), Color(0xFF6A3F2A), Color(0xFF946348), Color(0xFF5E3A28)];
   const List<Color> hides = <Color>[Color(0xFF8A5A36), Color(0xFFA06A3E), Color(0xFF7C5B3E), Color(0xFF9A6840), Color(0xFF7E5636)];
   const List<Body> bodies = <Body>[Body.stocky, Body.slim, Body(), Body.child, Body.elder];
@@ -301,7 +301,7 @@ List<Character> _crowd() {
   ];
 }
 
-final List<Character> _extras = _crowd();
+final List<Character> _extras = bandCrowd();
 
 class _Caught extends StatelessWidget {
   const _Caught();

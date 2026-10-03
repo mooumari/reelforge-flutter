@@ -1,3 +1,4 @@
+import 'package:example/rain_open.dart';
 import 'package:example/rain_week.dart';
 import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
@@ -226,4 +227,25 @@ void main() {
     expect(_same(expected[640]!, expected[760]!), isFalse);
     expect(_same(expected[1290]!, expected[1450]!), isFalse);
   });
+
+  for (final Composition open in <Composition>[rainOpen, rainOpenDoodle]) {
+    test('${open.id} is deterministic: the map, the weather, the ink and the camera', () async {
+      // One frame from inside each of the fourteen shots.
+      const List<int> sampled = <int>[70, 165, 235, 330, 440, 530, 700, 940, 1050, 1125, 1165, 1205, 1250, 1350];
+      final CompositionRenderer first = CompositionRenderer(open);
+      final Map<int, Uint8List> expected = <int, Uint8List>{
+        for (final int f in sampled) f: await _frame(first, f),
+      };
+      for (final int frame in <int>[165, 440, 700, 1250, 1350]) {
+        expect(_same(await _frame(CompositionRenderer(open), frame), expected[frame]!), isTrue,
+            reason: 'frame $frame differs when entered directly');
+      }
+      for (final int frame in sampled.reversed) {
+        expect(_same(await _frame(first, frame), expected[frame]!), isTrue,
+            reason: 'frame $frame differs on the way back down');
+      }
+      expect(_same(expected[70]!, expected[165]!), isFalse);
+      expect(_same(expected[1125]!, expected[1165]!), isFalse);
+    });
+  }
 }
