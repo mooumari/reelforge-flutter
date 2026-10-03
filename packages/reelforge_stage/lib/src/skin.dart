@@ -212,6 +212,7 @@ class Chain {
     this.gradient,
     this.stroke,
     this.strokeWidth = 0,
+    this.shade,
     this.at = Offset.zero,
     this.degrees = 0,
     this.children = const <Part>[],
@@ -228,6 +229,9 @@ class Chain {
   final Gradient? gradient;
   final Color? stroke;
   final double strokeWidth;
+
+  /// Form for a [Light], as on any [Shape].
+  final Shade? shade;
   final Offset at;
   final double degrees;
 
@@ -276,6 +280,7 @@ class Chain {
                     gradient: gradient,
                     stroke: stroke,
                     strokeWidth: strokeWidth,
+                    shade: shade,
                   ),
                 ]
               : const <Shape>[],

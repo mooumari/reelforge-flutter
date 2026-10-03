@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import 'character.dart';
 import 'part.dart';
+import 'pose.dart';
 import 'shape.dart';
 import 'skin.dart';
 
@@ -1250,6 +1251,116 @@ class ChestLights extends Garment {
         Shape(Paths.circle(Offset(r.center.dx, r.top + 9 + i * 13), 4), color: glow),
       ],
     ]));
+  }
+}
+
+// --- animals ---
+//
+// An animal that stands up and talks is a [Character] in fur: a monkey is a
+// body with long arms, a skin the colour of its coat, and these.
+
+/// A pale patch down the chest and belly, and a cap of darker fur on the
+/// crown if [crown] is given.
+class Fur extends Garment {
+  const Fur(this.belly, {this.crown});
+  final Color belly;
+  final Color? crown;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    f.torso.add(Shape(
+      _and(b.torsoPath, Paths.ellipse(Offset(b.mid(0.45), -b.torso * 0.42), b.shoulders * 0.3, b.torso * 0.44)),
+      color: belly,
+      shade: Shade.gentle,
+    ));
+    final Color? c = crown;
+    if (c == null) return;
+    f.hair.add(_hair(
+      f,
+      c,
+      f.headPath(<(double, double)>[
+        ..._crown(lift: 0.05, nape: 0.3), (0.7, -0.8), (0.42, -0.74), (0.3, -0.6), (0.1, -0.68),
+        (-0.12, -0.5), (-0.36, -0.2), (-0.62, 0.3),
+      ]),
+      locks: <Path>[_lock(f, <(double, double)>[(-0.6, -0.8), (-0.1, -0.98), (0.4, -0.9)], 0.07)],
+    ));
+  }
+}
+
+/// A monkey's face: a pale mask round the eyes and down over a muzzle,
+/// nostrils instead of a nose, and big round ears.
+class MonkeyFace extends Garment {
+  const MonkeyFace(this.color, {this.ear});
+  final Color color;
+
+  /// The inside of the ear; the mask's colour if not given.
+  final Color? ear;
+
+  @override
+  void dress(Fitting f) {
+    f.hideNose = true;
+    f.hideEars = true;
+    final double r = f.r, e = f.eyeRadius;
+    final Offset muzzle = Offset(f.mouth.dx + r * 0.16, f.mouth.dy - r * 0.1);
+    final Path mask = _or(
+      _or(
+        Paths.ellipse(f.eyeNear + Offset(-e * 0.1, e * 0.15), e * 1.9, e * 1.8),
+        Paths.ellipse(f.eyeFar + Offset(e * 0.1, e * 0.15), e * 1.6, e * 1.8),
+      ),
+      Paths.ellipse(muzzle + Offset(-r * 0.04, -r * 0.1), r * 0.42, r * 0.38),
+    );
+    // The ear stands out from the back of the head, over any fur on it.
+    f.faceFront.add(Part(shapes: <Shape>[
+      Shape(Paths.circle(f.h(-0.72, 0.02), r * 0.3), color: f.skin, shade: Shade.solid),
+      Shape(Paths.circle(f.h(-0.69, 0.04), r * 0.18), color: _dark(ear ?? color, 0.12), shade: Shade.gentle),
+    ]));
+    f.underFace.add(Part(shapes: <Shape>[
+      Shape(mask, color: color, shade: const Shade(form: 0.3, core: 0.15, coreStrength: 0.4, rim: 0.06)),
+      // The muzzle bulges forward of the mask.
+      Shape(
+        Paths.ellipse(muzzle, r * 0.44, r * 0.3),
+        color: _light(color, 0.06),
+        shade: const Shade(form: 0.45, core: 0.3, coreStrength: 0.5, rim: 0.1),
+      ),
+    ]));
+    f.faceFront.add(Part(shapes: <Shape>[
+      for (final double x in <double>[-0.07, 0.07])
+        Shape(Paths.ellipse(muzzle + Offset(r * (x + 0.02), -r * 0.13), r * 0.035, r * 0.05), color: _dark(color, 0.55)),
+    ]));
+  }
+}
+
+/// A long tail from the base of the back, hanging and curling up at the
+/// end, swinging on follow-through. [length] is in hip widths.
+class Tail extends Garment {
+  const Tail(this.color, {this.length = 2.4, this.curl = 1});
+  final Color color;
+  final double length;
+
+  /// How much the end curls up: 0 hangs straight.
+  final double curl;
+
+  @override
+  void dress(Fitting f) {
+    final Body b = f.body;
+    const List<double> shape = <double>[-14, -6, 10, 24, 32, 34, 30];
+    final Chain tail = Chain(
+      'tail',
+      segments: shape.length,
+      length: b.hips * length,
+      width: b.legRadius * 0.85,
+      tipWidth: b.legRadius * 0.4,
+      color: _dark(color, 0.04),
+      shade: _cloth,
+      at: Offset(-b.hips * 0.36, -b.torso * 0.1),
+      degrees: 160,
+    );
+    f.behind.add(tail.part);
+    f.jiggles.addAll(tail.jiggles(hertz: 1.3, damping: 0.3, inertia: 1.1, limit: 25));
+    f.stance = f.stance.plus(Pose(<String, Joint>{
+      for (int i = 0; i < shape.length; i++) 'tail$i': Joint.rotate(shape[i] * curl),
+    }));
   }
 }
 

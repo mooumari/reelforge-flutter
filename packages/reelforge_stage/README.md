@@ -38,6 +38,8 @@ Camera(
 | `Camera`, `ParallaxLayer` | pan and zoom over layers at different depths |
 | `reach`, `frameOf` | two-bone IK to a point; forward kinematics, the painter's own arithmetic |
 | `Walk`, `Waypoint`, `Biped` | footsteps planned from a route; planted feet stay planted |
+| `Gait`, `Quadruped` | the same for four legs: hind, fore, hind, fore, never fewer than two paws down |
+| `Lion` | a four-legged template -- lion, lioness, cub -- with a face that emotes and talks |
 | `followThrough`, `Jiggle` | carried parts lag, overshoot and settle on springs |
 | `Life`, `noise`, `drift` | breathing, head drift, blinks and glances, seeded |
 | `Gesture` | wind-up, overshoot, settle, and joints that trail each other |
@@ -82,6 +84,9 @@ an alien among them, showing all eight emotions on the same rig.
 a Bedouin man and woman, a legionary, a pharaoh, a philosopher, a cyborg, a
 scientist, a kid and a grandmother -- walking on in two rows, waving and
 saying hello.
+
+`example/lib/stage_savanna.dart` has a lion walking on four legs and a
+monkey walking on two, meeting at sunset and saying hello.
 
 ## Characters
 
@@ -143,6 +148,33 @@ brim's shadow across the eyes. Shadows are a deeper shade of each surface's
 own colour, nudged towards the light's shadow colour, so skin in shadow
 stays skin. `example/lib/stage_style.dart` is the style test: one
 character, lit by a low sun, with a close-up of the face.
+
+## Animals
+
+A `Lion` is numbers, as a `Body` is -- `length` from hip to shoulder, `leg`,
+`depth`, `headRadius` -- with `Lion.male`, `Lion.female` and `Lion.cub` to
+start from. Its rig is a `Quadruped`'s: the root is the hips, the hind legs
+hang from them and the forelegs from a `chest` further along, and the torso
+is one `Skin` over both, so the back gives when the shoulders drop. Its face
+is a `FaceStyle`, so `express`, `look`, `Speech` and `Life` work on it as on
+a person, and its tail is a `Chain` with `jiggles`.
+
+```dart
+final Gait gait = Gait(rig: Lion.male.part, body: Lion.male.quadruped, route: ..., groundY: 940, fps: 30);
+final Posed p = gait.at(frame, adjust: (Pose pose) => pose.plus(Lion.male.stance).plus(speech.at(frame, fps)));
+```
+
+`Gait` plans footfalls the way `Walk` does, by distance, so a planted paw
+stays where it landed; the legs step a quarter of a stride apart, hind then
+fore on the same side, and when the route ends each takes one last step to
+stand square. The hips and shoulders bob twice a stride, the head holds its
+line, and the shoulders drop when a planted foreleg needs the reach.
+
+An animal that stands and talks is a `Character` in fur. A monkey is a body
+with long arms and short legs, a skin the colour of its coat, and `Fur` (a
+pale belly, a darker crown), `MonkeyFace` (a mask, a muzzle and nostrils in
+place of the nose, big ears) and `Tail` (a `Chain` that curls up at rest and
+swings on follow-through). It walks, waves and talks like anyone else.
 
 ## Faces
 

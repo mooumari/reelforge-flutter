@@ -358,8 +358,15 @@ class Fitting {
   bool hideHair = false;
   bool hideEars = false;
 
+  /// Set by a face that draws its own nose: a muzzle, a snout.
+  bool hideNose = false;
+
   /// Parts that swing on follow-through: capes, ponytails.
   final List<Jiggle> jiggles = <Jiggle>[];
+
+  /// How a garment holds itself at rest, for anything a pose has to bend:
+  /// a monkey's curled tail. It becomes part of [Character.stance].
+  Pose stance = Pose.rest;
 
   /// A point along a leg as posed: [along] 0 at the hip, 1 at the ankle.
   Offset legPoint(Where w, String side, double along) {
@@ -480,14 +487,15 @@ class Character {
         headDrift: 1.8,
       );
 
-  /// How the character holds itself at rest: an elder's stoop. Add it to
-  /// whatever else it is doing.
-  Pose get stance => body.hunch == 0
-      ? Pose.rest
-      : Pose(<String, Joint>{
-          'chest': Joint.rotate(body.hunch),
-          'head': Joint.rotate(-body.hunch * 0.7),
-        });
+  /// How the character holds itself at rest: an elder's stoop, a curled
+  /// tail. Add it to whatever else it is doing.
+  Pose get stance => (body.hunch == 0
+          ? Pose.rest
+          : Pose(<String, Joint>{
+              'chest': Joint.rotate(body.hunch),
+              'head': Joint.rotate(-body.hunch * 0.7),
+            }))
+      .plus(_fitting.stance);
 
   static const Pose _armUp = Pose(<String, Joint>{
     'shoulderF': Joint.rotate(128),
@@ -633,15 +641,16 @@ class Character {
         Part(at: _faceAt, scaleX: _faceScale, scaleY: _faceScale, children: <Part>[face.build(turn: faceTurn)]),
         // A nose, turned with the head: a soft rounded bump, its tip towards
         // the way the face looks, lit like the rest of the head.
-        Part(shapes: <Shape>[
-          Shape(
-            Paths.smooth(<Offset>[
-              fit.h(0.36, -0.02), fit.h(0.47, 0.14), fit.h(0.47, 0.25), fit.h(0.36, 0.28), fit.h(0.28, 0.22), fit.h(0.31, 0.1),
-            ]),
-            color: _darker(skin, 0.05),
-            shade: const Shade(form: 0.5, core: 0.5, coreStrength: 0.8, rim: 0.12),
-          ),
-        ]),
+        if (!fit.hideNose)
+          Part(shapes: <Shape>[
+            Shape(
+              Paths.smooth(<Offset>[
+                fit.h(0.36, -0.02), fit.h(0.47, 0.14), fit.h(0.47, 0.25), fit.h(0.36, 0.28), fit.h(0.28, 0.22), fit.h(0.31, 0.1),
+              ]),
+              color: _darker(skin, 0.05),
+              shade: const Shade(form: 0.5, core: 0.5, coreStrength: 0.8, rim: 0.12),
+            ),
+          ]),
         if (!fit.hideHair) ...fit.hair,
         if (!fit.hideEars)
           Part(shapes: <Shape>[

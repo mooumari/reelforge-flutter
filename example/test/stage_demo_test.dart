@@ -4,6 +4,7 @@ import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
 import 'package:example/stage_faces.dart';
+import 'package:example/stage_savanna.dart';
 import 'package:example/stage_shapes.dart';
 import 'package:example/stage_style.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -121,6 +122,20 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[64]!, expected[80]!), isFalse);
+  });
+
+  test('the savanna is deterministic, and the lion walks on', () async {
+    // A four-legged gait, two tails on follow-through and two speeches.
+    final CompositionRenderer walked = CompositionRenderer(stageSavanna);
+    final Map<int, Uint8List> expected = <int, Uint8List>{};
+    for (int frame = 0; frame <= 320; frame += 20) {
+      expected[frame] = await _frame(walked, frame);
+    }
+    for (final int frame in <int>[80, 180, 260]) {
+      expect(_same(await _frame(CompositionRenderer(stageSavanna), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    expect(_same(expected[60]!, expected[80]!), isFalse);
   });
 
   test('the cast is deterministic, and walks on', () async {

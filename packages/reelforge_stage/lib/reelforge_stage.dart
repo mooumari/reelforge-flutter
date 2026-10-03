@@ -31,15 +31,22 @@
 /// that fit any body. The rig it builds walks, breathes, waves and talks
 /// with everything above.
 ///
+/// And animals: a [Lion] is a four-legged template -- a lion, a lioness, a
+/// cub -- that walks with a [Gait], hind and fore legs in turn with every
+/// paw planted. An animal that stands up and talks is a [Character] in fur:
+/// a monkey is a body with long arms, [Fur], a [MonkeyFace] and a [Tail].
+///
 /// The rule is the rest of ReelForge's: a frame is a pure function of its
 /// frame number. Nothing here holds state, runs a clock or reads one.
 library;
 
+export 'src/animals.dart';
 export 'src/camera.dart';
 export 'src/character.dart';
 export 'src/drawing.dart';
 export 'src/face.dart';
 export 'src/follow.dart';
+export 'src/gait.dart';
 export 'src/gesture.dart';
 export 'src/kinematics.dart';
 export 'src/life.dart';
