@@ -1,0 +1,282 @@
+{
+ "seconds": 4.505,
+ "visemes": [
+  {
+   "audioOffset": 0,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 520830,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 1041670,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 1432290,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 2083330,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 2604160,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 3255210,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 3906250,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 4947910,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 5468750,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 5989580,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 6510410,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 7161450,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 8333330,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8854160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 9374990,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 10026040,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 10677080,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 11197910,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 11718740,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 11979160,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 12630200,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 13541660,
+   "visemeId": 9
+  },
+  {
+   "audioOffset": 15104160,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 15624990,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 16145820,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 16796860,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 17578110,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 18684880,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 19790000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 21744780,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 22526030,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 23046860,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 23828110,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 25130200,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 25911439,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 26302070,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 26692689,
+   "visemeId": 17
+  },
+  {
+   "audioOffset": 27083320,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 27473939,
+   "visemeId": 16
+  },
+  {
+   "audioOffset": 28776020,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 29492170,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 30208320,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 30729150,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 31119770,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 31770820,
+   "visemeId": 13
+  },
+  {
+   "audioOffset": 32552060,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 33593730,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 34635400,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 35416650,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 36580000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 520830,
+   "duration": 3255199,
+   "text": "Between"
+  },
+  {
+   "audioOffset": 3906250,
+   "duration": 4817700,
+   "text": "sixteen"
+  },
+  {
+   "audioOffset": 8854160,
+   "duration": 1041660,
+   "text": "and"
+  },
+  {
+   "audioOffset": 10026040,
+   "duration": 3385410,
+   "text": "twenty"
+  },
+  {
+   "audioOffset": 13541660,
+   "duration": 2473950,
+   "text": "hours"
+  },
+  {
+   "audioOffset": 16145830,
+   "duration": 520830,
+   "text": "a"
+  },
+  {
+   "audioOffset": 16796870,
+   "duration": 2994790,
+   "text": "day"
+  },
+  {
+   "audioOffset": 21744790,
+   "duration": 1171870,
+   "text": "it"
+  },
+  {
+   "audioOffset": 23046870,
+   "duration": 2734370,
+   "text": "lies"
+  },
+  {
+   "audioOffset": 25911450,
+   "duration": 651040,
+   "text": "in"
+  },
+  {
+   "audioOffset": 26692700,
+   "duration": 651040,
+   "text": "the"
+  },
+  {
+   "audioOffset": 27473950,
+   "duration": 3125000,
+   "text": "shade"
+  },
+  {
+   "audioOffset": 30729160,
+   "duration": 911450,
+   "text": "and"
+  },
+  {
+   "audioOffset": 31770830,
+   "duration": 4817700,
+   "text": "rests"
+  }
+ ],
+ "hash": "d92b99d7931af9a7"
+}

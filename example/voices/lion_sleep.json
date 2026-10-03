@@ -1,0 +1,17 @@
+{
+  "class": "LionSleepVoices",
+  "audio": "assets/voices/lion_sleep",
+  "dart": "lib/lion_sleep_voices.dart",
+  "cast": {
+    "narrator": {"voice": "en-GB-RyanNeural", "style": "chat", "rate": "-4%"}
+  },
+  "lines": {
+    "intro": {"who": "narrator", "text": "A lion spends most of its life doing absolutely nothing."},
+    "hours": {"who": "narrator", "text": "Between sixteen and twenty hours a day, it lies in the shade and rests."},
+    "compare": {"who": "narrator", "text": "A person sleeps about eight hours. A giraffe, about five. The lion is in a league of its own."},
+    "lazy": {"who": "narrator", "text": "So is the lion just lazy? Not quite. Hunting is brutal."},
+    "hunt": {"who": "narrator", "text": "A few seconds of sprinting burns a huge amount of energy, and only about one hunt in four ends in a meal."},
+    "save": {"who": "narrator", "text": "So the lion saves its strength, and spends the hottest hours doing as little as possible."},
+    "close": {"who": "narrator", "text": "Rest isn't laziness. For a lion, it's a strategy."}
+  }
+}

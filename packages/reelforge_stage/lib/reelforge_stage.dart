@@ -37,6 +37,9 @@
 /// so their timing is the voice's own; it plays their audio, moves the
 /// mouth to them, and gives the route to walk.
 ///
+/// And a voice-over: a [Narration] lays [Line]s end to end and says where to
+/// cut the picture, and [Captions] light each word as it is spoken.
+///
 /// And animals: a [Lion] is a four-legged template -- a lion, a lioness, a
 /// cub -- that walks with a [Gait], hind and fore legs in turn with every
 /// paw planted. An animal that stands up and talks is a [Character] in fur:
@@ -57,6 +60,7 @@ export 'src/gesture.dart';
 export 'src/kinematics.dart';
 export 'src/life.dart';
 export 'src/outline.dart';
+export 'src/narration.dart';
 export 'src/part.dart';
 export 'src/performance.dart';
 export 'src/pose.dart';

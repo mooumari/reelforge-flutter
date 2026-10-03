@@ -1,0 +1,234 @@
+{
+ "seconds": 3.71,
+ "visemes": [
+  {
+   "audioOffset": 500000,
+   "visemeId": 0
+  },
+  {
+   "audioOffset": 1020830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 2062500,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 3104160,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 4145830,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 4927080,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 5578120,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 6229160,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 6880200,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 7531240,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8052080,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 8442700,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 8963540,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 9744790,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 10200520,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 10656240,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 11177080,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 11697910,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 12088540,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 12479160,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 12999990,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 13520820,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 14041660,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 14953119,
+   "visemeId": 11
+  },
+  {
+   "audioOffset": 16255200,
+   "visemeId": 18
+  },
+  {
+   "audioOffset": 17036450,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 17557280,
+   "visemeId": 4
+  },
+  {
+   "audioOffset": 18208320,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 18729160,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 19380200,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 20421860,
+   "visemeId": 21
+  },
+  {
+   "audioOffset": 20942700,
+   "visemeId": 15
+  },
+  {
+   "audioOffset": 21463530,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 21984360,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 22505189,
+   "visemeId": 7
+  },
+  {
+   "audioOffset": 23026030,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 23546860,
+   "visemeId": 14
+  },
+  {
+   "audioOffset": 23937480,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 24458320,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 25239570,
+   "visemeId": 1
+  },
+  {
+   "audioOffset": 25890610,
+   "visemeId": 19
+  },
+  {
+   "audioOffset": 26802070,
+   "visemeId": 6
+  },
+  {
+   "audioOffset": 27583320,
+   "visemeId": 20
+  },
+  {
+   "audioOffset": 28620000,
+   "visemeId": 0
+  }
+ ],
+ "words": [
+  {
+   "audioOffset": 500000,
+   "duration": 1432290,
+   "text": "A"
+  },
+  {
+   "audioOffset": 2062500,
+   "duration": 3385410,
+   "text": "lion"
+  },
+  {
+   "audioOffset": 5578120,
+   "duration": 3255199,
+   "text": "spends"
+  },
+  {
+   "audioOffset": 8963540,
+   "duration": 2604160,
+   "text": "most"
+  },
+  {
+   "audioOffset": 11697910,
+   "duration": 651040,
+   "text": "of"
+  },
+  {
+   "audioOffset": 12479160,
+   "duration": 1432290,
+   "text": "its"
+  },
+  {
+   "audioOffset": 14041660,
+   "duration": 2864580,
+   "text": "life"
+  },
+  {
+   "audioOffset": 17036450,
+   "duration": 2213540,
+   "text": "doing"
+  },
+  {
+   "audioOffset": 19380200,
+   "duration": 4947910,
+   "text": "absolutely"
+  },
+  {
+   "audioOffset": 24458330,
+   "duration": 4166660,
+   "text": "nothing"
+  }
+ ],
+ "hash": "d96f7bec7e8f64ed"
+}

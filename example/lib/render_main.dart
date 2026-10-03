@@ -11,6 +11,7 @@ import 'stage_cast.dart';
 import 'stage_faces.dart';
 import 'stage_heads.dart';
 import 'stage_wardrobe.dart';
+import 'lion_sleep.dart';
 import 'stage_savanna.dart';
 import 'stage_style.dart';
 import 'stage_shapes.dart';
@@ -36,6 +37,7 @@ Future<void> main(List<String> args) async {
     stageHeads,
     stageWardrobe,
     stageSavanna,
+    lionSleep,
     longform,
     longformJson,
     showreel,

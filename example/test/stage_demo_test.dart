@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
+import 'package:example/lion_sleep.dart';
 import 'package:example/stage_faces.dart';
 import 'package:example/stage_savanna.dart';
 import 'package:example/stage_shapes.dart';
@@ -136,6 +137,27 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[60]!, expected[80]!), isFalse);
+  });
+
+  test('the explainer is deterministic, cut to its narration, and its shots differ', () async {
+    // Five shots, captions, a camera and graphics that land on words.
+    final CompositionRenderer walked = CompositionRenderer(lionSleep);
+    final Map<int, Uint8List> expected = <int, Uint8List>{};
+    for (int frame = 0; frame < lionSleep.durationInFrames; frame += 60) {
+      expected[frame] = await _frame(walked, frame);
+    }
+    for (final int frame in <int>[120, 540, 1020]) {
+      expect(_same(await _frame(CompositionRenderer(lionSleep), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    expect(_same(expected[120]!, expected[300]!), isFalse);
+    // Every voiced line is declared as audio, and the bed under them.
+    final RenderManifest manifest = DeclarationPass.run(lionSleep);
+    final Set<String> sources = manifest.audio.map((AudioTimelineEntry e) => e.declaration.src).toSet();
+    expect(sources, containsAll(<String>[
+      for (final String name in <String>['intro', 'hours', 'compare', 'lazy', 'hunt', 'save', 'close']) 'assets/voices/lion_sleep/$name.wav',
+      'assets/sound/bed.m4a',
+    ]));
   });
 
   test('the cast is deterministic, and walks on', () async {

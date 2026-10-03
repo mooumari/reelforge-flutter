@@ -50,6 +50,7 @@ Camera(
 | `Part.clip` | children only inside the part's own shapes: pupils in eyes, teeth in a mouth |
 | `FaceStyle`, `FaceJoints`, `Emotion` | a face drawn from a style; eight emotions, `look`, `turn`, `moods` |
 | `Speech`, `Viseme`, `Gaze` | mouth shapes from Azure's visemes or from text; eyes that hold and dart |
+| `Narration`, `Captions` | a voice-over laid end to end, the picture cut in its pauses, and captions that light each word as it is said |
 | `Performance`, `Beat`, `Line` | a performer's part in seconds -- `Move`, `Say`, `Feel`, `Look`, `Act` -- with voiced lines, their audio and their mouth |
 | `Character`, `Body`, `Garment`, `Fitting` | a person from proportions, a skin, a face and an outfit; walks, waves and talks |
 | the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, boots, robot parts, props -- each fits any `Body` |
@@ -223,6 +224,33 @@ It reads `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` from the environment
 or the repository's `.env`, and only calls Azure for lines whose text or
 voice changed. The audio and the Dart file are committed, so a render needs
 neither the network nor a key.
+
+## Narrated videos
+
+A narrated video is timed to its voice. A `Narration` takes the voiced
+`Line`s and lays them end to end -- a lead-in, a pause between lines, a
+breath at the end -- so `starts`, `ends` and `seconds` are the voice's own.
+It says where to cut: `cuts(<int>[1, 1, 2])` is the middle of the pause after
+each shot's last line for shots holding one, one and two lines, and `lengths`
+is how long each shot is. Feed those to a `Storyboard` and no frame number
+is written by hand.
+
+A graphic lands on the word it is about by asking when that word is said:
+
+```dart
+final Narration voice = Narration(<Line>[Voices.intro, Voices.hours, Voices.compare]);
+double saidAt(int shot, int line, int word) =>
+    voice.starts[line] + Captions.wordTimes(voice.lines[line])[word].$1 - voice.cuts(shots)[shot];
+// the giraffe's bar grows at saidAt(2, 2, 7): "A giraffe, about five."
+```
+
+Re-voice a line and the cuts, the bars and the captions move with it.
+`Captions(narration: voice)` goes above the storyboard, and
+`...voice.audio(fps: 30)` beside it, outside any scene so a cut does not cut
+the voice off. Sound under it is made the same way as the pictures, in code:
+`tool/sound.py` writes a soft ambient bed and a few effects (a whoosh for a
+cut, a pop for a bar) as seeded arithmetic. `example/lib/lion_sleep.dart` is
+a whole episode made this way.
 
 ## Faces
 
