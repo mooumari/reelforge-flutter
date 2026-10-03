@@ -339,9 +339,9 @@ class Lion {
         // The ears, far then near: round, dark inside.
         Part(
           shapes: <Shape>[
-            Shape(Paths.circle(h(0.3, -0.86), r * 0.24), color: _far(ear), shade: Shade.soft),
-            Shape(Paths.circle(h(0.32, -0.84), r * 0.12), color: _far(inner)),
             if (m == null) ...<Shape>[
+              Shape(Paths.circle(h(0.3, -0.86), r * 0.24), color: _far(ear), shade: Shade.soft),
+              Shape(Paths.circle(h(0.32, -0.84), r * 0.12), color: _far(inner)),
               Shape(Paths.circle(h(-0.42, -0.8), r * 0.28), color: ear, shade: Shade.soft),
               Shape(Paths.circle(h(-0.38, -0.76), r * 0.15), color: inner),
             ],
@@ -374,17 +374,8 @@ class Lion {
             ),
           ],
         ),
-        // On a maned lion the mane comes up over the crown, and the near ear
-        // pokes out of it.
-        if (m != null) ...<Part>[
-          _crown(m, h),
-          Part(
-            shapes: <Shape>[
-              Shape(Paths.circle(h(-0.42, -0.86), r * 0.26), color: ear, shade: Shade.soft),
-              Shape(Paths.circle(h(-0.38, -0.82), r * 0.14), color: inner),
-            ],
-          ),
-        ],
+        // On a maned lion the mane comes up over the crown, hiding the ears.
+        if (m != null) _crown(m, h),
         // The muzzle: two whisker pads and a chin, pale.
         Part(
           shapes: <Shape>[
@@ -427,7 +418,13 @@ class Lion {
       // A few darker strands for the direction it falls in.
       for (int i = 0; i < 9; i++)
         Shape(
-          _strand(c, -math.pi * 0.9 + i * math.pi * 0.22, r * 0.95, r * (1.35 + (i % 3) * 0.12)),
+          _strand(
+            c,
+            -math.pi * 0.9 + i * math.pi * 0.22,
+            r * 0.95,
+            // Inside the mane's edge, so no strand pokes out of it.
+            math.min(r * (1.35 + (i % 3) * 0.12), _maneReach(-math.pi * 0.9 + i * math.pi * 0.22) * 0.8),
+          ),
           color: _darker(color, 0.14),
         ),
     ]);
