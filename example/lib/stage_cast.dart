@@ -80,7 +80,7 @@ final List<Cast> castOfTen = <Cast>[
       skin: const Color(0xFFC68B59),
       face: _face(brows: _black, browThickness: 8, cheeks: null),
       outfit: const <Garment>[
-        Beard(Color(0xFF3A2A22), length: 0.25),
+        Beard(Color(0xFF4A3426), length: 0.15, trimmed: true),
         Robe(_white, collar: true),
         Headcloth(_white, check: Color(0xFFC0392B)),
         Sandals(),

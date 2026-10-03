@@ -48,6 +48,7 @@ const List<Garment> _everything = <Garment>[
   Ponytail(Color(0xFF000000)),
   Curls(Color(0xFF000000)),
   Beard(Color(0xFF000000)),
+  Beard(Color(0xFF000000), trimmed: true),
   Moustache(Color(0xFF000000)),
   CowboyHat(Color(0xFF000000)),
   Cap(Color(0xFF000000)),

@@ -340,11 +340,14 @@ class Balding extends Garment {
 
 /// A beard round whichever jaw the head has; the mouth shows through it
 /// and a moustache goes over the lip. [length] grows it below the chin.
+/// [trimmed] keeps it short and neat: a band along the jaw and a patch on
+/// the chin, the cheeks clear.
 class Beard extends Garment {
-  const Beard(this.color, {this.length = 0.4, this.moustache = true});
+  const Beard(this.color, {this.length = 0.4, this.moustache = true, this.trimmed = false});
   final Color color;
   final double length;
   final bool moustache;
+  final bool trimmed;
 
   @override
   void dress(Fitting f) {
@@ -357,7 +360,21 @@ class Beard extends Garment {
     final Path below = Paths.polygon(<Offset>[
       f.h(-0.3, -0.3), f.h(-0.12, 0.1), f.h(0.18, 0.24), f.h(0.6, 0.22), f.h(1.4, 0.14), f.h(1.4, 3), f.h(-1.3, 3), f.h(-0.8, 0.35),
     ]);
-    final Path beard = _and(_or(_scaled(f.headOutline, f.h(0, -0.1), 1.05, 1.04), chin), below);
+    Path beard = _and(_or(_scaled(f.headOutline, f.h(0, -0.1), 1.05, 1.04), chin), below);
+    if (trimmed) {
+      // The face shrunk up and in leaves a band along the jaw; the chin
+      // keeps a patch under the lip.
+      final Path cheeks = _scaled(f.headOutline, f.h(0.2, -0.45), 0.86, 0.8);
+      final Offset m = f.mouth;
+      final Path goatee = Paths.smooth(<Offset>[
+        m + Offset(-f.r * 0.2, f.r * 0.1), m + Offset(0, f.r * 0.08), m + Offset(f.r * 0.17, f.r * 0.1),
+        m + Offset(f.r * 0.14, f.r * (0.32 + 0.2 * l)), m + Offset(-f.r * 0.02, f.r * (0.38 + 0.25 * l)), m + Offset(-f.r * 0.2, f.r * 0.3),
+      ]);
+      beard = _or(_minus(beard, cheeks), _and(goatee, beard));
+      f.underFace.add(Part(shapes: <Shape>[Shape(beard, color: color, shade: Shade.gentle)]));
+      if (moustache) Moustache(color).dress(f);
+      return;
+    }
     f.underFace.add(_inside(
       Shape(beard, color: color, shade: _cloth),
       <Shape>[
@@ -586,12 +603,21 @@ class LegionHelmet extends Garment {
   void dress(Fitting f) {
     final double rim = f.browTop - f.r * 0.05;
     final Path shell = _scaled(f.headOutline, f.h(0, -0.05), 1.1, 1.1);
-    final Path dome = _and(shell, _above(rim));
-    // The cheek guard hangs from the rim behind the near eye, to the jaw.
+    // Over the brow in front; behind the cheek guard, down over the back
+    // of the head to the nape.
     final double edge = f.eyeNear.dx - f.eyeRadius * 1.5;
+    final double nape = f.h(0, 0.12).dy, hinge = f.h(-0.58, 0).dx;
+    final Path dome = _and(shell, _or(_above(rim), Paths.rect(Rect.fromLTRB(-9999, -9999, hinge + 2, nape))));
+    // The cheek guard hangs from the rim in front of the ear and tapers
+    // forward along the jaw, clear of the eye.
     final Path cheek = Paths.smooth(<Offset>[
-      Offset(f.h(-0.5, 0).dx, rim - 2), Offset(edge, rim - 2), Offset(edge + f.r * 0.04, f.h(0, 0.25).dy),
-      Offset(edge - f.r * 0.08, f.h(0, 0.6).dy), Offset(f.h(-0.42, 0).dx, f.h(0, 0.5).dy), Offset(f.h(-0.52, 0).dx, f.h(0, 0.05).dy),
+      Offset(hinge, rim - 2), Offset(edge, rim - 2), Offset(edge + f.r * 0.02, f.h(0, 0.15).dy),
+      Offset(edge + f.r * 0.08, f.h(0, 0.5).dy), Offset(edge - f.r * 0.04, f.h(0, 0.64).dy),
+      Offset(hinge + f.r * 0.06, f.h(0, 0.3).dy),
+    ]);
+    // The neck guard: a thin lip flaring out from the bottom of the shell.
+    final Path neckGuard = f.headPath(<(double, double)>[
+      (-0.5, 0.0), (-0.95, 0.02), (-1.24, 0.14), (-1.3, 0.24), (-1.0, 0.22), (-0.55, 0.16),
     ]);
     f.hideHair = true;
     f.hideEars = true;
@@ -603,12 +629,12 @@ class LegionHelmet extends Garment {
         color: crest,
         shade: _cloth,
       ),
-      Shape(f.headPath(<(double, double)>[(-0.66, -0.55), (-1.08, -0.5), (-1.24, 0.2), (-0.98, 0.3), (-0.7, 0.05)]), color: _dark(metal, 0.16), shade: _metal),
+      Shape(neckGuard, color: _dark(metal, 0.1), shade: _metal),
       Shape(dome, color: metal, shade: Shade(form: 0.5, core: 0.35, coreStrength: 0.8, rim: 0.14, rimStrength: 0.75, cast: f.r * 0.1, castStrength: 0.35)),
       // The brow ridge.
       Shape(_and(_scaled(shell, f.h(0, -0.05), 1.02), Paths.rect(Rect.fromLTRB(-999, rim - f.r * 0.13, 999, rim))), color: _dark(metal, 0.12), shade: _metal),
       Shape(cheek, color: _dark(metal, 0.04), shade: _metal),
-      for (final Offset rivet in <Offset>[Offset(edge - f.r * 0.12, rim + f.r * 0.14), f.h(-0.86, -0.42)])
+      for (final Offset rivet in <Offset>[Offset((hinge + edge) / 2, rim + f.r * 0.1), f.h(-0.75, -0.35)])
         Shape(Paths.circle(rivet, f.r * 0.055), color: const Color(0xFFD4A94A), shade: Shade.gentle),
     ]));
   }

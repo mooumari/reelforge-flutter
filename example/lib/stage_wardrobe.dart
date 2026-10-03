@@ -41,7 +41,7 @@ const List<(String, HeadShape, List<Garment>)> _looks = <(String, HeadShape, Lis
   ('ponytail', HeadShape.oval, <Garment>[Ponytail(_blond)]),
   ('balding', HeadShape.long, <Garment>[Balding(_grey), Beard(_grey)]),
   ('cap', HeadShape.round, <Garment>[ShortHair(_brown), Cap(Color(0xFF2E7DD1))]),
-  ('ghutra', HeadShape.long, <Garment>[Beard(_black, length: 0.2), Headcloth(Color(0xFFF4F1EA), check: Color(0xFFC0272D))]),
+  ('ghutra', HeadShape.long, <Garment>[Beard(Color(0xFF4A3426), length: 0.15, trimmed: true), Headcloth(Color(0xFFF4F1EA), check: Color(0xFFC0272D))]),
   ('hijab', HeadShape.heart, <Garment>[Hijab(Color(0xFF3E6E8E))]),
   ('legion', HeadShape.square, <Garment>[LegionHelmet()]),
   ('nemes', HeadShape.long, <Garment>[Nemes()]),
