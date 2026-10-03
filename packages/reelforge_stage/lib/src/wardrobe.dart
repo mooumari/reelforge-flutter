@@ -36,12 +36,15 @@ Shape _shade(Path shape, Rect bounds, [double alpha = 0.14]) => Shape(
 
 // --- hair ---
 
-/// The cap of hair every style starts from: over the top and back of the
-/// head, a hairline above the face.
-Path _cap(Fitting f, {double back = 0.25}) => f.headPath(<(double, double)>[
-      (-0.98, back), (-1.07, -0.22), (-0.9, -0.7), (-0.5, -1.0), (0.05, -1.1),
-      (0.55, -0.95), (0.88, -0.6), (0.95, -0.32), (0.7, -0.5), (0.38, -0.6),
-      (0.05, -0.62), (-0.25, -0.5), (-0.42, -0.18), (-0.55, back),
+/// The cap of hair every style starts from, three-quarters on: over the top
+/// and the back of the head, a hairline across the forehead sweeping back to
+/// the temple, a sideburn in front of the ear, and down to the nape behind
+/// it. [back] is how low it comes at the nape, in head radii.
+Path _cap(Fitting f, {double back = 0.42}) => f.headPath(<(double, double)>[
+      (-0.86, back), (-1.06, 0.0), (-0.99, -0.5), (-0.62, -0.93), (-0.05, -1.1),
+      (0.5, -0.98), (0.86, -0.68), (0.98, -0.42), (0.7, -0.52), (0.35, -0.6),
+      (0.02, -0.56), (-0.18, -0.42), (-0.24, -0.12), (-0.22, 0.08), (-0.34, 0.02),
+      (-0.52, back * 0.6), (-0.64, back),
     ]);
 
 class ShortHair extends Garment {
@@ -49,7 +52,12 @@ class ShortHair extends Garment {
   final Color color;
 
   @override
-  void dress(Fitting f) => f.hair.add(Part(shapes: <Shape>[Shape(_cap(f), color: color)]));
+  void dress(Fitting f) => f.hair.add(Part(shapes: <Shape>[
+        Shape(_cap(f), color: color, shade: Shade.soft),
+        // A lighter lock where the light catches it.
+        Shape(f.headPath(<(double, double)>[(0.1, -0.98), (0.5, -0.88), (0.78, -0.62), (0.45, -0.72)]),
+            color: _light(color, 0.12)),
+      ]));
 }
 
 /// Down past the shoulders, behind.
@@ -167,12 +175,13 @@ class Beard extends Garment {
   }
 }
 
+/// Under the nose, over the lip; the far half shorter, as it turns away.
 Path _moustache(Fitting f) {
-  final Offset m = f.mouth + Offset(0, -f.r * 0.07);
+  final Offset m = f.mouth + Offset(0, -f.r * 0.11);
   Offset at(double x, double y) => Offset(m.dx + x * f.r, m.dy + y * f.r);
   return Paths.smooth(<Offset>[
-    at(-0.3, 0.05), at(-0.14, -0.08), at(0, -0.05), at(0.14, -0.08),
-    at(0.3, 0.05), at(0.14, 0.0), at(0, 0.03), at(-0.14, 0.0),
+    at(-0.34, 0.1), at(-0.2, -0.06), at(0, -0.05), at(0.12, -0.07),
+    at(0.24, 0.06), at(0.1, 0.03), at(0, 0.05), at(-0.16, 0.03),
   ]);
 }
 
@@ -181,11 +190,13 @@ class Moustache extends Garment {
   final Color color;
 
   @override
-  void dress(Fitting f) => f.faceFront.add(Part(shapes: <Shape>[Shape(_moustache(f), color: color)]));
+  void dress(Fitting f) => f.faceFront.add(Part(shapes: <Shape>[Shape(_moustache(f), color: color, shade: Shade.gentle)]));
 }
 
 // --- on the head ---
 
+/// A wide-brimmed hat with a pinched crown, pulled down to the brows; the
+/// brim throws its shadow across the eyes.
 class CowboyHat extends Garment {
   const CowboyHat(this.color, {this.band = const Color(0xFF3B2416)});
   final Color color;
@@ -193,19 +204,33 @@ class CowboyHat extends Garment {
 
   @override
   void dress(Fitting f) {
-    final Path crown = f.headPath(<(double, double)>[
-      (-0.66, -0.78), (-0.66, -1.35), (-0.4, -1.62), (-0.05, -1.5), (0.28, -1.64), (0.6, -1.4), (0.62, -0.78),
+    final Offset c = f.h(0.06, -0.8);
+    final Path brim = Paths.smooth(<Offset>[
+      for (int i = 0; i < 24; i++)
+        () {
+          final double a = i * math.pi / 12;
+          // The sides curl up a touch.
+          final double curl = math.pow(math.cos(a).abs(), 6) * 0.12;
+          return c + Offset(math.cos(a) * f.r * 1.5, (math.sin(a) * 0.27 - curl) * f.r);
+        }(),
     ]);
+    final Path crown = f.headPath(<(double, double)>[
+      (-0.62, -0.8), (-0.68, -1.15), (-0.54, -1.46), (-0.22, -1.56), (0.06, -1.44),
+      (0.34, -1.56), (0.62, -1.44), (0.74, -1.12), (0.7, -0.8), (0.04, -0.72),
+    ]);
+    final Path front = Path.combine(PathOperation.intersect, brim, Paths.rect(Rect.fromLTRB(-999, c.dy - f.r * 0.02, 999, 999)));
     f.headwear.add(Part(
-      at: f.h(0, -0.8),
+      at: c,
       degrees: -5,
       children: <Part>[
-        Part(at: -f.h(0, -0.8), shapes: <Shape>[
-          Shape(Paths.ellipse(f.h(0.02, -0.82), f.r * 1.5, f.r * 0.24), color: _dark(color, 0.12)),
-          Shape(crown, color: color),
-          Shape(Path.combine(PathOperation.intersect, crown, Paths.rect(Rect.fromLTRB(-999, f.h(0, -1.05).dy, 999, f.h(0, -0.86).dy))),
+        Part(at: -c, shapes: <Shape>[
+          Shape(brim, color: _dark(color, 0.14), shade: Shade(form: 0.3, core: 0.25, rim: 0.12, cast: f.r * 0.2, castStrength: 0.4)),
+          Shape(crown, color: color, shade: Shade.soft),
+          Shape(Path.combine(PathOperation.intersect, crown, Paths.rect(Rect.fromLTRB(-999, f.h(0, -1.0).dy, 999, f.h(0, -0.82).dy))),
               color: band),
-          Shape(Paths.ellipse(f.h(0.02, -0.8), f.r * 1.5, f.r * 0.1), color: _light(color, 0.1)),
+          // The dent down the middle of the crown.
+          Shape(f.headPath(<(double, double)>[(0.02, -1.42), (0.12, -1.32), (0.1, -1.1), (0.04, -1.2)]), color: _dark(color, 0.12)),
+          Shape(front, color: color, shade: Shade.soft),
         ]),
       ],
     ));
@@ -424,30 +449,37 @@ class Glasses extends Garment {
 // --- the body ---
 
 class Shirt extends Garment {
-  const Shirt(this.color, {this.sleeves = 1, this.vNeck = true});
+  const Shirt(this.color, {this.sleeves = 1, this.vNeck = true, this.collar = true});
   final Color color;
 
   /// How far down the arm: 1 to the wrist, about 0.4 for short sleeves, 0
   /// for none.
   final double sleeves;
   final bool vNeck;
+  final bool collar;
 
   @override
   void dress(Fitting f) {
     final Body b = f.body;
-    f.torso.add(Shape(b.torsoPath, color: color));
-    f.torso.add(_shade(b.torsoPath, b.torsoPath.getBounds()));
+    final double m = b.mid(1), t = b.torso;
+    f.torso.add(Shape(b.torsoPath, color: color, shade: Shade.soft));
     if (vNeck) {
       f.torso.add(Shape(
-        Paths.polygon(<Offset>[Offset(b.front - 34, -b.torso - 2), Offset(b.front - 16, -b.torso + b.torso * 0.16), Offset(b.front - 4, -b.torso - 2)]),
-        color: Color.lerp(f.skin, const Color(0xFF000000), 0.08),
+        Paths.smooth(<Offset>[Offset(m - 16, -t - 2), Offset(m + 1, -t + 26), Offset(m + 12, -t - 2)]),
+        color: _dark(f.skin, 0.08),
       ));
+    }
+    if (collar) {
+      f.torso.add(Shape(Paths.polygon(<Offset>[Offset(m - 26, -t - 4), Offset(m - 2, -t + 4), Offset(m - 8, -t + 16)]),
+          color: _light(color, 0.1)));
+      f.torso.add(Shape(Paths.polygon(<Offset>[Offset(m + 22, -t - 5), Offset(m + 4, -t + 4), Offset(m + 10, -t + 14)]),
+          color: _light(color, 0.06)));
     }
     if (sleeves > 0) f.arms.add(Cover(color, to: sleeves));
   }
 }
 
-/// Open down the front, no sleeves.
+/// Open down the front, showing what is under it; no sleeves.
 class Vest extends Garment {
   const Vest(this.color);
   final Color color;
@@ -455,17 +487,18 @@ class Vest extends Garment {
   @override
   void dress(Fitting f) {
     final Body b = f.body;
-    final Path vest = Path.combine(
-      PathOperation.difference,
-      f.torsoBand(0.08, 1),
-      Paths.polygon(<Offset>[
-        Offset(b.front - 30, -b.torso - 10), Offset(b.front + 60, -b.torso - 10),
-        Offset(b.front + 60, 40), Offset(b.front - 6, 40), Offset(b.front - 12, -b.torso * 0.5),
-      ]),
-    );
-    f.torso.add(Shape(vest, color: color));
-    f.torso.add(Shape(Paths.circle(Offset(b.front - 14, -b.torso * 0.62), 3.5), color: _dark(color, 0.4)));
-    f.torso.add(Shape(Paths.circle(Offset(b.front - 11, -b.torso * 0.4), 3.5), color: _dark(color, 0.4)));
+    final double t = b.torso, m = b.mid(0.6);
+    final Path opening = Paths.polygon(<Offset>[
+      Offset(m - 16, -t - 20), Offset(m + 18, -t - 20), Offset(m + 9, -t * 0.42), Offset(m + 6, 30), Offset(m - 2, 30), Offset(m - 4, -t * 0.42),
+    ]);
+    final Path vest = Path.combine(PathOperation.difference, f.torsoBand(0.1, 1), opening);
+    f.torso.add(Shape(vest, color: color, shade: Shade.soft));
+    // The near panel's edge catches a little light; buttons down it.
+    for (int i = 0; i < 3; i++) {
+      f.torso.add(Shape(Paths.circle(Offset(m - 8 - i * 0.6, -t * (0.6 - i * 0.16)), 2.8), color: _dark(color, 0.45)));
+    }
+    // A pocket.
+    f.torso.add(Shape(Paths.roundRect(Rect.fromLTWH(m - 40, -t * 0.62, 20, 3), 1.5), color: _dark(color, 0.3)));
   }
 }
 
@@ -563,7 +596,7 @@ class Toga extends Garment {
     final Path drape = Path.combine(
       PathOperation.intersect,
       Paths.polygon(<Offset>[
-        Offset(b.back - 10, -b.torso - 10), Offset(b.back + b.depth * 0.45, -b.torso - 10),
+        Offset(b.back - 10, -b.torso - 10), Offset(b.back + b.shoulders * 0.45, -b.torso - 10),
         Offset(b.front + 40, -b.torso * 0.15), Offset(b.front + 40, 30), Offset(b.front - 20, 30),
       ]),
       b.torsoPath,
@@ -613,8 +646,8 @@ class Trousers extends Garment {
 
   @override
   void dress(Fitting f) {
-    f.legs.add(Cover(color, to: length, extra: 3.5));
-    f.torso.add(Shape(f.torsoBand(-1, 0.12), color: color));
+    f.legs.add(Cover(color, to: length, extra: 3));
+    f.torso.add(Shape(f.torsoBand(-1, 0.13), color: color, shade: Shade.soft));
   }
 }
 
@@ -626,16 +659,18 @@ class Belt extends Garment {
   @override
   void dress(Fitting f) {
     final Body b = f.body;
+    final double m = b.mid(0.1), t = b.torso;
     f.overTorso.add(Part(shapes: <Shape>[
-      Shape(f.torsoBand(0.07, 0.15), color: color),
-      if (buckle != null)
-        Shape(Paths.roundRect(Rect.fromLTRB(b.front + b.belly * 0.5 - 16, -b.torso * 0.16, b.front + b.belly * 0.5 + 2, -b.torso * 0.06), 3),
-            color: buckle),
+      Shape(f.torsoBand(0.07, 0.16), color: color, shade: Shade.soft),
+      if (buckle != null) ...<Shape>[
+        Shape(Paths.roundRect(Rect.fromLTRB(m - 11, -t * 0.175, m + 9, -t * 0.055), 3), color: buckle, shade: Shade.gentle),
+        Shape(Paths.roundRect(Rect.fromLTRB(m - 6, -t * 0.14, m + 4, -t * 0.09), 1.5), color: _dark(buckle!, 0.3)),
+      ],
     ]));
   }
 }
 
-/// A scarf knotted at the throat.
+/// A scarf knotted at the throat, its point down the chest.
 class Bandana extends Garment {
   const Bandana(this.color);
   final Color color;
@@ -643,12 +678,13 @@ class Bandana extends Garment {
   @override
   void dress(Fitting f) {
     final Body b = f.body;
-    final Offset n = b.headAt;
+    final double t = b.torso, m = b.mid(1);
     f.overTorso.add(Part(shapes: <Shape>[
       Shape(Paths.smooth(<Offset>[
-        n + const Offset(-26, -4), n + const Offset(16, -2), n + const Offset(30, 14),
-        n + const Offset(14, 40), n + const Offset(-2, 16), n + const Offset(-24, 14),
-      ]), color: color),
+        Offset(m - 34, -t - 6), Offset(m - 4, -t - 1), Offset(m + 26, -t - 7),
+        Offset(m + 16, -t + 10), Offset(m + 3, -t + 34), Offset(m - 14, -t + 12),
+      ]), color: color, shade: Shade.soft),
+      Shape(Paths.circle(Offset(m - 2, -t + 4), 5.5), color: _dark(color, 0.12)),
     ]));
   }
 }
@@ -668,8 +704,8 @@ class BroadCollar extends Garment {
       rings.add(Shape(
         Path.combine(
           PathOperation.difference,
-          Paths.ellipse(c, b.depth * (0.22 + 0.32 * t), b.torso * (0.08 + 0.2 * t)),
-          Paths.ellipse(c, b.depth * 0.22, b.torso * 0.08),
+          Paths.ellipse(c, b.shoulders * (0.22 + 0.32 * t), b.torso * (0.08 + 0.2 * t)),
+          Paths.ellipse(c, b.shoulders * 0.22, b.torso * 0.08),
         ),
         color: colors[i],
       ));
@@ -694,8 +730,8 @@ class Cape extends Garment {
       'cape',
       segments: 5,
       length: drop,
-      width: b.depth * 0.45,
-      tipWidth: b.depth * 0.95,
+      width: b.shoulders * 0.45,
+      tipWidth: b.shoulders * 0.95,
       color: _dark(color, 0.1),
       at: Offset(b.back + 18, -b.torso + 8),
       degrees: 97,
@@ -704,8 +740,8 @@ class Cape extends Garment {
     f.jiggles.addAll(cape.jiggles(hertz: 1.3, damping: 0.35, inertia: 0.9, limit: 14));
     f.overTorso.add(Part(shapes: <Shape>[
       Shape(Paths.smooth(<Offset>[
-        Offset(b.back + 6, -b.torso + 4), Offset(b.back + b.depth * 0.5, -b.torso - 6),
-        Offset(b.front - 10, -b.torso + 4), Offset(b.back + b.depth * 0.5, -b.torso + 18),
+        Offset(b.back + 6, -b.torso + 4), Offset(b.back + b.shoulders * 0.5, -b.torso - 6),
+        Offset(b.front - 10, -b.torso + 4), Offset(b.back + b.shoulders * 0.5, -b.torso + 18),
       ]), color: color),
       Shape(Paths.circle(Offset(b.front - 18, -b.torso + 6), 6), color: const Color(0xFFD4A94A)),
     ]));
@@ -763,7 +799,7 @@ class Boots extends Garment {
   }
 }
 
-/// Pointed toe, a riding heel, a tall shaft.
+/// Pointed toe, a riding heel, a tall shaft with a stitched top.
 class CowboyBoots extends Garment {
   const CowboyBoots(this.color);
   final Color color;
@@ -771,16 +807,21 @@ class CowboyBoots extends Garment {
   @override
   void dress(Fitting f) {
     final Body b = f.body;
-    final double s = b.sole, r = b.ankleRadius;
+    final double s = b.sole, r = b.ankleRadius, ft = b.foot;
     f.feet = (Color Function(Color) tone) => <Shape>[
           Shape(Paths.smooth(<Offset>[
-            Offset(-b.foot * 0.3, -r), Offset(b.foot * 0.25, -r * 0.6), Offset(b.foot * 0.75, s - 9),
-            Offset(b.foot * 1.08, s - 2), Offset(b.foot * 0.6, s), Offset(-b.foot * 0.1, s - 3), Offset(-b.foot * 0.32, s * 0.3),
-          ]), color: tone(color)),
-          Shape(Paths.rect(Rect.fromLTRB(-b.foot * 0.3, s - 7, -b.foot * 0.06, s)), color: tone(_dark(color, 0.4))),
+            Offset(-r * 1.05, -r * 1.2), Offset(r * 0.9, -r * 1.1), Offset(ft * 0.6, s * 0.15),
+            Offset(ft * 1.1, s * 0.62), Offset(ft * 0.95, s - 1), Offset(ft * 0.2, s - 3),
+            Offset(-r * 1.0, s - 1), Offset(-r * 1.2, s * 0.4),
+          ]), color: tone(color), shade: Shade.solid),
+          // The heel, and the sole's edge.
+          Shape(Paths.polygon(<Offset>[Offset(-r * 1.1, s - 6), Offset(-r * 0.15, s - 6), Offset(-r * 0.25, s + 1), Offset(-r * 1.0, s + 1)]),
+              color: tone(_dark(color, 0.45))),
+          Shape(Paths.smooth(<Offset>[Offset(0, s - 3.5), Offset(ft * 0.9, s - 2.5), Offset(ft * 0.95, s - 0.5), Offset(0, s)]),
+              color: tone(_dark(color, 0.35))),
         ];
-    f.legs.add(Cover(color, from: 0.68, extra: 5.5));
-    f.legs.add(Cover(_dark(color, 0.18), from: 0.68, to: 0.71, extra: 6.5));
+    f.legs.add(Cover(color, from: 0.66, extra: 4.5));
+    f.legs.add(Cover(_dark(color, 0.22), from: 0.66, to: 0.7, extra: 5.5));
   }
 }
 

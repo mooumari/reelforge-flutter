@@ -9,6 +9,7 @@ import 'showreel.dart';
 import 'stage_compare.dart';
 import 'stage_cast.dart';
 import 'stage_faces.dart';
+import 'stage_style.dart';
 import 'stage_shapes.dart';
 import 'stage_demo.dart';
 
@@ -28,6 +29,7 @@ Future<void> main(List<String> args) async {
     stageShapes,
     stageFaces,
     stageCast,
+    stageStyle,
     longform,
     longformJson,
     showreel,

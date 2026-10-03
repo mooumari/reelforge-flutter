@@ -79,6 +79,48 @@ const List<Garment> _everything = <Garment>[
 ];
 
 void main() {
+  group('Light and Shade', () {
+    double lum(Color c) => 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+    const Color grey = Color(0xFF909090);
+
+    testWidgets('a shaded ball is lit on the side towards the light, and turns with it', (WidgetTester tester) async {
+      final Part ball = Part(shapes: <Shape>[Shape(Paths.circle(const Offset(100, 100), 60), color: grey, shade: Shade.solid)]);
+      final ui.Image fromLeft = await _paint(tester, Drawing(ball, light: const Light(from: Offset(-1, 0))));
+      final Color left = await _pixel(tester, fromLeft, 50, 100), right = await _pixel(tester, fromLeft, 152, 100);
+      expect(lum(left), greaterThan(lum(grey)));
+      expect(lum(right), lessThan(lum(grey)));
+      // The same ball turned half round, the light where it was: the lit
+      // side is still the side facing the light.
+      final ui.Image turned = await _paint(
+        tester,
+        Drawing(Part(at: const Offset(200, 200), degrees: 180, children: <Part>[ball]), light: const Light(from: Offset(-1, 0))),
+      );
+      expect(lum(await _pixel(tester, turned, 50, 100)), greaterThan(lum(await _pixel(tester, turned, 152, 100))));
+      // Unshaded, it is flat.
+      final ui.Image flat = await _paint(
+        tester,
+        Drawing(Part(shapes: <Shape>[Shape(Paths.circle(const Offset(100, 100), 60), color: grey)]), light: const Light(from: Offset(-1, 0))),
+      );
+      expect(await _pixel(tester, flat, 50, 100), grey);
+      expect(await _pixel(tester, flat, 152, 100), grey);
+    });
+
+    testWidgets('a cast shadow lands on what is drawn under it, and nowhere else', (WidgetTester tester) async {
+      final Part scene = Part(shapes: <Shape>[
+        Shape(Paths.rect(const Rect.fromLTRB(0, 100, 200, 200)), color: grey),
+        // Above the floor, casting straight down 40.
+        Shape(Paths.rect(const Rect.fromLTRB(60, 40, 140, 80)),
+            color: const Color(0xFFFF0000), shade: const Shade(form: 0, core: 0, rim: 0, cast: 40, castStrength: 0.5)),
+      ]);
+      final ui.Image image = await _paint(tester, Drawing(scene, light: const Light(from: Offset(0, -1))));
+      // On the floor under it: darker. Beside it on the floor: not.
+      expect(lum(await _pixel(tester, image, 100, 110)), lessThan(lum(grey)));
+      expect(await _pixel(tester, image, 20, 110), grey);
+      // In the empty air between: nothing.
+      expect((await _pixel(tester, image, 100, 90)).a, 0);
+    });
+  });
+
   group('Where and Shape.live', () {
     test('Where gives other joints in the asking part\'s own space', () {
       final Part root = Part(
@@ -157,7 +199,9 @@ void main() {
         final Character c = Character(body: b);
         final Part placed = c.part.placed(at: c.standing(300, 900));
         expect(frameOf(placed, Pose.rest, 'footF').origin.dy + b.sole, closeTo(900, 1e-9));
-        expect(frameOf(placed, Pose.rest, 'footB').origin.dy + b.sole, closeTo(900, 1e-9));
+        final double far = frameOf(placed, Pose.rest, 'footB').origin.dy + b.sole;
+        expect(far, lessThan(900));
+        expect(far, greaterThan(900 - b.legRadius * 0.5));
       }
     });
 
@@ -233,9 +277,13 @@ void main() {
       // Halfway up the torso, in front of the arm: shirt. Low on the head,
       // clear of the face, the ear and the shadow: skin.
       final Offset chest = frameOf(placed, Pose.rest, 'body').apply(Offset(c.body.front - 8, -c.body.torso * 0.5));
-      expect(await _pixel(tester, image, chest.dx.round(), chest.dy.round()), shirt);
+      // Lit, so not the flat colour, but the shirt's and not the skin's.
+      double far(Color a, Color b) => (a.r - b.r).abs() + (a.g - b.g).abs() + (a.b - b.b).abs();
+      final Color atChest = await _pixel(tester, image, chest.dx.round(), chest.dy.round());
+      expect(far(atChest, shirt), lessThan(far(atChest, skin)));
       final Offset cheek = frameOf(placed, Pose.rest, 'head').apply(c.body.headCenter + Offset(-c.body.headRadius * 0.35, c.body.headRadius * 0.45));
-      expect(await _pixel(tester, image, cheek.dx.round(), cheek.dy.round()), skin);
+      final Color atCheek = await _pixel(tester, image, cheek.dx.round(), cheek.dy.round());
+      expect(far(atCheek, skin), lessThan(far(atCheek, shirt)));
     });
   });
 }

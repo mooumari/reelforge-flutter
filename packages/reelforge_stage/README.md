@@ -50,6 +50,7 @@ Camera(
 | `Speech`, `Viseme`, `Gaze` | mouth shapes from Azure's visemes or from text; eyes that hold and dart |
 | `Character`, `Body`, `Garment`, `Fitting` | a person from proportions, a skin, a face and an outfit; walks, waves and talks |
 | the wardrobe | hair, beards, hats, headcloths, helmets, robes, armour, boots, robot parts, props -- each fits any `Body` |
+| `Light`, `Shade` | light for flat drawings: a gradient, a shadow crescent, a rim and cast shadows, from the outline alone |
 | `Shape.live`, `Where` | an outline computed from the pose: a robe's hem that spans both legs mid-stride |
 | `Part.bake` | fold a pose into the drawing, so it is where animation starts |
 
@@ -120,8 +121,14 @@ garment is a class with one method, `dress(Fitting)`, that adds drawings to
 the layers it belongs in. `Character.build(hold: ...)` hangs props on the
 hands; `Props` has a staff, a spear, a shield, a scroll and more.
 
-The body is side on and the face three-quarters (`faceTurn`), which is how a
-walking cast reads; front-on talking shots use a `FaceStyle` on its own.
+Everything is drawn from one angle, three-quarters on and facing right --
+body, head, face, ear, hair and clothes agree about which way the
+character is facing -- and every surface is `Shade`d, so a `Drawing`'s
+`Light` gives it form: a lit side, a shadow side, a bright rim, and the hat
+brim's shadow across the eyes. Shadows are a deeper shade of each surface's
+own colour, nudged towards the light's shadow colour, so skin in shadow
+stays skin. `example/lib/stage_style.dart` is the style test: one
+character, lit by a low sun, with a close-up of the face.
 
 ## Faces
 

@@ -18,10 +18,13 @@ import 'shape.dart';
 /// is looked up by part name and two copies of one character would otherwise
 /// have to share a pose.
 class Drawing extends StatelessWidget {
-  const Drawing(this.part, {super.key, this.pose = Pose.rest});
+  const Drawing(this.part, {super.key, this.pose = Pose.rest, this.light = const Light()});
 
   final Part part;
   final Pose pose;
+
+  /// The light [Shade]d shapes take. Unshaded shapes ignore it.
+  final Light light;
 
   @override
   Widget build(BuildContext context) {
@@ -43,26 +46,39 @@ class Drawing extends StatelessWidget {
     }());
     return CustomPaint(
       size: Size.infinite,
-      painter: _PartPainter(part, pose),
+      painter: _PartPainter(part, pose, light),
     );
   }
 }
 
 class _PartPainter extends CustomPainter {
-  const _PartPainter(this.part, this.pose);
+  const _PartPainter(this.part, this.pose, this.light);
 
   final Part part;
   final Pose pose;
+  final Light light;
 
   @override
-  void paint(Canvas canvas, Size size) => _paintPart(canvas, part, part, pose, Affine.identity);
+  void paint(Canvas canvas, Size size) {
+    // Cast shadows land only on what this drawing has already painted, so
+    // the drawing gets a layer of its own to land on.
+    final bool casts = _casts(part);
+    if (casts) canvas.saveLayer(null, Paint());
+    _paintPart(canvas, part, part, pose, Affine.identity, light);
+    if (casts) canvas.restore();
+  }
 
   @override
   bool shouldRepaint(_PartPainter oldDelegate) =>
-      oldDelegate.part != part || oldDelegate.pose != pose;
+      oldDelegate.part != part || oldDelegate.pose != pose || oldDelegate.light != light;
 }
 
-void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent) {
+final Expando<bool> _castsCache = Expando<bool>();
+
+bool _casts(Part part) => _castsCache[part] ??=
+    part.shapes.any((Shape s) => (s.shade?.cast ?? 0) > 0) || part.children.any(_casts);
+
+void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent, Light light) {
   final Joint joint = part.name.isEmpty ? Joint.rest : pose[part.name];
   final double opacity = (part.opacity * joint.opacity).clamp(0.0, 1.0);
   if (opacity <= 0) return;
@@ -89,8 +105,13 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent) {
           shape.skin?.deformed(root, pose) ??
           shape.live!(Where(root, pose, here)),
   ];
+  // The light, turned into this part's own space.
+  Offset toLight = Offset.zero;
+  if (part.shapes.any((Shape s) => s.shade != null) && here.determinant != 0) {
+    toLight = here.inverse.applyVector(light.from);
+  }
   for (int i = 0; i < outlines.length; i++) {
-    part.shapes[i].paint(canvas, outlines[i]);
+    part.shapes[i].paint(canvas, outlines[i], light: light, toLight: toLight);
   }
   if (part.clip && part.children.isNotEmpty) {
     canvas.save();
@@ -101,7 +122,7 @@ void _paintPart(Canvas canvas, Part root, Part part, Pose pose, Affine parent) {
     canvas.clipPath(inside);
   }
   for (final Part child in part.children) {
-    _paintPart(canvas, root, child, pose, here);
+    _paintPart(canvas, root, child, pose, here, light);
   }
   if (part.clip && part.children.isNotEmpty) canvas.restore();
   if (faded) canvas.restore();

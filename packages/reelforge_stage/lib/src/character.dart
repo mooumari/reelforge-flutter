@@ -12,57 +12,64 @@ import 'shape.dart';
 import 'skin.dart';
 import 'walk.dart';
 
-/// The proportions of a person, facing right, with the origin at the hips.
+/// The proportions of a person, seen three-quarters on and facing right,
+/// with the origin between the hips.
 ///
 /// Everything a [Character] draws and every [Garment] that dresses it is
-/// measured from these, so a child, a giant and a hunched old man are the
+/// measured from these, so a child, a giant and a stooped old man are the
 /// same template with different numbers -- and wear the same clothes.
+///
+/// Three-quarters on, the side of the body nearer the viewer is on the
+/// left of the drawing and the chest faces right: the near shoulder and hip
+/// are left of the middle, the far ones right of it and mostly hidden, and
+/// the front of the body -- buttons, buckle, collar -- runs down [mid].
 @immutable
 class Body {
   const Body({
-    this.headRadius = 60,
-    this.neck = 14,
-    this.torso = 140,
-    this.depth = 96,
+    this.headRadius = 64,
+    this.neck = 10,
+    this.torso = 118,
+    this.shoulders = 92,
+    this.hips = 80,
     this.belly = 0,
     this.chest = 0,
-    this.upperArm = 58,
-    this.forearm = 52,
-    this.armRadius = 15,
-    this.wristRadius = 12,
-    this.hand = 15,
-    this.upperLeg = 68,
-    this.lowerLeg = 62,
-    this.legRadius = 21,
-    this.ankleRadius = 16,
-    this.foot = 50,
+    this.upperArm = 50,
+    this.forearm = 46,
+    this.armRadius = 12,
+    this.wristRadius = 9.5,
+    this.hand = 12,
+    this.upperLeg = 58,
+    this.lowerLeg = 54,
+    this.legRadius = 17,
+    this.ankleRadius = 11.5,
+    this.foot = 34,
     this.hunch = 0,
   });
 
   /// Small, big-headed, short-limbed.
   static const Body child = Body(
-    headRadius: 58, neck: 8, torso: 96, depth: 78, upperArm: 40, forearm: 36,
-    armRadius: 12, wristRadius: 10, hand: 12, upperLeg: 46, lowerLeg: 42,
-    legRadius: 16, ankleRadius: 13, foot: 38,
+    headRadius: 60, neck: 6, torso: 82, shoulders: 72, hips: 64, upperArm: 34, forearm: 31,
+    armRadius: 10, wristRadius: 8, hand: 10.5, upperLeg: 38, lowerLeg: 35,
+    legRadius: 13.5, ankleRadius: 10, foot: 28,
   );
 
   /// Broad, heavy, a belly.
   static const Body stocky = Body(
-    torso: 150, depth: 128, belly: 16, chest: 6, armRadius: 18, wristRadius: 14,
-    hand: 17, legRadius: 25, ankleRadius: 18, upperLeg: 64, lowerLeg: 58,
+    torso: 124, shoulders: 118, hips: 104, belly: 14, chest: 4, armRadius: 15, wristRadius: 11.5,
+    hand: 14, legRadius: 21, ankleRadius: 14, upperLeg: 54, lowerLeg: 50,
   );
 
   /// Tall and narrow.
   static const Body slim = Body(
-    headRadius: 56, torso: 150, depth: 84, upperArm: 64, forearm: 58,
-    armRadius: 13, wristRadius: 10, upperLeg: 78, lowerLeg: 72, legRadius: 18,
-    ankleRadius: 14,
+    headRadius: 60, torso: 128, shoulders: 82, hips: 70, upperArm: 56, forearm: 51,
+    armRadius: 10.5, wristRadius: 8.5, upperLeg: 66, lowerLeg: 62, legRadius: 15,
+    ankleRadius: 10.5,
   );
 
   /// Bent at the shoulders, a little smaller.
   static const Body elder = Body(
-    headRadius: 57, torso: 128, depth: 98, belly: 6, upperArm: 54, forearm: 48,
-    upperLeg: 60, lowerLeg: 56, legRadius: 19, hunch: 9,
+    headRadius: 61, torso: 108, shoulders: 88, hips: 82, belly: 6, upperArm: 46, forearm: 42,
+    upperLeg: 50, lowerLeg: 48, legRadius: 16, hunch: 9,
   );
 
   final double headRadius;
@@ -71,8 +78,8 @@ class Body {
   /// Hips to the top of the shoulders.
   final double torso;
 
-  /// Front to back.
-  final double depth;
+  /// Across the shoulders, and across the hips, as seen.
+  final double shoulders, hips;
 
   /// How far the front sticks out at the waist, and at the chest.
   final double belly, chest;
@@ -83,45 +90,64 @@ class Body {
   /// Degrees the chest leans forward at rest; see [Character.stance].
   final double hunch;
 
-  double get front => depth / 2;
-  double get back => -depth / 2;
+  /// The torso's outline edges: [back] the near side, [front] the far side
+  /// and chest.
+  double get back => -shoulders / 2;
+  double get front => shoulders / 2 + chest;
+
+  /// The front middle of the body -- where buttons go -- at [height] from
+  /// the hips (0) to the shoulders (1): to the right of centre, as the chest
+  /// is turned that way.
+  double mid([double height = 0.5]) => shoulders * 0.2 + belly * 0.5 * (1 - (height - 0.3).abs() * 2).clamp(0.0, 1.0);
 
   /// The bottom of the sole, below the ankle.
-  double get sole => ankleRadius + 8;
+  double get sole => ankleRadius + 6;
 
-  Offset get hipF => Offset(depth * 0.1, 0);
-  Offset get hipB => Offset(-depth * 0.1, 0);
-  Offset get shoulderF => Offset(depth * 0.12, -torso + armRadius + 8);
-  Offset get shoulderB => Offset(-depth * 0.08, -torso + armRadius + 8);
+  Offset get hipF => Offset(-hips * 0.2, -legRadius * 0.6);
+  Offset get hipB => Offset(hips * 0.24, -legRadius * 0.8);
+  Offset get shoulderF => Offset(-shoulders * 0.36, -torso + armRadius + 5);
+  Offset get shoulderB => Offset(shoulders * 0.38, -torso + armRadius + 3);
 
   /// Where the head turns, on top of the neck.
-  Offset get headAt => Offset(depth * 0.08, -torso - neck);
+  Offset get headAt => Offset(shoulders * 0.06, -torso - neck);
 
   /// The middle of the head, in the head's own space.
-  Offset get headCenter => Offset(0, -headRadius * 0.85);
+  Offset get headCenter => Offset(0, -headRadius * 0.82);
 
   /// Feet on the ground to the top of the head.
-  double get height => upperLeg + lowerLeg + sole + torso + neck + headRadius * 1.85;
+  double get height => upperLeg + lowerLeg + sole + torso + neck + headRadius * 1.82;
 
-  /// The torso, side on: back, belly, chest.
-  Path get torsoPath => Paths.smooth(<Offset>[
-        Offset(back + 12, -torso),
-        Offset(back, -torso * 0.68),
-        Offset(back - 2, -torso * 0.3),
-        Offset(back + 8, 6),
-        Offset(0, 16),
-        Offset(front - 6 + belly * 0.4, 6),
-        Offset(front + belly, -torso * 0.32),
-        Offset(front + chest, -torso * 0.7),
-        Offset(front - 16, -torso),
-      ]);
+  /// The torso: rounded shoulders, a waist, the hips, the chest a little
+  /// fuller on the side it faces.
+  Path get torsoPath {
+    final double w = shoulders / 2, hw = hips / 2, t = torso;
+    return Paths.smooth(<Offset>[
+      Offset(-w * 0.55, -t),
+      Offset(-w * 0.92, -t + 10),
+      Offset(-w, -t + 26),
+      Offset(-w * 0.94, -t * 0.55),
+      Offset(-hw * 0.96, -t * 0.2),
+      Offset(-hw, -4),
+      Offset(-hw * 0.7, 10),
+      Offset(0, 14),
+      Offset(hw * 0.75, 10),
+      Offset(hw + belly * 0.6, -4),
+      Offset(hw * 0.98 + belly, -t * 0.25),
+      Offset(w * 0.96 + chest, -t * 0.6),
+      Offset(w, -t + 24),
+      Offset(w * 0.9, -t + 8),
+      Offset(w * 0.5, -t),
+      Offset(0, -t - 3),
+    ]);
+  }
 }
 
-/// A sleeve, a trouser leg, a glove: a length of a limb in one colour,
-/// skinned to the limb so it bends with it.
+/// A sleeve, a trouser leg, a glove, a boot's shaft: a length of a limb in
+/// one colour, skinned to the limb so it bends with it.
 ///
 /// [from] and [to] are fractions of the limb, 0 at the shoulder or hip and 1
-/// at the wrist or ankle. [side] limits it to one arm or leg.
+/// at the wrist or ankle; the ends are cut straight, as cloth is. [side]
+/// limits it to one arm or leg.
 @immutable
 class Cover {
   const Cover(this.color, {this.from = 0, this.to = 1, this.extra = 2.5, this.side});
@@ -132,7 +158,7 @@ class Cover {
   /// How much wider than the limb: cloth sits on top of it.
   final double extra;
 
-  /// `'F'` or `'B'` for one side only; null for both.
+  /// `'F'` (near) or `'B'` (far) for one side only; null for both.
   final String? side;
 }
 
@@ -177,8 +203,8 @@ class Fitting {
   /// The part of the head the face is on, for anything that covers the rest
   /// of the head -- a headscarf, a helmet -- to cut out.
   Path get faceWindow {
-    final double left = eyeNear.dx - eyeRadius - r * 0.22, right = eyeFar.dx + eyeRadius + r * 0.3;
-    final double top = browTop - r * 0.12, bottom = mouth.dy + r * 0.42;
+    final double left = eyeNear.dx - eyeRadius - r * 0.2, right = math.min(eyeFar.dx + eyeRadius + r * 0.3, r * 1.0);
+    final double top = browTop - r * 0.12, bottom = mouth.dy + r * 0.36;
     return Paths.ellipse(
       Offset((left + right) / 2, (top + bottom) / 2),
       (right - left) / 2,
@@ -188,6 +214,21 @@ class Fitting {
 
   double get r => body.headRadius;
   Offset get headCenter => body.headCenter;
+
+  /// The head's outline, in head space: round, with the jaw a little fuller
+  /// on the side the face is turned to.
+  Path get headOutline => Paths.smooth(<Offset>[
+        for (int i = 0; i < 24; i++)
+          () {
+            final double a = i * math.pi / 12;
+            // Most at 55 degrees below the forward horizontal.
+            final double jaw = math.max(0.0, math.cos(a - 0.95)) * 0.07;
+            return headCenter + Offset(math.cos(a) * r * (1 + jaw), math.sin(a) * r * (0.98 + jaw));
+          }(),
+      ]);
+
+  /// Where the ear is, in head space.
+  Offset get ear => h(-0.4, 0.08);
 
   /// [x], [y] in head radii from the middle of the head, in head space.
   Offset h(double x, double y) => headCenter + Offset(x * r, y * r);
@@ -202,10 +243,10 @@ class Fitting {
         PathOperation.intersect,
         body.torsoPath,
         Paths.rect(Rect.fromLTRB(
-          body.back - 40,
+          body.back - 60,
           to >= 1 ? -body.torso - 60 : -body.torso * to,
-          body.front + body.belly + body.chest + 40,
-          from <= 0 ? 40 : -body.torso * from,
+          body.front + body.belly + 60,
+          from <= 0 ? 60 : -body.torso * from,
         )),
       );
 
@@ -260,15 +301,16 @@ class Fitting {
     final double front = math.max(f.dx, k.dx) + reach, back = math.min(f.dx, k.dx) - reach;
     final double hem = math.max(f.dy, k.dy) + 4;
     Offset chest(double x, double y) => w.point('chest', Offset(x, y));
+    final double hw = b.hips / 2;
     return Paths.smooth(<Offset>[
-      chest(b.back - 1, -b.torso * waist),
-      chest(b.back - 3, 10),
+      chest(-hw - 2, -b.torso * waist),
+      chest(-hw - 3, 8),
       Offset(back, hem - 10),
       Offset(back + (front - back) * 0.3, hem),
       Offset(back + (front - back) * 0.7, hem),
       Offset(front, hem - 10),
-      chest(b.front + b.belly * 0.6 + 3, 10),
-      chest(b.front + b.belly + 1, -b.torso * waist),
+      chest(hw + b.belly * 0.6 + 3, 8),
+      chest(hw + b.belly + 2, -b.torso * waist),
     ]);
   }
 }
@@ -276,10 +318,12 @@ class Fitting {
 /// A person built from a [Body], a [FaceStyle] and an outfit of [Garment]s.
 ///
 /// [part] is a rig every motion in this package already knows: it walks with
-/// [biped], breathes and blinks with [life], waves with any gesture written
-/// for `shoulderF`, `elbowF` and `handF`, and its face takes every
-/// [Emotion], [Speech] and glance. Drawn side on, facing right, with the face
-/// turned three-quarters towards the viewer.
+/// [biped], breathes and blinks with [life], gestures with `shoulderF`,
+/// `elbowF` and `handF`, and its face takes every [Emotion], [Speech] and
+/// glance. Drawn three-quarters on, facing right: every part of it -- body,
+/// head, face, ear, hair, clothes -- is drawn from that one angle, so they
+/// agree about which way it is facing. Every surface is [Shade]d, so a
+/// [Drawing]'s [Light] gives it form.
 ///
 /// Ten characters are ten lists of garments -- the clothes, hair, beards and
 /// hats are reusable, and a new one is a small [Garment] class.
@@ -287,19 +331,35 @@ class Fitting {
 class Character {
   const Character({
     this.body = const Body(),
-    this.skin = const Color(0xFFE0A47C),
-    this.face = const FaceStyle(),
+    this.skin = const Color(0xFFE6A97F),
+    this.face = Character.defaultFace,
     this.outfit = const <Garment>[],
-    this.faceTurn = 0.55,
+    this.faceTurn = 0.7,
     this.faceSize = 1,
   });
+
+  /// A small, clean face: modest eyes with big pupils, thin brows, a little
+  /// nose turned the way the head is.
+  static const FaceStyle defaultFace = FaceStyle(
+    eyeSpacing: 60,
+    eyeWidth: 24,
+    eyeHeight: 30,
+    pupilRadius: 9.5,
+    browGap: 30,
+    browLength: 26,
+    browThickness: 6,
+    mouthY: 50,
+    mouthWidth: 40,
+    noseY: 26,
+    nose: <Shape>[],
+  );
 
   final Body body;
   final Color skin;
   final FaceStyle face;
   final List<Garment> outfit;
 
-  /// How far round the face is drawn: 0 front on, 1 three-quarters.
+  /// How far round the face is drawn: 0 front on, 1 well turned.
   final double faceTurn;
 
   /// The face's size on the head; 1 fits a [FaceStyle] drawn for a head of
@@ -317,7 +377,7 @@ class Character {
 
   /// The legs and feet, for a [Walk].
   Biped get biped {
-    final Offset toe = Offset(body.foot * 0.85, body.sole), heel = Offset(-body.foot * 0.22, body.sole);
+    final Offset toe = Offset(body.foot * 0.85, body.sole), heel = Offset(-body.foot * 0.25, body.sole);
     return Biped(
       front: Leg(hip: 'hipF', knee: 'kneeF', ankle: 'footF', toe: toe, heel: heel),
       back: Leg(hip: 'hipB', knee: 'kneeB', ankle: 'footB', toe: toe, heel: heel),
@@ -346,21 +406,25 @@ class Character {
           'head': Joint.rotate(-body.hunch * 0.7),
         });
 
-  /// Feet on the ground, at [groundY]: where to place [part] when not
-  /// walking. ([Walk] places it itself.)
+  /// The near foot on the ground at [groundY] -- the far one a touch higher,
+  /// as it is further back: where to place [part] when not walking. ([Walk]
+  /// places it itself.)
   Offset standing(double x, double groundY) =>
-      Offset(x, groundY - body.upperLeg - body.lowerLeg - body.sole);
+      Offset(x, groundY - body.hipF.dy - body.upperLeg - body.lowerLeg - body.sole);
 
   double get _faceScale => body.headRadius / 95 * faceSize;
 
-  Offset get _faceAt => body.headCenter + Offset(body.headRadius * 0.1, -body.headRadius * 0.02);
+  /// The middle of the face: towards the side the head is turned.
+  Offset get _faceAt => body.headCenter + Offset(body.headRadius * 0.16, -body.headRadius * 0.06);
 
   Fitting get _fitting => _fittings[this] ??= _dress();
 
+  Part get _faceRig => Part(at: _faceAt, scaleX: _faceScale, scaleY: _faceScale, children: <Part>[
+        face.build(turn: faceTurn),
+      ]);
+
   Fitting _dress() {
-    final Part faceRig = Part(at: _faceAt, scaleX: _faceScale, scaleY: _faceScale, children: <Part>[
-      face.build(turn: faceTurn),
-    ]);
+    final Part faceRig = _faceRig;
     Offset where(String name, [Offset local = Offset.zero]) => frameOf(faceRig, Pose.rest, name).apply(local);
     final Fitting fit = Fitting._(
       body,
@@ -378,10 +442,15 @@ class Character {
     return fit;
   }
 
-  static Color _far(Color c) => Color.lerp(c, const Color(0xFF1B1030), 0.2)!;
+  /// The far side of the body is a little darker and cooler: it is further
+  /// from the light, and it pushes it back.
+  static Color _far(Color c) => Color.lerp(c, const Color(0xFF2A1F4A), 0.16)!;
+
+  static Color _darker(Color c, double t) => Color.lerp(c, const Color(0xFF2A1F4A), t)!;
 
   /// The rig, with [hold] hung on its hands: `{'handF': [sword]}`. Things
-  /// held are drawn in the hand's space, the hand at the origin.
+  /// held are drawn in the hand's space, the hand at the origin; things in
+  /// the far hand are behind the body.
   Part build({Map<String, List<Part>> hold = const <String, List<Part>>{}}) {
     final Fitting fit = _fitting;
     final Body b = body;
@@ -393,15 +462,18 @@ class Character {
         if (fit.behind.isNotEmpty) chest(fit.behind),
         chest(<Part>[_arm('B', fit, _far, hold['handB'] ?? const <Part>[])]),
         _leg('B', fit, _far),
+        _leg('F', fit, (Color c) => c),
         chest(<Part>[
           Part(shapes: <Shape>[
-            Shape(Paths.capsule(b.headAt + const Offset(0, 6), b.headAt + Offset(0, -b.headRadius * 0.4), b.depth * 0.14),
-                color: Color.lerp(skin, const Color(0xFF000000), 0.12)),
-            Shape(b.torsoPath, color: skin),
+            Shape(
+              Paths.capsule(b.headAt + const Offset(0, 14), b.headAt + Offset(0, -b.headRadius * 0.5), b.headRadius * 0.24),
+              color: _darker(skin, 0.1),
+              shade: Shade.solid,
+            ),
+            Shape(b.torsoPath, color: skin, shade: Shade.solid),
             ...fit.torso,
           ]),
         ]),
-        _leg('F', fit, (Color c) => c),
         if (fit.overLegs.isNotEmpty) Part(children: fit.overLegs),
         chest(<Part>[
           ...fit.overTorso,
@@ -415,30 +487,35 @@ class Character {
   Part _head(Fitting fit) {
     final Body b = body;
     final double r = b.headRadius;
-    final Offset c = b.headCenter;
     return Part(
       name: 'head',
       at: b.headAt,
       children: <Part>[
         ...fit.headBack,
         Part(shapes: <Shape>[
-          Shape(Paths.ellipse(c, r, r * 1.02), color: skin),
-          // Cel shadow on the back of the head, cut to the head.
-          Shape(
-            Path.combine(PathOperation.intersect, Paths.ellipse(c, r, r * 1.02),
-                Paths.circle(c + Offset(-r * 1.55, r * 0.1), r * 1.2)),
-            color: const Color(0x1C000000),
-          ),
+          // The jaw casts a small shadow on the neck and collar under it;
+          // the shape itself is not drawn.
+          Shape(Paths.ellipse(fit.h(0.08, 0.5), r * 0.55, r * 0.42), shade: Shade(form: 0, core: 0, rim: 0, cast: r * 0.14, castStrength: 0.32)),
+          Shape(fit.headOutline, color: skin, shade: const Shade(form: 0.4, core: 0.2, coreStrength: 0.55, rim: 0.08)),
         ]),
         ...fit.underFace,
         Part(at: _faceAt, scaleX: _faceScale, scaleY: _faceScale, children: <Part>[face.build(turn: faceTurn)]),
+        // A nose, turned with the head: a soft rounded bump, its tip towards
+        // the way the face looks, lit like the rest of the head.
+        Part(shapes: <Shape>[
+          Shape(
+            Paths.smooth(<Offset>[
+              fit.h(0.36, -0.02), fit.h(0.47, 0.14), fit.h(0.47, 0.25), fit.h(0.36, 0.28), fit.h(0.28, 0.22), fit.h(0.31, 0.1),
+            ]),
+            color: _darker(skin, 0.05),
+            shade: const Shade(form: 0.5, core: 0.5, coreStrength: 0.8, rim: 0.12),
+          ),
+        ]),
         if (!fit.hideHair) ...fit.hair,
         if (!fit.hideEars)
           Part(shapes: <Shape>[
-            Shape(Paths.ellipse(c + Offset(-r * 0.2, r * 0.12), r * 0.15, r * 0.21),
-                color: Color.lerp(skin, const Color(0xFF000000), 0.06)),
-            Shape(Paths.ellipse(c + Offset(-r * 0.19, r * 0.12), r * 0.06, r * 0.1),
-                color: Color.lerp(skin, const Color(0xFF000000), 0.18)),
+            Shape(Paths.ellipse(fit.ear, r * 0.14, r * 0.2), color: skin, shade: Shade.solid),
+            Shape(Paths.ellipse(fit.ear + Offset(r * 0.02, 0), r * 0.06, r * 0.1), color: _darker(skin, 0.22)),
           ]),
         ...fit.headwear,
         ...fit.faceFront,
@@ -448,6 +525,7 @@ class Character {
 
   Part _arm(String side, Fitting fit, Color Function(Color) tone, List<Part> held) {
     final Body b = body;
+    final double h = b.hand;
     return _limb(
       joint: 'shoulder$side',
       child: 'elbow$side',
@@ -462,7 +540,18 @@ class Character {
       end: Part(
         name: 'hand$side',
         at: Offset(0, b.forearm),
-        shapes: <Shape>[Shape(Paths.circle(Offset(0, b.hand * 0.35), b.hand), color: tone(fit.hands[side] ?? skin))],
+        shapes: <Shape>[
+          // A mitten and a thumb.
+          Shape(
+            Paths.smooth(<Offset>[
+              Offset(-h * 0.75, -h * 0.1), Offset(-h * 0.8, h * 0.8), Offset(-h * 0.2, h * 1.45),
+              Offset(h * 0.55, h * 1.2), Offset(h * 0.8, h * 0.4), Offset(h * 0.6, -h * 0.2),
+            ]),
+            color: tone(fit.hands[side] ?? skin),
+            shade: Shade.solid,
+          ),
+          Shape(Paths.ellipse(Offset(h * 0.85, h * 0.45), h * 0.32, h * 0.45), color: tone(_darker(fit.hands[side] ?? skin, 0.06))),
+        ],
         children: held,
       ),
     );
@@ -484,18 +573,25 @@ class Character {
       end: Part(
         name: 'foot$side',
         at: Offset(0, b.lowerLeg),
-        shapes: fit.feet?.call(tone) ??
-            <Shape>[
-              Shape(
-                Paths.roundRect(
-                  Rect.fromLTRB(-b.foot * 0.3, -b.ankleRadius * 0.7, b.foot * 0.95, b.sole),
-                  b.ankleRadius * 0.8,
-                ),
-                color: tone(skin),
-              ),
-            ],
+        shapes: fit.feet?.call(tone) ?? <Shape>[Shape(Character.shoe(b), color: tone(skin), shade: Shade.solid)],
       ),
     );
+  }
+
+  /// A foot or a plain shoe, three-quarters on, in ankle space: a rounded
+  /// wedge pointing forward, flat on the sole.
+  static Path shoe(Body b, {double toe = 1, double top = 0.8}) {
+    final double f = b.foot * toe, r = b.ankleRadius, s = b.sole;
+    return Paths.smooth(<Offset>[
+      Offset(-r * 0.95, -r * top),
+      Offset(r * 0.6, -r * top * 0.95),
+      Offset(f * 0.62, s * 0.2),
+      Offset(f * 0.92, s * 0.62),
+      Offset(f * 0.8, s),
+      Offset(f * 0.2, s + 0.5),
+      Offset(-r * 1.0, s),
+      Offset(-r * 1.15, s * 0.45),
+    ]);
   }
 
   /// One skinned outline for the bare limb, then one per cover, all bent by
@@ -515,20 +611,29 @@ class Character {
   }) {
     final double length = upper + lower;
     double radius(double t) => r0 + (r1 - r0) * t;
-    Shape skinned(double from, double to, double extra, Color color) => Shape.skin(
-          Skin(
-            Paths.taper(Offset(0, from * length), Offset(0, to * length), radius(from) + extra, radius(to) + extra),
-            bones: <String>[joint, child],
-            tip: Offset(0, lower),
-          ),
-          color: color,
+    Shape skinned(double from, double to, double extra, Color color, Shade shade) {
+      Path path = Paths.taper(Offset.zero, Offset(0, length), radius(0) + extra, radius(1) + extra);
+      // Cloth ends are cut straight across the limb.
+      if (from > 0 || to < 1) {
+        path = Path.combine(
+          PathOperation.intersect,
+          path,
+          Paths.rect(Rect.fromLTRB(-99, from > 0 ? from * length : -99, 99, to < 1 ? to * length : length + 99)),
         );
+      }
+      return Shape.skin(
+        Skin(path, bones: <String>[joint, child], tip: Offset(0, lower)),
+        color: color,
+        shade: shade,
+      );
+    }
+
     return Part(
       name: joint,
       at: at,
       shapes: <Shape>[
-        skinned(0, 1, 0, skinColor),
-        for (final Cover c in covers) skinned(c.from, c.to, c.extra, tone(c.color)),
+        skinned(0, 1, 0, skinColor, Shade.solid),
+        for (final Cover c in covers) skinned(c.from, c.to, c.extra, tone(c.color), Shade.soft),
       ],
       children: <Part>[
         Part(name: child, at: Offset(0, upper), children: <Part>[end]),

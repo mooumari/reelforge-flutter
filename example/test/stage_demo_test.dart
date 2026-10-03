@@ -5,6 +5,7 @@ import 'package:example/stage_compare.dart';
 import 'package:example/stage_demo.dart';
 import 'package:example/stage_faces.dart';
 import 'package:example/stage_shapes.dart';
+import 'package:example/stage_style.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelforge/reelforge.dart';
 
@@ -135,5 +136,20 @@ void main() {
           reason: 'frame $frame differs when entered directly');
     }
     expect(_same(expected[100]!, expected[120]!), isFalse);
+  });
+
+  test('the style test is deterministic: light, cast shadows and the close-up', () async {
+    // Shading is worked out per part per frame from the pose, and cast
+    // shadows paint into a layer; none of it may carry between frames.
+    final CompositionRenderer walked = CompositionRenderer(stageStyle);
+    final Map<int, Uint8List> expected = <int, Uint8List>{};
+    for (int frame = 0; frame <= 280; frame += 20) {
+      expected[frame] = await _frame(walked, frame);
+    }
+    for (final int frame in <int>[40, 140, 280]) {
+      expect(_same(await _frame(CompositionRenderer(stageStyle), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    expect(_same(expected[120]!, expected[140]!), isFalse);
   });
 }

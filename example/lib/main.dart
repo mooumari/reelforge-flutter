@@ -9,6 +9,7 @@ import 'longform.dart';
 import 'stage_compare.dart';
 import 'stage_cast.dart';
 import 'stage_faces.dart';
+import 'stage_style.dart';
 import 'stage_shapes.dart';
 import 'stage_demo.dart';
 import 'report_data.dart';
@@ -32,6 +33,7 @@ Future<void> main() async {
         stageShapes,
         stageFaces,
         stageCast,
+        stageStyle,
         longform,
         helloFlutter,
         weeklyDeals,
