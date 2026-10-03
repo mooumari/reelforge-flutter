@@ -80,9 +80,9 @@ final Walk _walk = Walk(
   rig: _rig,
   route: const <Waypoint>[
     Waypoint(4, 150),
-    Waypoint(24, 260, curve: Curves.easeInSine),
-    Waypoint(130, 1176, curve: Curves.linear),
-    Waypoint(150, 1286, curve: Curves.easeOutSine),
+    Waypoint(24, 248, curve: Curves.easeInSine),
+    Waypoint(146, 1188, curve: Curves.linear),
+    Waypoint(166, 1286, curve: Curves.easeOutSine),
   ],
   groundY: _bottomGround,
   fps: _fps,

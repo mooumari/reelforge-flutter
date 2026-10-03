@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:reelforge/reelforge.dart' show ExactCurve;
 
 import 'follow.dart';
 import 'kinematics.dart';
@@ -177,7 +178,7 @@ class Gait {
       final Waypoint to = _route[i];
       if (frame > to.frame) continue;
       final Waypoint from = _route[i - 1];
-      final double t = to.curve.transform((frame - from.frame) / (to.frame - from.frame));
+      final double t = to.curve.exact((frame - from.frame) / (to.frame - from.frame));
       return from.x + (to.x - from.x) * t;
     }
     return _route.last.x;
@@ -350,7 +351,7 @@ class Gait {
     // A short or quick step folds the leg less.
     final double size = ((current.to - current.from).abs() / stepLength).clamp(0.25, 1.0) *
         ((current.land - current.lift) / (0.25 * fps)).clamp(0.6, 1.0);
-    final double along = Curves.easeInOut.transform(t);
+    final double along = Curves.easeInOut.exact(t);
     final double fold = math.pow(math.sin(math.pi * (t / 0.85).clamp(0.0, 1.0)), 1.5).toDouble();
     final double reach = math.sin(math.pi * ((t - 0.45) / 0.55).clamp(0.0, 1.0));
     // Up quickly and down slowly, easing off the ground and onto it.

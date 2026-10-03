@@ -37,7 +37,7 @@ Camera(
 | `Drawing` | paints a part in a pose |
 | `Camera`, `ParallaxLayer` | pan and zoom over layers at different depths |
 | `reach`, `frameOf` | two-bone IK to a point; forward kinematics, the painter's own arithmetic |
-| `Walk`, `Waypoint`, `Biped` | footsteps planned from a route; planted feet stay planted |
+| `Walk`, `Waypoint`, `Biped` | footsteps planned from a route; planted feet stay planted. `running: true` for a run with flight; `Walk.paced` for "go from here to there at this pace" (a route faster than the legs can show is an assertion, not a splayed-legs walk) |
 | `Gait`, `Quadruped` | the same for four legs: hind, fore, hind, fore, never fewer than two paws down |
 | `Lion` | a four-legged template -- lion, lioness, cub -- with a face that emotes and talks |
 | `followThrough`, `Jiggle` | carried parts lag, overshoot and settle on springs |

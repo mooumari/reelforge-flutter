@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:reelforge/reelforge.dart' show ExactCurve;
 
 import 'outline.dart';
 import 'part.dart';
@@ -299,7 +300,8 @@ class FaceStyle {
   /// neutral. Blend between two with [Pose.lerp]; layer speech and blinks on
   /// top with [Pose.plus].
   Pose express(Emotion emotion, {double amount = 1}) {
-    final Pose full = _expressions[emotion]!;
+    // A face with no brows has nothing for the expression to raise or knit.
+    final Pose full = browThickness > 0 ? _expressions[emotion]! : _browless[emotion]!;
     return amount == 1 ? full : Pose.lerp(Pose.rest, full, amount);
   }
 
@@ -382,6 +384,14 @@ class FaceStyle {
       browLeftY: 4,
       brows: const <String, double>{'raise': 0.3},
     ),
+  };
+
+  static final Map<Emotion, Pose> _browless = <Emotion, Pose>{
+    for (final MapEntry<Emotion, Pose> e in _expressions.entries)
+      e.key: Pose(<String, Joint>{
+        for (final MapEntry<String, Joint> j in e.value.joints.entries)
+          if (j.key != FaceJoints.browL && j.key != FaceJoints.browR) j.key: j.value,
+      }),
   };
 
   /// A sequence of feelings: each `(frame, emotion)` is reached [transition]
@@ -472,14 +482,14 @@ class Gaze {
     Offset from = cues.first.$2, to = cues.first.$2;
     int start = cues.first.$1;
     Offset reached(int now) =>
-        Offset.lerp(from, to, curve.transform(((now - start) / over).clamp(0.0, 1.0)))!;
+        Offset.lerp(from, to, curve.exact(((now - start) / over).clamp(0.0, 1.0)))!;
     for (final (int f, Offset d) in cues.skip(1)) {
       if (f > frame) break;
       from = reached(f);
       to = d;
       start = f;
     }
-    return Offset.lerp(from, to, curve.transform(((frame - start) / over).clamp(0.0, 1.0)))!;
+    return Offset.lerp(from, to, curve.exact(((frame - start) / over).clamp(0.0, 1.0)))!;
   }
 }
 

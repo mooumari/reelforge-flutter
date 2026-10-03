@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:reelforge/reelforge.dart' show ExactCurve;
 
 import 'follow.dart';
 import 'kinematics.dart';
@@ -116,13 +117,17 @@ class Walk {
     this.scale = 1,
     this.body = const Biped(),
     double? stepLength,
-    this.stepHeight = 0.16,
-    this.armSwing = 24,
-    this.lean = 5,
-  })  : assert(route.isNotEmpty, 'A walk needs at least one waypoint.'),
+    double? stepHeight,
+    double? armSwing,
+    double? lean,
+    this.running = false,
+  })  : stepHeight = stepHeight ?? (running ? 0.34 : 0.16),
+        armSwing = armSwing ?? (running ? 42 : 24),
+        lean = lean ?? (running ? 13 : 5),
+        assert(route.isNotEmpty, 'A walk needs at least one waypoint.'),
         _route = List<Waypoint>.unmodifiable(route) {
     _measureRig();
-    this.stepLength = stepLength ?? _legLength * scale * 0.68;
+    this.stepLength = stepLength ?? _legLength * scale * (running ? 1.5 : 0.68);
     _dir = route.last.x >= route.first.x ? 1 : -1;
     assert(() {
       for (int i = 1; i < route.length; i++) {
@@ -132,7 +137,51 @@ class Walk {
       return true;
     }(), 'A walk goes one way: waypoints must not turn back, and their frames must increase.');
     _plan();
+    assert(
+      topPace < (running ? 2.0 : 1.6),
+      'This route reaches ${topPace.toStringAsFixed(2)}x the pace a walk is drawn for: the legs cannot keep up. Slow it down, or set running: true.',
+    );
   }
+
+  /// A walk from [from] to [to] starting at frame [start], as long as it takes
+  /// to go at [pace]: 1 is the pace a walk is drawn for (a step every 0.45s;
+  /// every 0.3s running), and the route's own fastest moment, with its easing,
+  /// is what is held to it. So a character is never asked to go faster than
+  /// its legs can show: pass a pace, get the duration.
+  factory Walk.paced({
+    required Part rig,
+    required double from,
+    required double to,
+    required double groundY,
+    required int fps,
+    int start = 0,
+    double pace = 1.0,
+    bool running = false,
+    double scale = 1,
+    Biped body = const Biped(),
+    Curve curve = Curves.easeInOutSine,
+    double? stepLength,
+  }) {
+    Walk trial(int frames) => Walk(
+          rig: rig,
+          route: <Waypoint>[Waypoint(start, from), Waypoint(start + frames, to, curve: curve)],
+          groundY: groundY,
+          fps: fps,
+          scale: scale,
+          body: body,
+          running: running,
+          stepLength: stepLength,
+        );
+    // Pace is inversely proportional to duration, so one slow trial says how
+    // long the real thing takes.
+    const int probe = 3000;
+    final double probed = trial(probe).topPace;
+    final int frames = math.max(12, (probe * probed / pace).ceil());
+    return trial(frames);
+  }
+
+  /// The frame the body stops on.
+  int get endFrame => _route.last.frame;
 
   /// The character, unplaced. Its root is the pelvis.
   final Part rig;
@@ -153,6 +202,11 @@ class Walk {
 
   /// Degrees the chest leans forward at a full pace.
   final double lean;
+
+  /// A run: longer, quicker strides, a moment in the air between them, the
+  /// arms bent and pumping, the body leaning in. A walk planned for a speed
+  /// that is really a run is what makes legs splay and hips sink.
+  final bool running;
 
   final List<Waypoint> _route;
   late final int _dir;
@@ -192,7 +246,7 @@ class Walk {
       final Waypoint to = _route[i];
       if (frame > to.frame) continue;
       final Waypoint from = _route[i - 1];
-      final double t = to.curve.transform((frame - from.frame) / (to.frame - from.frame));
+      final double t = to.curve.exact((frame - from.frame) / (to.frame - from.frame));
       return from.x + (to.x - from.x) * t;
     }
     return _route.last.x;
@@ -204,27 +258,26 @@ class Walk {
   /// Distance per frame at [frame].
   double _speed(num frame) => (_uAt(frame + 1) - _uAt(frame - 1)) / 2;
 
-  /// The pace a stride is drawn for: a step every 0.45s.
-  double get _pace => stepLength / (0.45 * fps);
+  /// The pace a stride is drawn for: a step every 0.45s walking, every 0.3s
+  /// running.
+  double get _pace => stepLength / ((running ? 0.3 : 0.45) * fps);
 
-  /// The first frame, fractional, at which the body has gone [u].
-  double _frameAt(double u) {
-    if (u <= 0) return _first.toDouble();
-    if (u >= _u.last) {
-      final int i = _u.indexWhere((double v) => v >= _u.last);
-      return (_first + i).toDouble();
+  /// The fastest the route goes, as a multiple of [_pace]: 1 is a walk drawn
+  /// at its own stride, 1.7 and over is not a walk any more.
+  double get topPace {
+    double top = 0;
+    for (int f = _first; f <= _route.last.frame; f++) {
+      top = math.max(top, _speed(f) / _pace);
     }
-    int lo = 0, hi = _u.length - 1;
-    while (hi - lo > 1) {
-      final int mid = (lo + hi) >> 1;
-      if (_u[mid] >= u) {
-        hi = mid;
-      } else {
-        lo = mid;
-      }
-    }
-    final double span = _u[hi] - _u[lo];
-    return _first + lo + (span <= 0 ? 0 : (u - _u[lo]) / span);
+    return top;
+  }
+
+  /// How far along the route the body is at [frame], fractional.
+  double _uInterp(double frame) {
+    final double i = (frame - _first).clamp(0.0, (_u.length - 1).toDouble());
+    final int lo = i.floor();
+    final int hi = math.min(lo + 1, _u.length - 1);
+    return _u[lo] + (_u[hi] - _u[lo]) * (i - lo);
   }
 
   double _standOffset(int foot) =>
@@ -232,48 +285,90 @@ class Walk {
 
   void _plan() {
     _first = _route.first.frame;
-    _u = <double>[for (int f = _first; f <= _route.last.frame; f++) _uAt(f)];
+    final int lastFrame = _route.last.frame;
+    _u = <double>[for (int f = _first; f <= lastFrame; f++) _uAt(f)];
     final double total = _u.last;
     final double length = stepLength;
-    final double lead = length * 0.5;
-    final double minSwing = 0.2 * fps, maxSwing = 0.5 * fps, minStance = 0.08 * fps;
+    // Footfalls come on a beat, one foot then the other, and a step is as long
+    // as the body travels in one beat: short while setting off and coming to
+    // a stop, long at speed. Placing them by distance instead -- one fixed
+    // stride -- is what makes a walk that eases in and out shuffle, rush and
+    // lurch.
+    final double period = (running ? 0.30 : 0.45) * fps;
+    final double swingTime = period * (running ? 1.3 : 0.8);
+    final double minStance = (running ? 0.05 : 0.08) * fps;
 
     final List<double> at = <double>[_standOffset(0), _standOffset(1)];
     final List<double> landed = <double>[double.negativeInfinity, double.negativeInfinity];
     final List<Footstep> out = <Footstep>[];
 
-    void add(int foot, double to, double landBody, {double? swingFrames}) {
-      double land = _frameAt(landBody);
-      final double v = math.max(_speed(land), 1e-6);
-      final double swing = (swingFrames ?? (0.8 * length / v)).clamp(minSwing, maxSwing);
+    // [swing] is how long the foot is in the air, in frames. Planned steps
+    // give [share] and [beat] instead: a share of a foot's whole cycle (the
+    // time since it last landed), so that when the beat quickens the foot is
+    // not left planted for the old, longer one.
+    void add(int foot, double to, double land, {double? swing, double share = 0, double beat = 0}) {
+      swing ??= landed[foot].isFinite ? (land - landed[foot]) * share / 2 : beat * share;
       double lift = land - swing;
-      final int other = 1 - foot;
-      // Never both feet in the air: this is a walk, not a run.
-      lift = math.max(lift, landed[other]);
+      if (!running) lift = math.max(lift, landed[1 - foot]);
       lift = math.max(lift, landed[foot] + minStance);
-      land = math.max(land, lift + minSwing);
+      land = math.max(land, lift + 0.1 * fps);
       out.add(Footstep(foot, lift, land, _world(at[foot]), _world(to)));
       at[foot] = to;
       landed[foot] = land;
     }
 
+    // Nothing steps until the body moves.
+    double start = _first.toDouble();
+    while (start < lastFrame && _speed(start) < 0.03 * _pace) {
+      start++;
+    }
+    // However fast the body goes, a leg only spans so much: past that the
+    // steps come quicker instead of longer.
+    final double maxStride = length * (running ? 1.1 : 1.3);
+    double land = start + swingTime;
+    double lastLand = start;
     int foot = 1; // the back foot moves first
-    for (int k = 0;; k++) {
-      final double to = (k + 1) * length;
-      if (to > total - 0.25 * length) break;
-      add(foot, to, to - lead);
+    while (land < lastFrame) {
+      final double v = _speed(land);
+      final double beat = v * period > maxStride ? math.max(0.6 * period, maxStride / v) : period;
+      final double stride = (_uInterp(land + beat / 2) - _uInterp(land - beat / 2)).clamp(0.0, maxStride);
+      // A foot is planted for 1.2 strides of body travel walking, 0.7 running:
+      // it lands half of that ahead, and leaves half of it behind.
+      // A foot never lands past where it will stand when the body stops.
+      final double to = math.min(_uInterp(land) + (running ? 0.35 : 0.6) * stride, total + _standOffset(foot));
+      if (_uInterp(land) > total - 0.3 * length) break;
+      if ((to - at[foot]).abs() > 0.06 * length) {
+        add(foot, to, land, share: running ? 1.3 : 0.8, beat: beat);
+        lastLand = land;
+      }
       foot = 1 - foot;
+      land += beat;
     }
     // Two last steps, bringing each foot under the body where it stops.
+    double settle = math.max(lastLand + 0.5 * period, math.min(land, lastFrame.toDouble()));
     for (int i = 0; i < 2; i++) {
       final double to = total + _standOffset(foot);
       if ((to - at[foot]).abs() > 0.03 * length) {
-        add(foot, to, math.min(to - lead * 0.6, total), swingFrames: 0.36 * fps);
+        add(foot, to, settle, swing: 0.36 * fps);
+        settle += 0.42 * period;
       }
       foot = 1 - foot;
     }
     steps = List<Footstep>.unmodifiable(out);
+    // The moments neither foot is down, in a run: the body is thrown between
+    // them, up and over.
+    final List<(double, double)> air = <(double, double)>[];
+    for (int i = 0; i < out.length; i++) {
+      for (int j = i + 1; j < out.length && j <= i + 2; j++) {
+        if (out[j].foot == out[i].foot) continue;
+        final double a = math.max(out[i].lift, out[j].lift), b = math.min(out[i].land, out[j].land);
+        if (b - a > 0.5) air.add((a, b));
+      }
+    }
+    _air = air;
   }
+
+  late final List<(double, double)> _air;
 
   // --- where each foot is ---
 
@@ -297,11 +392,11 @@ class Walk {
       final double size = _size(current);
       final (Offset liftAt, double liftAngle) = _pivot(leg, current.from, _toeOff * size, toe: true);
       final (Offset landAt, double landAngle) = _pivot(leg, current.to, -_heelStrike * size, toe: false);
-      final double along = Curves.easeInOutSine.transform(t);
+      final double along = Curves.easeInOutSine.exact(t);
       // Up quickly, down a little slower: the peak comes early in the swing.
       final double arc = math.sin(math.pi * math.pow(t, 0.8)) * stepHeight * _legLength * scale * size;
       final Offset ankle = Offset.lerp(liftAt, landAt, along)! - Offset(0, arc);
-      final double angle = liftAngle + (landAngle - liftAngle) * Curves.easeInOut.transform(t);
+      final double angle = liftAngle + (landAngle - liftAngle) * Curves.easeInOut.exact(t);
       return (ankle, angle);
     }
 
@@ -313,7 +408,7 @@ class Walk {
       final double strike = 0.12 * fps;
       final double since = frame - previous.land;
       if (since < strike) {
-        angle = -_heelStrike * _size(previous) * (1 - Curves.easeOut.transform(since / strike));
+        angle = -_heelStrike * _size(previous) * (1 - Curves.easeOut.exact(since / strike));
       }
     }
     if (next != null) {
@@ -321,7 +416,7 @@ class Walk {
       final double roll = math.min(0.22 * fps, (next.lift - (previous?.land ?? next.lift - 0.22 * fps)) * 0.45);
       final double until = next.lift - frame;
       if (until < roll && roll > 0) {
-        angle = _toeOff * _size(next) * Curves.easeIn.transform(1 - until / roll);
+        angle = _toeOff * _size(next) * Curves.easeIn.exact(1 - until / roll);
         aboutToe = true;
       }
     }
@@ -363,22 +458,43 @@ class Walk {
   /// 0 standing, 1 at the pace the stride is drawn for.
   double _paceAt(num frame) => (_speed(frame) / _pace).clamp(0.0, 1.6);
 
-  double _rootY(double frame) {
-    final double pace = math.min(_paceAt(frame), 1);
-    final double sole = body.front.toe.dy;
-    // A standing leg is not quite straight; a walking one is a little more
-    // bent, which is what leaves room for the hips to rise and fall.
-    final double bend = 0.985 - 0.035 * pace;
-    double y = groundY - (sole + _legLength * bend) * scale - _hips[0].dy * scale;
+  /// The hips' height, smoothed over three frames so that a foot landing is a
+  /// settling and not a knock.
+  double _rootY(double frame) =>
+      math.max((_rawRootY(frame - 1) + 2 * _rawRootY(frame) + _rawRootY(frame + 1)) / 4, _floor(frame));
+
+  /// The lowest the hips may be -- as a y, so the largest -- with every foot
+  /// that holds them up still within reach of its hip.
+  double _floor(double frame) {
     final double x = xAt(frame);
     final double reachLimit = _legLength * scale * 0.997;
+    double floor = double.negativeInfinity;
     for (int i = 0; i < 2; i++) {
+      // Walking, both feet hold the hips up. Running, only a foot on the
+      // ground does; a swinging one is reached for, not stood on.
+      if (running && !plantedAt(i, frame)) continue;
       final Offset ankle = _foot(i, frame).$1;
       final double hipX = x + _hips[i].dx * scale * _dir;
       final double dx = (ankle.dx - hipX).abs();
       final double rise = dx >= reachLimit ? 0 : math.sqrt(reachLimit * reachLimit - dx * dx);
-      final double lowest = ankle.dy - rise - _hips[i].dy * scale;
-      y = _smoothMax(y, lowest, 0.025 * _legLength * scale);
+      floor = math.max(floor, ankle.dy - rise - _hips[i].dy * scale);
+    }
+    return floor;
+  }
+
+  double _rawRootY(double frame) {
+    final double pace = math.min(_paceAt(frame), 1);
+    final double sole = body.front.toe.dy;
+    // A standing leg is not quite straight; a walking one is a little more
+    // bent, which is what leaves room for the hips to rise and fall.
+    final double bend = 0.985 - (running ? 0.09 : 0.035) * pace;
+    double y = groundY - (sole + _legLength * bend) * scale - _hips[0].dy * scale;
+    final double floor = _floor(frame);
+    if (floor.isFinite) y = _smoothMax(y, floor, 0.025 * _legLength * scale);
+    if (running) {
+      for (final (double a, double b) in _air) {
+        if (frame > a && frame < b) y -= 0.1 * _legLength * scale * math.sin(math.pi * (frame - a) / (b - a));
+      }
     }
     return y;
   }
@@ -427,7 +543,7 @@ class Walk {
       final double ahead = ((ankleAt(i, late).dx - xAt(late)) * _dir / stepLength).clamp(-1.2, 1.2);
       final double swing = armSwing * math.min(_paceAt(late), 1.2) * ahead;
       joints[arm.$1] = Joint.rotate(swing);
-      joints[arm.$2] = Joint.rotate(-6 - 16 * math.min(_paceAt(late), 1) * math.max(0, -ahead));
+      joints[arm.$2] = Joint.rotate(running ? -78 - 14 * ahead : -6 - 16 * math.min(_paceAt(late), 1) * math.max(0, -ahead));
     }
 
     Pose pose = Pose(joints);
@@ -435,7 +551,16 @@ class Walk {
 
     for (int i = 0; i < 2; i++) {
       final Leg leg = _legs[i];
-      final (Offset ankle, double angle) = _foot(i, f);
+      final (Offset footAt, double angle) = _foot(i, f);
+      Offset ankle = footAt;
+      if (running && !plantedAt(i, f)) {
+        // A swinging foot that the leg cannot reach is brought in to where it
+        // can, rather than stretching the leg after it.
+        final Offset hip = frameOf(placed, pose, leg.hip).origin;
+        final double limit = _legLength * scale * 0.9995;
+        final Offset d = ankle - hip;
+        if (d.distance > limit) ankle = hip + d / d.distance * limit;
+      }
       pose = reach(
         placed,
         pose,

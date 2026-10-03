@@ -16,7 +16,7 @@ import 'stage_style.dart' show wyatt;
 /// whoever wears them, and every one of them walks, waves and talks on the
 /// same joints.
 const int _fps = 30;
-const int _frames = 450;
+const int _frames = 720;
 
 final Composition stageCast = Composition(
   id: 'StageCast',
@@ -267,7 +267,7 @@ class _Spot {
 
   /// A brisk walk, in pixels a frame: proportional to the legs, so short
   /// legs take as many steps a second as long ones, not longer strides.
-  double get speed => (who.body.upperLeg + who.body.lowerLeg) * scale * 0.1;
+  double get speed => (who.body.upperLeg + who.body.lowerLeg) * scale * 0.075;
 }
 
 const double _backGround = 640, _frontGround = 1000;

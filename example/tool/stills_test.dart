@@ -2,7 +2,13 @@ import 'dart:io';
 
 import 'package:example/rain_cast.dart';
 import 'package:example/rain_week.dart';
+import 'package:example/lion_sleep.dart';
+import 'package:example/stage_cast.dart';
+import 'package:example/stage_compare.dart';
+import 'package:example/stage_style.dart';
+import 'package:example/stage_demo.dart';
 import 'package:example/stage_savanna.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelforge/reelforge.dart';
@@ -23,6 +29,11 @@ final Map<String, Composition> _all = <String, Composition>{
   stageSavanna.id: stageSavanna,
   rainCast.id: rainCast,
   rainWeek.id: rainWeek,
+  stageDemo.id: stageDemo,
+  stageCast.id: stageCast,
+  walkCompare.id: walkCompare,
+  stageStyle.id: stageStyle,
+  lionSleep.id: lionSleep,
 };
 
 void main() {
@@ -39,6 +50,11 @@ void main() {
     Directory(_out).createSync(recursive: true);
     // ignore: avoid_print
     print('${composition.id}: ${composition.durationInFrames} frames at ${composition.fps} fps');
+    // A build error is drawn as a red screen; say what it was.
+    FlutterError.onError = (FlutterErrorDetails d) {
+      // ignore: avoid_print
+      if (!d.exceptionAsString().contains("'inTest'")) print('BUILD ERROR: ${d.toString(minLevel: DiagnosticLevel.debug)}');
+    };
     final CompositionRenderer renderer = CompositionRenderer(composition);
     for (final String f in _frames.split(',').where((String s) => s.isNotEmpty)) {
       final int frame = int.parse(f);

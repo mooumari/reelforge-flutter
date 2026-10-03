@@ -213,14 +213,14 @@ void main() {
     test('a walk plans steps for it', () {
       final Walk walk = Walk(
         rig: plain.part,
-        route: const <Waypoint>[Waypoint(0, 0), Waypoint(60, 400)],
+        route: const <Waypoint>[Waypoint(0, 0), Waypoint(120, 400)],
         groundY: 800,
         fps: 30,
         body: plain.biped,
       );
       expect(walk.steps, isNotEmpty);
       // Stopped, both feet flat where their last steps put them.
-      final Posed p = walk.at(90);
+      final Posed p = walk.at(150);
       for (final (int, String) foot in <(int, String)>[(0, 'footF'), (1, 'footB')]) {
         final Footstep last = walk.steps.lastWhere((Footstep s) => s.foot == foot.$1);
         final Offset ankle = frameOf(p.part, p.pose, foot.$2).origin;

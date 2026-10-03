@@ -190,7 +190,7 @@ void main() {
     test('walking left mirrors the character and still plants its feet', () {
       final Walk walk = _walk(route: const <Waypoint>[
         Waypoint(0, 900),
-        Waypoint(60, 400),
+        Waypoint(120, 400),
       ]);
       expect(walk.at(30).part.scaleX, lessThan(0));
       for (int f = 0; f <= 90; f++) {

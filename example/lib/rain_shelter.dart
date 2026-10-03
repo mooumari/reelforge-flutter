@@ -108,6 +108,7 @@ final List<Walk> _runs = <Walk>[
       fps: rainFps.toInt(),
       scale: _runScale,
       body: c.biped,
+      running: true,
     ),
 ];
 

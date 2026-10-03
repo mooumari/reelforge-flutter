@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:example/rain_week.dart';
 import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
@@ -9,6 +7,7 @@ import 'package:example/stage_faces.dart';
 import 'package:example/stage_savanna.dart';
 import 'package:example/stage_shapes.dart';
 import 'package:example/stage_style.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelforge/reelforge.dart';
 
@@ -23,7 +22,21 @@ import 'package:reelforge/reelforge.dart';
 /// before the one asked for. If that ever leaked state between calls, the
 /// fresh-renderer test is what would catch it.
 Future<Uint8List> _frame(CompositionRenderer renderer, int frame) async {
-  final ByteData data = await renderer.renderFrameRgba(frame);
+  // A build error is drawn as a red screen, which is the same red screen every
+  // time: deterministic, and wrong. Fail on it instead.
+  final FlutterExceptionHandler? before = FlutterError.onError;
+  final List<String> errors = <String>[];
+  FlutterError.onError = (FlutterErrorDetails d) {
+    // The renderer runs outside a testWidgets body, which the binding grumbles about.
+    if (!d.exceptionAsString().contains("'inTest'")) errors.add(d.exceptionAsString());
+  };
+  final ByteData data;
+  try {
+    data = await renderer.renderFrameRgba(frame);
+  } finally {
+    FlutterError.onError = before;
+  }
+  expect(errors, isEmpty, reason: 'frame $frame threw while building');
   return Uint8List.fromList(
     data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
   );

@@ -82,8 +82,7 @@ class Camera extends StatelessWidget {
       final CameraKeyframe to = keyframes[i];
       if (frame > to.frame) continue;
       final CameraKeyframe from = keyframes[i - 1];
-      final double t = to.curve
-          .transform((frame - from.frame) / (to.frame - from.frame));
+      final double t = to.curve.exact((frame - from.frame) / (to.frame - from.frame));
       return CameraState(
         Offset.lerp(centerOf(from), centerOf(to), t)!,
         // Zoom is a ratio, so it is blended as one: halfway between 1x and 4x

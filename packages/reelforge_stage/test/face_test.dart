@@ -149,6 +149,15 @@ void main() {
       expect(style.express(Emotion.happy, amount: 0.5)[FaceJoints.mouth].weights['smile'], 0.5);
     });
 
+    test('a face without brows is never asked to move them', () {
+      const FaceStyle bare = FaceStyle(browThickness: 0);
+      final Set<String> names = bare.build().names;
+      for (final Emotion e in Emotion.values) {
+        expect(names, containsAll(bare.express(e).joints.keys), reason: e.name);
+      }
+      expect(bare.express(Emotion.happy)[FaceJoints.mouth].weights['smile'], 1);
+    });
+
     test('brows mirror: a cross face lowers both inner ends', () {
       final Pose angry = style.express(Emotion.angry);
       expect(angry[FaceJoints.browL].degrees, greaterThan(0));

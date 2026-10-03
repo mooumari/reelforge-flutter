@@ -90,19 +90,20 @@ final Composition rainWeek = Composition(
 // --- shot 1: the storm comes ---
 
 /// The band, small, walking home across the bank with the day's gatherings.
-final List<(Character, double, double, double)> _walkers = <(Character, double, double, double)>[
-  (tor, 120, 0.34, 4.0),
-  (ama, 20, 0.33, 4.0),
-  (bran, -70, 0.35, 4.3),
-  (eda, -160, 0.31, 3.2),
-  (kito, -230, 0.3, 3.4),
+final List<(Character, double, double, double, double)> _walkers = <(Character, double, double, double, double)>[
+  // character, start x, scale, seconds, distance
+  (tor, 120, 0.34, 4.0, 310),
+  (ama, 20, 0.33, 4.0, 320),
+  (bran, -70, 0.35, 4.3, 400),
+  (eda, -30, 0.31, 3.2, 190),
+  (kito, -90, 0.3, 3.4, 150),
 ];
 
 final List<Walk> _walks = <Walk>[
-  for (final (Character c, double x, double s, double speed) in _walkers)
+  for (final (Character c, double x, double s, double speed, double far) in _walkers)
     Walk(
       rig: c.part,
-      route: Performance(fps: _fps, startX: x, beats: <Beat>[Move(x + speed * 110, at: 0, seconds: speed, curve: Curves.linear)]).route,
+      route: Performance(fps: _fps, startX: x, beats: <Beat>[Move(x + far, at: 0, seconds: speed, curve: Curves.linear)]).route,
       groundY: 928,
       fps: _fps,
       scale: s,

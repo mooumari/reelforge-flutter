@@ -15,6 +15,39 @@ enum Extrapolate {
   identity,
 }
 
+/// Exact evaluation of easing curves.
+extension ExactCurve on Curve {
+  /// Like [Curve.transform], but without Flutter's tolerance.
+  ///
+  /// A [Cubic] solves for its parameter only to within 0.001, which is fine
+  /// for a UI but means per-frame positions and speeds wobble by about a
+  /// thousandth of the distance travelled: a few pixels over a long pan,
+  /// visible as shimmer on slow motion. This solves to machine precision, so
+  /// a slow ease is smooth.
+  double exact(double t) {
+    final Curve self = this;
+    if (self is! Cubic || t <= 0 || t >= 1) return transform(t);
+    double start = 0;
+    double end = 1;
+    double mid = t;
+    for (int i = 0; i < 60; i++) {
+      mid = (start + end) / 2;
+      final double x = 3 * self.a * mid * (1 - mid) * (1 - mid) +
+          3 * self.c * mid * mid * (1 - mid) +
+          mid * mid * mid;
+      if ((x - t).abs() < 1e-12) break;
+      if (x < t) {
+        start = mid;
+      } else {
+        end = mid;
+      }
+    }
+    return 3 * self.b * mid * (1 - mid) * (1 - mid) +
+        3 * self.d * mid * mid * (1 - mid) +
+        mid * mid * mid;
+  }
+}
+
 /// Maps [input] from [inputRange] onto [outputRange].
 ///
 /// ```dart
@@ -90,7 +123,7 @@ double _segment(
   final double y1 = outputRange[i + 1].toDouble();
   final double t = (x - x0) / (x1 - x0);
   // Curves are only defined on [0, 1]; extrapolation stays linear.
-  final double eased = (t >= 0 && t <= 1) ? easing.transform(t) : t;
+  final double eased = (t >= 0 && t <= 1) ? easing.exact(t) : t;
   return y0 + (y1 - y0) * eased;
 }
 

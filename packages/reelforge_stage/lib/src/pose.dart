@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:reelforge/reelforge.dart' show ExactCurve;
 
 /// How far one part is from its resting placement.
 ///
@@ -232,7 +233,7 @@ class Take {
       if (f > to.frame) continue;
       final Keyframe from = keyframes[i - 1];
       final double t = (f - from.frame) / (to.frame - from.frame);
-      return Pose.lerp(from.pose, to.pose, to.curve.transform(t));
+      return Pose.lerp(from.pose, to.pose, to.curve.exact(t));
     }
     return keyframes.last.pose;
   }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:reelforge/reelforge.dart' show ExactCurve;
 
 import 'pose.dart';
 
@@ -141,7 +142,7 @@ class Life {
     if (since < 0 || since > 7) return 1;
     if (since < 2) return 1 - 0.92 * (since / 2);
     if (since < 3) return 0.08;
-    return 0.08 + 0.92 * Curves.easeOut.transform((since - 3) / 4);
+    return 0.08 + 0.92 * Curves.easeOut.exact((since - 3) / 4);
   }
 
   /// Eyes hold still, then dart: a glance is fast, the hold is long.
@@ -150,7 +151,7 @@ class Life {
     final int i = (t / hold).floor();
     final double f = t / hold - i;
     Offset target(int k) => Offset(_hash(seed + 31, k), _hash(seed + 37, k) * 0.5) * glance;
-    final double dart = Curves.easeOutCubic.transform((f / 0.08).clamp(0.0, 1.0));
+    final double dart = Curves.easeOutCubic.exact((f / 0.08).clamp(0.0, 1.0));
     return Offset.lerp(target(i - 1), target(i), dart)!;
   }
 }

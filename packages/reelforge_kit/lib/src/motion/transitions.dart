@@ -94,7 +94,7 @@ class _SlideTransition extends SceneTransition {
 
   @override
   Widget build(BuildContext context, Widget child) {
-    final double t = curve.transform(
+    final double t = curve.exact(
       SceneTransition.edge(context, frames).clamp(0.0, 1.0),
     );
     Widget result =
@@ -119,7 +119,7 @@ class _ScaleTransition extends SceneTransition {
 
   @override
   Widget build(BuildContext context, Widget child) {
-    final double t = curve.transform(
+    final double t = curve.exact(
       SceneTransition.edge(context, frames).clamp(0.0, 1.0),
     );
     Widget result =

@@ -366,6 +366,7 @@ class _Compare extends StatelessWidget {
         ),
         Positioned(
           left: 960 - (bars.length * width + (bars.length - 1) * gap) / 2,
+          width: bars.length * width + (bars.length - 1) * gap,
           top: 0,
           bottom: 0,
           child: Stack(children: <Widget>[

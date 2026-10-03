@@ -3,6 +3,27 @@ import 'package:reelforge/reelforge.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('exact easing is smooth where Flutter\'s cubic solver is not', () {
+    // Over a long ease the cubic solver's 0.001 tolerance shows up as speed
+    // that wanders from frame to frame; the exact evaluator does not.
+    const Curve curve = Curves.easeInOutSine;
+    double wander(double Function(double) f) {
+      double worst = 0;
+      for (int i = 100; i < 900; i++) {
+        final double a = f(i / 1000) - f((i - 1) / 1000);
+        final double b = f((i + 1) / 1000) - f(i / 1000);
+        worst = worst < (a - b).abs() ? (a - b).abs() : worst;
+      }
+      return worst;
+    }
+
+    expect(wander(curve.exact), lessThan(1e-4));
+    expect(curve.exact(0), 0);
+    expect(curve.exact(1), 1);
+    expect(curve.exact(0.5), closeTo(curve.transform(0.5), 0.005));
+    expect(Curves.linear.exact(0.3), 0.3);
+  });
+
   group('interpolate', () {
     test('maps linearly across a single segment', () {
       expect(interpolate(0, <int>[0, 10], <int>[0, 100]), 0);

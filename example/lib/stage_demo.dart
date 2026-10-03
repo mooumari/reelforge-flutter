@@ -30,9 +30,9 @@ const List<Waypoint> _heroRoute = <Waypoint>[
 
 const List<Waypoint> _pipRoute = <Waypoint>[
   Waypoint(0, -60),
-  Waypoint(24, 87, curve: Curves.easeInSine),
-  Waypoint(120, 1009, curve: Curves.linear),
-  Waypoint(144, 1156, curve: Curves.easeOutSine),
+  Waypoint(24, 70, curve: Curves.easeInSine),
+  Waypoint(137, 1026, curve: Curves.linear),
+  Waypoint(161, 1156, curve: Curves.easeOutSine),
 ];
 
 final Walk _heroWalk = Walk(

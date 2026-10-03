@@ -164,7 +164,7 @@ class Captions extends StatelessWidget {
     // the last.
     final double fadeIn = (local / 0.18 + 0.3).clamp(0.0, 1.0);
     final double fadeOut = ((narration.ends[i] + 0.35 - t) / 0.18).clamp(0.0, 1.0);
-    final double show = Curves.easeOut.transform(math.min(fadeIn, fadeOut));
+    final double show = Curves.easeOut.exact(math.min(fadeIn, fadeOut));
 
     return Align(
       alignment: Alignment.bottomCenter,

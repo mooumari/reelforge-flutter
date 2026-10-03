@@ -240,7 +240,7 @@ class Performance {
     final List<Feel> feels = _of<Feel>().toList();
     for (int i = 0; i < feels.length; i++) {
       final Feel f = feels[i];
-      double ramp(Feel g) => Curves.easeInOutSine.transform(((t - g.at) / math.max(g.ease, 1e-6)).clamp(0.0, 1.0));
+      double ramp(Feel g) => Curves.easeInOutSine.exact(((t - g.at) / math.max(g.ease, 1e-6)).clamp(0.0, 1.0));
       final double weight = ramp(f) * (i + 1 < feels.length ? 1 - ramp(feels[i + 1]) : 1);
       if (weight > 0 && f.emotion != Emotion.neutral) out = out.plus(face.express(f.emotion, amount: f.amount * weight));
     }
