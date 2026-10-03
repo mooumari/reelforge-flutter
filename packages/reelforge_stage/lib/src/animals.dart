@@ -86,7 +86,7 @@ class Lion {
     color: coat,
     shade: Shade.soft,
     at: Offset(-length * 0.27, -depth * 0.55),
-    degrees: 118,
+    degrees: 128,
     children: <Part>[
       Part(
         shapes: <Shape>[
@@ -341,8 +341,10 @@ class Lion {
           shapes: <Shape>[
             Shape(Paths.circle(h(0.3, -0.86), r * 0.24), color: _far(ear), shade: Shade.soft),
             Shape(Paths.circle(h(0.32, -0.84), r * 0.12), color: _far(inner)),
-            Shape(Paths.circle(h(-0.42, -0.8), r * 0.28), color: ear, shade: Shade.soft),
-            Shape(Paths.circle(h(-0.38, -0.76), r * 0.15), color: inner),
+            if (m == null) ...<Shape>[
+              Shape(Paths.circle(h(-0.42, -0.8), r * 0.28), color: ear, shade: Shade.soft),
+              Shape(Paths.circle(h(-0.38, -0.76), r * 0.15), color: inner),
+            ],
           ],
         ),
         // The skull, broad, with full cheeks.
@@ -372,6 +374,17 @@ class Lion {
             ),
           ],
         ),
+        // On a maned lion the mane comes up over the crown, and the near ear
+        // pokes out of it.
+        if (m != null) ...<Part>[
+          _crown(m, h),
+          Part(
+            shapes: <Shape>[
+              Shape(Paths.circle(h(-0.42, -0.86), r * 0.26), color: ear, shade: Shade.soft),
+              Shape(Paths.circle(h(-0.38, -0.82), r * 0.14), color: inner),
+            ],
+          ),
+        ],
         // The muzzle: two whisker pads and a chin, pale.
         Part(
           shapes: <Shape>[
@@ -417,6 +430,31 @@ class Lion {
           _strand(c, -math.pi * 0.9 + i * math.pi * 0.22, r * 0.95, r * (1.35 + (i % 3) * 0.12)),
           color: _darker(color, 0.14),
         ),
+    ]);
+  }
+
+  /// The mane over the top of the head: a band of locks hugging the skull
+  /// from behind the ear to above the brow, their points swept forward.
+  Part _crown(Color color, Offset Function(double, double) h) {
+    const Shade fur = Shade(form: 0.4, core: 0.3, coreStrength: 0.6, rim: 0.12, rimStrength: 0.5);
+    // Round the skull from behind (left) to over the brow, in radians from
+    // pointing forward, clockwise.
+    Path band(double from, double to, double outer, double inner, int locks) {
+      Offset at(double a, double radius) => h(math.cos(a) * radius, math.sin(a) * radius * 1.02);
+      final double step = (to - from) / locks;
+      return Paths.smooth(<Offset>[
+        for (int i = 0; i <= locks * 2; i++) at(from + step * i / 2, outer + (i.isEven ? 0.06 : 0) - 0.04 * (i / (locks * 2))),
+        // Back along the inside: a point every lock, swept forward.
+        for (int i = locks; i >= 0; i--) ...<Offset>[
+          at(from + step * i + step * 0.35, inner - 0.04),
+          if (i > 0) at(from + step * (i - 0.5), inner + 0.16),
+        ],
+      ]);
+    }
+
+    return Part(shapes: <Shape>[
+      Shape(band(math.pi * 0.95, math.pi * 1.72, 1.12, 0.72, 7), color: _darker(color, 0.1), shade: fur),
+      Shape(band(math.pi * 1.05, math.pi * 1.66, 1.06, 0.82, 6), color: color, shade: fur),
     ]);
   }
 

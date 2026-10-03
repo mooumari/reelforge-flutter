@@ -311,7 +311,8 @@ class Gait {
     // the paw, more upright as the leg trails; a foreleg stands with the
     // wrist over the paw, and rolls forward over it as it leaves.
     final double lean = fore ? 4 + 16 * behind + 26 * peel : -16 + 16 * behind - 6 * peel;
-    final double pitch = (fore ? -48 : -38) * peel;
+    // Rolling onto its toes, the heel rises: the paw turns toes-down.
+    final double pitch = (fore ? 40 : 30) * peel;
     final Offset toe = Offset(toeX, groundY);
     return (pivot: toe - _toWorld(_turn(_legs[leg].toe, pitch)), lean: lean, pitch: pitch, support: 1.0);
   }
@@ -429,7 +430,10 @@ class Gait {
   late final List<double> _standing = <double>[
     for (int leg = 0; leg < 4; leg++)
       groundY -
-          _topY(leg, _stance(leg, _world(_neutral(leg)), _first.toDouble(), 0), _route.first.x + _tops[leg].dx * scale * _dir, 0.85),
+          _topY(leg, _stance(leg, _world(_neutral(leg)), _first.toDouble(), 0), _route.first.x + _tops[leg].dx * scale * _dir,
+              // A foreleg stands as a column under the shoulder; a hind leg
+              // keeps a spring in its knee and hock.
+              _fore(leg) ? 0.95 : 0.88),
   ];
 
   /// How far into its stride the body is, 0 to 1, and how near walking pace
@@ -538,7 +542,13 @@ class Gait {
     ];
     final Map<String, Joint> joints = <String, Joint>{
       body.chest: Joint(move: Offset(0, lift)),
-      if (body.head != null) body.head!: Joint(move: Offset(0, -lift * 0.5)),
+      // The head holds its line, nodding a little as each foreleg takes the
+      // weight.
+      if (body.head != null)
+        body.head!: Joint(
+          move: Offset(0, -lift * 0.5),
+          degrees: 2.5 * _pace(f) * math.sin(4 * math.pi * (_cycle(f) - 0.4)),
+        ),
       for (final MapEntry<String, Offset> b in blades.entries) b.key: Joint(move: b.value),
     };
 
