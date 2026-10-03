@@ -10,7 +10,6 @@ import 'part.dart';
 import 'pose.dart';
 import 'shape.dart';
 import 'skin.dart';
-import 'walk.dart';
 
 /// The far side of an animal is darker and cooler, as a person's is.
 Color _far(Color c) => Color.lerp(c, const Color(0xFF2A1F4A), 0.18)!;
@@ -64,8 +63,6 @@ class Lion {
   /// The tail, against the body's [length].
   final double tail;
 
-  double get _upper => leg * 0.52;
-  double get _lower => leg * 0.48;
   double get _paw => leg * 0.1;
 
   Offset get chestAt => Offset(length, -depth * 0.08);
@@ -111,12 +108,12 @@ class Lion {
 
   /// The legs, for a [Gait].
   Quadruped get quadruped {
-    final Offset toe = Offset(_paw * 1.2, _paw * 1.05);
+    final Offset toe = Offset(_paw * 1.1, _paw * 1.05);
     return Quadruped(
-      hindNear: Leg(hip: 'hipF', knee: 'kneeF', ankle: 'footF', toe: toe, heel: toe),
-      hindFar: Leg(hip: 'hipB', knee: 'kneeB', ankle: 'footB', toe: toe, heel: toe),
-      foreNear: Leg(hip: 'shoulderF', knee: 'elbowF', ankle: 'pawF', toe: toe, heel: toe),
-      foreFar: Leg(hip: 'shoulderB', knee: 'elbowB', ankle: 'pawB', toe: toe, heel: toe),
+      hindNear: PawLeg(top: 'hipF', middle: 'kneeF', lower: 'hockF', paw: 'footF', toe: toe),
+      hindFar: PawLeg(top: 'hipB', middle: 'kneeB', lower: 'hockB', paw: 'footB', toe: toe),
+      foreNear: PawLeg(top: 'shoulderF', middle: 'elbowF', lower: 'wristF', paw: 'pawF', toe: toe),
+      foreFar: PawLeg(top: 'shoulderB', middle: 'elbowB', lower: 'wristB', paw: 'pawB', toe: toe),
     );
   }
 
@@ -164,7 +161,7 @@ class Lion {
   Pose swish(num frame, int fps) => tailChain.wave(frame, fps, amplitude: 9, hertz: 0.35, taper: 0.8);
 
   /// Where to place [part] standing still with its feet on [groundY].
-  Offset standing(double x, double groundY) => Offset(x, groundY - _paw * 1.05 - leg - leg * 0.06);
+  Offset standing(double x, double groundY) => Offset(x, groundY - _paw * 1.05 - leg * 1.02);
 
   Part build() {
     final double s = length, d = depth;
@@ -240,17 +237,28 @@ class Lion {
     );
   }
 
+  /// A leg's three bones, top to bottom: thigh, shin, hock to paw; or upper
+  /// arm, forearm, wrist to paw.
+  List<double> _bones(bool fore) => fore ? <double>[leg * 0.4, leg * 0.44, leg * 0.14] : <double>[leg * 0.36, leg * 0.4, leg * 0.26];
+
   Part _leg({required bool fore, required bool near}) {
     final String side = near ? 'F' : 'B';
     final Color Function(Color) tone = near ? (Color c) => c : _far;
     final double l = leg, p = _paw;
-    final double r0 = l * (fore ? 0.17 : 0.18), r1 = l * 0.09;
+    final List<double> bones = _bones(fore);
+    final double knee = bones[0], lower = bones[0] + bones[1], end = lower + bones[2];
     final String top = fore ? 'shoulder$side' : 'hip$side';
     final String middle = fore ? 'elbow$side' : 'knee$side';
-    final String end = fore ? 'paw$side' : 'foot$side';
+    final String joint = fore ? 'wrist$side' : 'hock$side';
+    final String paw = fore ? 'paw$side' : 'foot$side';
     // The far legs are a little further along and higher up: further away.
     final Offset at = Offset(near ? 0 : l * 0.11, near ? 0 : -depth * 0.1);
-    final Path limb = Paths.taper(Offset.zero, Offset(0, l), r0, r1);
+    // Thick at the top, slim from the hock or wrist down.
+    final Path limb = Path.combine(
+      PathOperation.union,
+      Paths.taper(Offset.zero, Offset(0, lower), l * (fore ? 0.16 : 0.17), l * (fore ? 0.085 : 0.075)),
+      Paths.taper(Offset(0, lower), Offset(0, end), l * (fore ? 0.085 : 0.075), l * 0.07),
+    );
     // The haunch and the shoulder blade: the big muscle at the top of the
     // leg, which gives a cat its shape.
     final Path muscle = fore
@@ -260,15 +268,15 @@ class Lion {
             Offset(-l * 0.16, -l * 0.26),
             Offset(l * 0.12, -l * 0.24),
             Offset(l * 0.24, l * 0.04),
-            Offset(l * 0.12, l * 0.36),
-            Offset(-l * 0.12, l * 0.4),
+            Offset(l * 0.14, l * 0.3),
+            Offset(-l * 0.1, l * 0.36),
           ]);
     return Part(
       name: top,
       at: at,
       shapes: <Shape>[
         Shape.skin(
-          Skin(limb, bones: <String>[top, middle], tip: Offset(0, _lower)),
+          Skin(limb, bones: <String>[top, middle, joint], tip: Offset(0, bones[2])),
           color: tone(coat),
           shade: Shade.soft,
         ),
@@ -277,31 +285,37 @@ class Lion {
       children: <Part>[
         Part(
           name: middle,
-          at: Offset(0, _upper),
+          at: Offset(0, knee),
           children: <Part>[
             Part(
-              name: end,
-              at: Offset(0, _lower),
-              shapes: <Shape>[
-                Shape(
-                  Paths.smooth(<Offset>[
-                    Offset(-p * 0.95, -p * 0.7),
-                    Offset(p * 0.6, -p * 0.85),
-                    Offset(p * 1.6, -p * 0.05),
-                    Offset(p * 1.95, p * 0.7),
-                    Offset(p * 1.6, p * 1.05),
-                    Offset(-p * 0.6, p * 1.05),
-                    Offset(-p * 1.15, p * 0.35),
-                  ]),
-                  color: tone(_lighter(coat, 0.08)),
-                  shade: Shade.soft,
+              name: joint,
+              at: Offset(0, bones[1]),
+              children: <Part>[
+                Part(
+                  name: paw,
+                  at: Offset(0, bones[2]),
+                  shapes: <Shape>[
+                    Shape(
+                      Paths.smooth(<Offset>[
+                        Offset(-p * 1.3, -p * 0.7),
+                        Offset(p * 0.2, -p * 0.85),
+                        Offset(p * 1.15, -p * 0.05),
+                        Offset(p * 1.5, p * 0.7),
+                        Offset(p * 1.15, p * 1.05),
+                        Offset(-p * 1.0, p * 1.05),
+                        Offset(-p * 1.5, p * 0.35),
+                      ]),
+                      color: tone(_lighter(coat, 0.08)),
+                      shade: Shade.soft,
+                    ),
+                    // Toes.
+                    for (final double x in <double>[0.15, 0.75])
+                      Shape(
+                        Paths.capsule(Offset(p * x, p * 0.55), Offset(p * (x + 0.08), p * 1.0), p * 0.06),
+                        color: tone(_darker(coat, 0.35)),
+                      ),
+                  ],
                 ),
-                // Toes.
-                for (final double x in <double>[0.55, 1.15])
-                  Shape(
-                    Paths.capsule(Offset(p * x, p * 0.55), Offset(p * (x + 0.08), p * 1.0), p * 0.06),
-                    color: tone(_darker(coat, 0.35)),
-                  ),
               ],
             ),
           ],

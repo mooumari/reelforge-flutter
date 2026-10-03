@@ -167,8 +167,14 @@ final Posed p = gait.at(frame, adjust: (Pose pose) => pose.plus(Lion.male.stance
 `Gait` plans footfalls the way `Walk` does, by distance, so a planted paw
 stays where it landed; the legs step a quarter of a stride apart, hind then
 fore on the same side, and when the route ends each takes one last step to
-stand square. The hips and shoulders bob twice a stride, the head holds its
-line, and the shoulders drop when a planted foreleg needs the reach.
+stand square. Each leg has three bones (a `PawLeg`: thigh or upper arm,
+shin or forearm, hock or wrist, then the paw), and each step is a cat's
+step: the paw peels off heel first over its toes, the leg folds -- the hock
+flexes, the forepaw tucks under the wrist -- swings forward, reaches out and
+lands flat. The hips ride the hind legs and the chest the forelegs, eased so
+they never rise or sink faster than a body does; the shoulder blades slide
+with the forelegs, and the head holds its line. `toeAt` says where each
+paw's toes are.
 
 An animal that stands and talks is a `Character` in fur. A monkey is a body
 with long arms and short legs, a skin the colour of its coat, and `Fur` (a

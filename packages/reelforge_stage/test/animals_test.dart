@@ -2,7 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reelforge_stage/reelforge_stage.dart';
 
-const List<String> _ankles = <String>['footF', 'pawF', 'footB', 'pawB'];
+const List<String> _paws = <String>['footF', 'pawF', 'footB', 'pawB'];
+
+/// Where the toes of [leg]'s paw are, as drawn.
+Offset _toe(Gait gait, Lion lion, Posed p, int leg) =>
+    frameOf(p.part, p.pose, _paws[leg]).apply(lion.quadruped.hindNear.toe);
 
 /// Walks [lion] seven strides at a lion's pace, and stops.
 Gait _gait(Lion lion, {bool left = false}) {
@@ -22,7 +26,6 @@ Gait _gait(Lion lion, {bool left = false}) {
   );
 }
 
-Offset _ankle(Posed p, String name) => frameOf(p.part, p.pose, name).apply(Offset.zero);
 
 void main() {
   group('Gait', () {
@@ -33,8 +36,8 @@ void main() {
           for (int f = 0; f <= 160; f++) {
             final Posed p = gait.at(f);
             for (int leg = 0; leg < 4; leg++) {
-              expect((_ankle(p, _ankles[leg]) - gait.ankleAt(leg, f)).distance, lessThan(0.05),
-                  reason: '${_ankles[leg]}, frame $f, ${left ? 'left' : 'right'}');
+              expect((_toe(gait, l.$2, p, leg) - gait.toeAt(leg, f)).distance, lessThan(0.05),
+                  reason: '${_paws[leg]}, frame $f, ${left ? 'left' : 'right'}');
             }
           }
         }
@@ -48,10 +51,10 @@ void main() {
         for (final Footstep step in gait.steps.where((Footstep s) => s.foot == leg)) {
           final List<Offset> at = <Offset>[];
           for (int f = step.land.ceil(); gait.plantedAt(leg, f) && f < 200; f++) {
-            at.add(_ankle(gait.at(f), _ankles[leg]));
+            at.add(_toe(gait, Lion.male, gait.at(f), leg));
           }
           for (final Offset a in at) {
-            expect((a - at.first).distance, lessThan(0.05), reason: '${_ankles[leg]} slid after landing at ${step.land}');
+            expect((a - at.first).distance, lessThan(0.05), reason: '${_paws[leg]} slid after landing at ${step.land}');
           }
           checked += at.length;
         }
@@ -86,6 +89,23 @@ void main() {
       expect(gait.at(200).pose, gait.at(220).pose);
     });
 
+    test('no joint jumps from one frame to the next', () {
+      // Paws peel, fold, reach and land; the hips and shoulders ride the
+      // legs. Each of those hands over to the next, and none may snap.
+      final Gait gait = _gait(Lion.male);
+      Pose before = gait.at(0).pose;
+      for (int f = 1; f <= 160; f++) {
+        final Pose now = gait.at(f).pose;
+        for (final String joint in now.joints.keys) {
+          double turn = (now[joint].degrees - before[joint].degrees).abs() % 360;
+          if (turn > 180) turn = 360 - turn;
+          expect(turn, lessThan(55), reason: '$joint, frame $f');
+          expect((now[joint].move - before[joint].move).distance, lessThan(6), reason: '$joint, frame $f');
+        }
+        before = now;
+      }
+    });
+
     test('a frame is a function of its number', () {
       final Gait a = _gait(Lion.male), b = _gait(Lion.male);
       for (final int f in <int>[0, 37, 80, 121, 190]) {
@@ -98,7 +118,7 @@ void main() {
     test('has the joints its gait, life and follow-through drive', () {
       for (final Lion lion in const <Lion>[Lion.male, Lion.female, Lion.cub]) {
         for (final String joint in <String>[
-          'hips', 'chest', 'head', ..._ankles, 'kneeF', 'elbowF', 'tail0', ...FaceJoints.eyes, FaceJoints.mouth,
+          'hips', 'chest', 'head', ..._paws, 'kneeF', 'hockF', 'elbowF', 'wristF', 'tail0', ...FaceJoints.eyes, FaceJoints.mouth,
         ]) {
           expect(pathTo(lion.part, joint), isNotNull, reason: joint);
         }
