@@ -44,13 +44,14 @@ class Body {
     this.ankleRadius = 11.5,
     this.foot = 34,
     this.hunch = 0,
+    this.head = HeadShape.oval,
   });
 
   /// Small, big-headed, short-limbed.
   static const Body child = Body(
     headRadius: 60, neck: 6, torso: 82, shoulders: 72, hips: 64, upperArm: 34, forearm: 31,
     armRadius: 10, wristRadius: 8, hand: 10.5, upperLeg: 38, lowerLeg: 35,
-    legRadius: 13.5, ankleRadius: 10, foot: 28,
+    legRadius: 13.5, ankleRadius: 10, foot: 28, head: HeadShape.round,
   );
 
   /// Broad, heavy, a belly.
@@ -69,7 +70,7 @@ class Body {
   /// Bent at the shoulders, a little smaller.
   static const Body elder = Body(
     headRadius: 61, torso: 108, shoulders: 88, hips: 82, belly: 6, upperArm: 46, forearm: 42,
-    upperLeg: 50, lowerLeg: 48, legRadius: 16, hunch: 9,
+    upperLeg: 50, lowerLeg: 48, legRadius: 16, hunch: 9, head: HeadShape.long,
   );
 
   final double headRadius;
@@ -89,6 +90,9 @@ class Body {
 
   /// Degrees the chest leans forward at rest; see [Character.stance].
   final double hunch;
+
+  /// The head's silhouette: a skull, cheeks and a jaw.
+  final HeadShape head;
 
   /// The torso's outline edges: [back] the near side, [front] the far side
   /// and chest.
@@ -140,6 +144,61 @@ class Body {
       Offset(0, -t - 3),
     ]);
   }
+}
+
+/// The silhouette of a head, three-quarters on and facing right: the skull
+/// round at the back and top, the face side with a cheek, a jaw and a chin
+/// that comes forward the way the face looks.
+///
+/// Points are in head radii from the middle of the head. Every shape shares
+/// the same skull -- top at -1, back at -1 -- so hats, hair and helmets fit
+/// them all; they differ in the cheek, the jaw and the chin.
+@immutable
+class HeadShape {
+  const HeadShape(this.points);
+
+  /// A soft oval with a gentle jaw: the everyday head.
+  static const HeadShape oval = HeadShape(<(double, double)>[
+    (0, -1.0), (0.5, -0.9), (0.84, -0.6), (0.97, -0.2), (0.98, 0.15), (0.88, 0.48), (0.66, 0.78),
+    (0.36, 0.94), (0.05, 0.92), (-0.32, 0.74), (-0.62, 0.48), (-0.9, 0.15), (-1.0, -0.25), (-0.82, -0.7),
+    (-0.45, -0.95),
+  ]);
+
+  /// A broad, square jaw: the hero, the soldier, the cowboy.
+  static const HeadShape square = HeadShape(<(double, double)>[
+    (0, -1.0), (0.5, -0.92), (0.86, -0.62), (0.98, -0.2), (1.0, 0.2), (0.98, 0.56), (0.86, 0.86),
+    (0.5, 0.99), (0.1, 0.98), (-0.3, 0.88), (-0.58, 0.62), (-0.88, 0.25), (-1.0, -0.2), (-0.84, -0.68),
+    (-0.46, -0.95),
+  ]);
+
+  /// Wide cheekbones and a small, pointed chin.
+  static const HeadShape heart = HeadShape(<(double, double)>[
+    (0, -1.0), (0.52, -0.92), (0.9, -0.6), (1.0, -0.15), (0.95, 0.25), (0.76, 0.6), (0.5, 0.9),
+    (0.3, 1.0), (0.06, 0.88), (-0.3, 0.62), (-0.62, 0.38), (-0.92, 0.08), (-1.0, -0.3), (-0.82, -0.72),
+    (-0.45, -0.96),
+  ]);
+
+  /// Long in the face: the elder, the scholar.
+  static const HeadShape long = HeadShape(<(double, double)>[
+    (0, -1.04), (0.5, -0.95), (0.82, -0.66), (0.93, -0.25), (0.93, 0.2), (0.85, 0.62), (0.65, 0.95),
+    (0.36, 1.1), (0.05, 1.07), (-0.3, 0.86), (-0.6, 0.52), (-0.88, 0.12), (-0.98, -0.3), (-0.8, -0.76),
+    (-0.44, -1.0),
+  ]);
+
+  /// Round and full in the cheek: a child.
+  static const HeadShape round = HeadShape(<(double, double)>[
+    (0, -1.0), (0.55, -0.88), (0.9, -0.5), (1.02, 0.0), (0.98, 0.4), (0.78, 0.74), (0.42, 0.94),
+    (0.0, 0.96), (-0.4, 0.86), (-0.74, 0.6), (-0.96, 0.2), (-1.0, -0.3), (-0.8, -0.74), (-0.45, -0.95),
+  ]);
+
+  final List<(double, double)> points;
+
+  /// The outline around [center], [radius] to a head radius.
+  Path outline(Offset center, double radius) => (_outlines[this] ??= <String, Path>{}).putIfAbsent('$center $radius', () => Paths.smooth(<Offset>[
+            for (final (double x, double y) in points) center + Offset(x * radius, y * radius),
+          ]));
+
+  static final Expando<Map<String, Path>> _outlines = Expando<Map<String, Path>>();
 }
 
 /// A sleeve, a trouser leg, a glove, a boot's shaft: a length of a limb in
@@ -215,17 +274,8 @@ class Fitting {
   double get r => body.headRadius;
   Offset get headCenter => body.headCenter;
 
-  /// The head's outline, in head space: round, with the jaw a little fuller
-  /// on the side the face is turned to.
-  Path get headOutline => Paths.smooth(<Offset>[
-        for (int i = 0; i < 24; i++)
-          () {
-            final double a = i * math.pi / 12;
-            // Most at 55 degrees below the forward horizontal.
-            final double jaw = math.max(0.0, math.cos(a - 0.95)) * 0.07;
-            return headCenter + Offset(math.cos(a) * r * (1 + jaw), math.sin(a) * r * (0.98 + jaw));
-          }(),
-      ]);
+  /// The head's outline, in head space; see [HeadShape].
+  Path get headOutline => body.head.outline(headCenter, r);
 
   /// Where the ear is, in head space.
   Offset get ear => h(-0.4, 0.08);

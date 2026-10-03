@@ -33,6 +33,7 @@ const Light _sun = Light(
 );
 
 const Character wyatt = Character(
+  body: Body(head: HeadShape.square),
   skin: Color(0xFFE7A77B),
   face: FaceStyle(
     eyeSpacing: 60,
