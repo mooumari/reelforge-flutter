@@ -1,4 +1,5 @@
 import 'package:example/rain_open.dart';
+import 'package:example/stick_proto.dart';
 import 'package:example/rain_week.dart';
 import 'package:example/stage_cast.dart';
 import 'package:example/stage_compare.dart';
@@ -248,4 +249,21 @@ void main() {
       expect(_same(expected[1125]!, expected[1165]!), isFalse);
     });
   }
+
+  test('StickProto is deterministic: the walks, the stirring and the close-up', () async {
+    const List<int> sampled = <int>[20, 70, 110, 149, 170, 230];
+    final CompositionRenderer first = CompositionRenderer(stickProto);
+    final Map<int, Uint8List> expected = <int, Uint8List>{
+      for (final int f in sampled) f: await _frame(first, f),
+    };
+    for (final int frame in <int>[70, 230]) {
+      expect(_same(await _frame(CompositionRenderer(stickProto), frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs when entered directly');
+    }
+    for (final int frame in sampled.reversed) {
+      expect(_same(await _frame(first, frame), expected[frame]!), isTrue,
+          reason: 'frame $frame differs on the way back down');
+    }
+    expect(_same(expected[20]!, expected[110]!), isFalse);
+  });
 }

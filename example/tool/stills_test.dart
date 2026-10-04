@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:example/rain_cast.dart';
 import 'package:example/rain_open.dart';
+import 'package:example/stick_lab.dart';
+import 'package:example/stick_proto.dart';
 import 'package:example/rain_week.dart';
 import 'package:example/lion_sleep.dart';
 import 'package:example/stage_cast.dart';
@@ -33,6 +35,8 @@ final Map<String, Composition> _all = <String, Composition>{
   rainWeek.id: rainWeek,
   rainOpen.id: rainOpen,
   rainOpenDoodle.id: rainOpenDoodle,
+  stickLab.id: stickLab,
+  stickProto.id: stickProto,
   stageDemo.id: stageDemo,
   stageCast.id: stageCast,
   walkCompare.id: walkCompare,

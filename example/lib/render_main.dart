@@ -13,6 +13,7 @@ import 'stage_heads.dart';
 import 'stage_wardrobe.dart';
 import 'lion_sleep.dart';
 import 'rain_open.dart';
+import 'stick_proto.dart';
 import 'rain_week.dart';
 import 'stage_savanna.dart';
 import 'stage_style.dart';
@@ -43,6 +44,7 @@ Future<void> main(List<String> args) async {
     rainWeek,
     rainOpen,
     rainOpenDoodle,
+    stickProto,
     longform,
     longformJson,
     showreel,
