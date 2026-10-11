@@ -9,7 +9,7 @@ import 'declarations/manifest.dart';
 import 'declarations/pass.dart';
 import 'media/spawn.dart';
 import 'media/video_backend.dart';
-import 'quiet_host.dart';
+import 'quiet_host.dart' if (dart.library.js_interop) 'quiet_host_web.dart';
 import 'renderer.dart';
 
 /// Entry point for a render host binary.
